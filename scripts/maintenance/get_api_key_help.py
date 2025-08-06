@@ -1,0 +1,66 @@
+"""
+Help find the correct API Key for Breeze Connect
+
+The error "Could not authenticate credentials. Please check api key" means
+the API Key (not the session token) is incorrect.
+"""
+
+print("="*60)
+print("BREEZE API AUTHENTICATION HELP")
+print("="*60)
+print()
+print("You provided: https://localhost:56412/?apisession=52469011")
+print("This gives us the SESSION TOKEN: 52469011 ✓")
+print()
+print("But we still need the correct API KEY and API SECRET")
+print("="*60)
+print()
+print("TO GET YOUR API KEY:")
+print("-"*40)
+print("1. Log in to ICICI Direct")
+print("2. Go to: https://secure.icicidirect.com/")
+print("3. Navigate to: Customer Service > API")
+print("   OR")
+print("   Go directly to: https://api.icicidirect.com/apiuser/home")
+print()
+print("4. Look for a section showing:")
+print("   - API Key (looks like: I1234N567P89012Q3456R78)")
+print("   - API Secret (a long string)")
+print()
+print("5. The API Key should be ~16-24 characters")
+print("   It usually contains only letters and numbers")
+print("   It may look like: I4539N853P45738Q5847R00")
+print()
+print("="*60)
+print("CURRENT CREDENTIALS IN .env:")
+print("-"*40)
+
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+api_key = os.getenv('BREEZE_API_KEY')
+api_secret = os.getenv('BREEZE_API_SECRET')
+session = os.getenv('BREEZE_API_SESSION')
+
+print(f"API Key:     {api_key}")
+print(f"API Secret:  {api_secret[:10]}..." if api_secret else "Not set")
+print(f"Session:     {session} ✓ (This is correct)")
+print()
+print("="*60)
+print("WHAT TO DO:")
+print("-"*40)
+print("1. Get your ACTUAL API Key from ICICI Direct portal")
+print("2. Update the .env file with the correct API Key")
+print("3. Run: python test_breeze_simple.py")
+print()
+print("The API Key in .env appears to be wrong:")
+print(f"  Current: {api_key}")
+print("  It has unusual characters: (, !, ], O")
+print("  API Keys typically don't have these special characters")
+print()
+print("Please check if:")
+print("  - 'O' should be '0' (zero)")
+print("  - The special characters are really part of the key")
+print("  - You copied the right field from ICICI Direct")
+print("="*60)

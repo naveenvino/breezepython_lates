@@ -1,0 +1,39 @@
+# Core dependencies
+breeze-connect==1.0.54
+pandas==2.2.0
+python-dotenv==1.0.0
+requests==2.31.0
+numpy==1.26.3
+openpyxl==3.1.2
+
+# Kite Connect for live trading
+kiteconnect>=5.0.0
+
+# Visualization (optional)
+matplotlib>=3.5.0
+seaborn>=0.11.0
+
+# Web framework
+fastapi>=0.100.0
+uvicorn>=0.20.0
+python-multipart>=0.0.6
+
+# Database
+sqlalchemy>=2.0.0
+pyodbc>=4.0.35
+pymssql>=2.2.8
+
+# Configuration and validation
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# Async HTTP
+aiohttp>=3.9.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.23.0
+pytest-cov>=4.1.0
+
+# Monitoring and Dashboard
+rich>=13.7.0
