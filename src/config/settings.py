@@ -58,6 +58,22 @@ class DatabaseSettings(BaseSettings):
                 f"?driver={self.driver.replace(' ', '+')}"
             )
     
+    @property
+    def connection_string_async(self) -> str:
+        """Build asynchronous SQL Server connection string"""
+        if self.trusted_connection:
+            return (
+                f"mssql+aioodbc://{self.server}/{self.database}"
+                f"?driver={self.driver.replace(' ', '+')}"
+                "&trusted_connection=yes"
+            )
+        else:
+            return (
+                f"mssql+aioodbc://{self.username}:{self.password}@"
+                f"{self.server}/{self.database}"
+                f"?driver={self.driver.replace(' ', '+')}"
+            )
+    
     class Config:
         env_file = ".env"
         case_sensitive = False

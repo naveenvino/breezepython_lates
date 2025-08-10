@@ -4,7 +4,7 @@ Service for calculating option prices and managing option data
 """
 import logging
 from datetime import datetime, timedelta
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Dict
 
 from ..database.models import OptionsHistoricalData
 from .data_collection_service import DataCollectionService
@@ -206,24 +206,68 @@ class OptionPricingService:
             # Only premium required
             return 0  # Premium handled separately
     
-    def get_strike_list(self, spot_price: float, num_strikes: int = 20) -> List[int]:
+    def calculate_greeks(
+        self,
+        option_type: str,
+        spot_price: float,
+        strike_price: float,
+        time_to_expiry: float,  # in years
+        risk_free_rate: float,
+        volatility: float,
+        option_price: Optional[float] = None # For implied volatility
+    ) -> Dict[str, float]:
         """
-        Get list of strikes around current spot price
+        Calculate option Greeks (Delta, Gamma, Theta, Vega, Rho)
         
         Args:
-            spot_price: Current NIFTY spot price
-            num_strikes: Number of strikes on each side of ATM
+            option_type: 'c' for Call, 'p' for Put
+            spot_price: Current underlying price
+            strike_price: Option strike price
+            time_to_expiry: Time to expiry in years
+            risk_free_rate: Risk-free interest rate (e.g., 0.05 for 5%)
+            volatility: Implied volatility (e.g., 0.20 for 20%)
+            option_price: Optional, for calculating implied volatility
             
         Returns:
-            List of strike prices
+            Dictionary of Greeks
         """
-        atm_strike = self.calculate_atm_strike(spot_price)
-        strike_interval = 50
-        
-        strikes = []
-        for i in range(-num_strikes, num_strikes + 1):
-            strike = atm_strike + (i * strike_interval)
-            if strike > 0:  # Ensure positive strikes
-                strikes.append(strike)
-        
-        return sorted(strikes)
+        from py_vollib.black_scholes import black_scholes as bs
+        from py_vollib.black_scholes.greeks.analytical import delta, gamma, theta, vega, rho
+        from py_vollib.black_scholes.implied_volatility import implied_volatility as iv
+
+        try:
+            if option_price is not None:
+                # Calculate implied volatility if option_price is provided
+                try:
+                    volatility = iv(
+                        option_price,
+                        spot_price,
+                        strike_price,
+                        time_to_expiry,
+                        risk_free_rate,
+                        option_type
+                    )
+                except Exception as e:
+                    logger.warning(f"Could not calculate implied volatility: {e}. Using provided volatility.")
+
+            if volatility <= 0:
+                logger.warning("Volatility is non-positive, cannot calculate Greeks.")
+                return {
+                    "delta": 0.0, "gamma": 0.0, "theta": 0.0,
+                    "vega": 0.0, "rho": 0.0, "implied_volatility": 0.0
+                }
+
+            return {
+                "delta": delta(option_type, spot_price, strike_price, time_to_expiry, risk_free_rate, volatility),
+                "gamma": gamma(option_type, spot_price, strike_price, time_to_expiry, risk_free_rate, volatility),
+                "theta": theta(option_type, spot_price, strike_price, time_to_expiry, risk_free_rate, volatility),
+                "vega": vega(option_type, spot_price, strike_price, time_to_expiry, risk_free_rate, volatility),
+                "rho": rho(option_type, spot_price, strike_price, time_to_expiry, risk_free_rate, volatility),
+                "implied_volatility": volatility
+            }
+        except Exception as e:
+            logger.error(f"Error calculating Greeks: {e}")
+            return {
+                "delta": 0.0, "gamma": 0.0, "theta": 0.0,
+                "vega": 0.0, "rho": 0.0, "implied_volatility": 0.0
+            }

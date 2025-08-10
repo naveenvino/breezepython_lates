@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UI Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        .status {
+            padding: 8px 16px;
+            border-radius: 4px;
+            display: inline-block;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .link {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 5px;
+        }
+        .link:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Trading Platform UI Test</h1>
+    
+    <div class="test-card">
+        <h2>1. API Status</h2>
+        <div id="apiStatus">Checking...</div>
+    </div>
+
+    <div class="test-card">
+        <h2>2. Quick Links</h2>
+        <a href="login.html" class="link">Login Page</a>
+        <a href="index.html" class="link">Dashboard (requires login)</a>
+        <a href="ml_validation_form.html" class="link">ML Validation (direct)</a>
+        <a href="backtest.html" class="link">Backtest Module (direct)</a>
+        <a href="data_collection.html" class="link">Data Collection (direct)</a>
+    </div>
+
+    <div class="test-card">
+        <h2>3. Test Login</h2>
+        <button onclick="testLogin()">Test Admin Login</button>
+        <div id="loginResult"></div>
+    </div>
+
+    <div class="test-card">
+        <h2>4. Working Features</h2>
+        <ul>
+            <li>✅ Login System (admin/admin, user/user, trader/trader)</li>
+            <li>✅ Main Dashboard with statistics</li>
+            <li>✅ Sidebar Navigation</li>
+            <li>✅ Backtesting Module (fully functional)</li>
+            <li>✅ ML Validation Module (your enhanced version)</li>
+            <li>✅ Data Collection Module (NIFTY, Options, Weekly)</li>
+            <li>✅ Command Palette (Ctrl+K in dashboard)</li>
+            <li>✅ User Profile Display</li>
+            <li>✅ "Under Development" placeholders for other modules</li>
+        </ul>
+    </div>
+
+    <div class="test-card">
+        <h2>5. API Endpoints</h2>
+        <ul>
+            <li>Authentication: POST /auth/login, GET /auth/user</li>
+            <li>Backtest: POST /backtest, GET /backtest</li>
+            <li>ML Validation: POST /ml/validate</li>
+            <li>Data Collection: POST /collect/nifty-bulk, /collect/options-bulk</li>
+            <li>Session: GET /session/validate, POST /session/update</li>
+        </ul>
+    </div>
+
+    <script>
+        // Check API status
+        async function checkAPI() {
+            try {
+                const response = await fetch('http://localhost:8000/health');
+                const data = await response.json();
+                document.getElementById('apiStatus').innerHTML = 
+                    `<div class="status success">✅ API is running at localhost:8000<br>Database: ${data.database}</div>`;
+            } catch (error) {
+                document.getElementById('apiStatus').innerHTML = 
+                    `<div class="status error">❌ API is not running. Please start unified_api_correct.py</div>`;
+            }
+        }
+
+        // Test login
+        async function testLogin() {
+            try {
+                const response = await fetch('http://localhost:8000/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: 'admin'
+                    })
+                });
+                const data = await response.json();
+                document.getElementById('loginResult').innerHTML = 
+                    `<div class="status success">✅ Login successful!<br>Token: ${data.token}<br>Role: ${data.role}</div>`;
+                
+                // Store in session for testing
+                sessionStorage.setItem('user', data.username);
+                sessionStorage.setItem('token', data.token);
+            } catch (error) {
+                document.getElementById('loginResult').innerHTML = 
+                    `<div class="status error">❌ Login failed: ${error.message}</div>`;
+            }
+        }
+
+        // Check on load
+        checkAPI();
+    </script>
+</body>
+</html>

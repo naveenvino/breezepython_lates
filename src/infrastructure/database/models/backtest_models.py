@@ -72,6 +72,8 @@ class BacktestRun(Base):
     total_return_percent = Column('TotalReturnPercent', DECIMAL(10, 2), nullable=True)
     max_drawdown = Column('MaxDrawdown', DECIMAL(18, 2), nullable=True)
     max_drawdown_percent = Column('MaxDrawdownPercent', DECIMAL(10, 2), nullable=True)
+    sharpe_ratio = Column('SharpeRatio', DECIMAL(10, 4), nullable=True)
+    sortino_ratio = Column('SortinoRatio', DECIMAL(10, 4), nullable=True)
     
     # Metadata
     created_at = Column('CreatedAt', DateTime, nullable=False, server_default=func.now())
@@ -115,6 +117,11 @@ class BacktestTrade(Base):
     
     # P&L
     total_pnl = Column('TotalPnL', DECIMAL(18, 2), nullable=True)
+    
+    # Wednesday Exit Comparison (what-if analysis)
+    wednesday_exit_time = Column('WednesdayExitTime', DateTime, nullable=True)
+    wednesday_exit_pnl = Column('WednesdayExitPnL', DECIMAL(18, 2), nullable=True)
+    wednesday_index_price = Column('WednesdayIndexPrice', DECIMAL(18, 2), nullable=True)
     
     # Zone information at trade entry
     resistance_zone_top = Column('ResistanceZoneTop', DECIMAL(18, 2), nullable=True)

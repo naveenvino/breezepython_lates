@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backtesting Module</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f0f1e;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+
+        .module-header {
+            margin-bottom: 30px;
+        }
+
+        .module-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .module-description {
+            color: #999;
+            font-size: 14px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tab {
+            padding: 12px 0;
+            color: #999;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            color: #fff;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.08);
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+
+        .signal-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .signal-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .signal-checkbox:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .signal-checkbox.selected {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .results-section {
+            margin-top: 30px;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .metric-value.positive {
+            color: #22c55e;
+        }
+
+        .metric-value.negative {
+            color: #ef4444;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            position: relative;
+            height: 400px;
+        }
+        
+        .chart-container canvas {
+            max-height: 350px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
+            transition: width 0.3s;
+        }
+
+        .status-message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-message.info {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #3b82f6;
+        }
+
+        .status-message.success {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #22c55e;
+        }
+
+        .status-message.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .history-table th,
+        .history-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .history-table th {
+            color: #999;
+            font-weight: 500;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .history-table td {
+            font-size: 14px;
+        }
+
+        .history-table tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="module-header">
+        <h1 class="module-title">Backtesting</h1>
+        <p class="module-description">Test your trading strategies with historical data</p>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('configure')">Configure</div>
+        <div class="tab" onclick="switchTab('results')">Results</div>
+        <div class="tab" onclick="switchTab('history')">History</div>
+    </div>
+
+    <div id="configure-tab" class="tab-content active">
+        <div class="card">
+            <h3 style="margin-bottom: 20px;">Backtest Parameters</h3>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="fromDate">From Date</label>
+                    <input type="date" id="fromDate" value="2025-07-14">
+                </div>
+                
+                <div class="form-group">
+                    <label for="toDate">To Date</label>
+                    <input type="date" id="toDate" value="2025-07-18">
+                </div>
+                
+                <div class="form-group">
+                    <label for="initialCapital">Initial Capital (₹)</label>
+                    <input type="number" id="initialCapital" value="500000">
+                </div>
+                
+                <div class="form-group">
+                    <label for="lotsToTrade">Lots to Trade</label>
+                    <input type="number" id="lotsToTrade" value="10">
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-bottom: 20px;">Signal Selection</h3>
+            <div class="signal-grid" id="signalGrid">
+                <!-- Signals will be populated here -->
+            </div>
+            <div style="margin-top: 12px;">
+                <button class="btn btn-secondary" onclick="selectAllSignals()">Select All</button>
+                <button class="btn btn-secondary" onclick="deselectAllSignals()">Deselect All</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-bottom: 20px;">Advanced Options</h3>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="useHedging" checked>
+                <label for="useHedging">Use Hedging</label>
+            </div>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="wednesdayExit" checked>
+                <label for="wednesdayExit">Wednesday Exit (3:15 PM)</label>
+            </div>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="autoFetchData" checked>
+                <label for="autoFetchData">Auto-fetch Missing Data</label>
+            </div>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="hedgeOffset">Hedge Offset (Points)</label>
+                    <input type="number" id="hedgeOffset" value="200">
+                </div>
+                
+                <div class="form-group">
+                    <label for="commissionPerLot">Commission per Lot (₹)</label>
+                    <input type="number" id="commissionPerLot" value="40">
+                </div>
+                
+                <div class="form-group">
+                    <label for="slippagePercent">Slippage (%)</label>
+                    <input type="number" id="slippagePercent" value="0.001" step="0.001">
+                </div>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn btn-primary" onclick="runBacktest()" id="runBtn">
+                <i class="fas fa-play"></i> Run Backtest
+            </button>
+            <button class="btn btn-secondary" onclick="resetForm()">
+                <i class="fas fa-redo"></i> Reset
+            </button>
+        </div>
+
+        <div id="progressSection" style="display: none;">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+            <div class="status-message info">
+                <div class="spinner"></div>
+                <span id="statusText">Initializing backtest...</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="results-tab" class="tab-content">
+        <div class="results-section">
+            <div class="metric-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Total P&L</div>
+                    <div class="metric-value" id="totalPL">₹0</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Win Rate</div>
+                    <div class="metric-value" id="winRate">0%</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Total Trades</div>
+                    <div class="metric-value" id="totalTrades">0</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Max Drawdown</div>
+                    <div class="metric-value negative" id="maxDrawdown">₹0</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Sharpe Ratio</div>
+                    <div class="metric-value" id="sharpeRatio">0.00</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Return %</div>
+                    <div class="metric-value" id="returnPercent">0%</div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h3 style="margin-bottom: 20px;">Equity Curve</h3>
+                <canvas id="equityChart"></canvas>
+            </div>
+
+            <div class="chart-container">
+                <h3 style="margin-bottom: 20px;">Trade Distribution</h3>
+                <canvas id="tradeChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div id="history-tab" class="tab-content">
+        <div class="card">
+            <h3 style="margin-bottom: 20px;">Backtest History</h3>
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Period</th>
+                        <th>Signals</th>
+                        <th>P&L</th>
+                        <th>Win Rate</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTableBody">
+                    <!-- History will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Initialize signals
+        const signals = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8'];
+        const signalDescriptions = {
+            'S1': 'Bear Trap (Bullish)',
+            'S2': 'Support Hold (Bullish)',
+            'S3': 'Resistance Hold (Bearish)',
+            'S4': 'Bias Failure Bull (Bullish)',
+            'S5': 'Bias Failure Bear (Bearish)',
+            'S6': 'Weakness Confirmed (Bearish)',
+            'S7': 'Breakout Confirmed (Bullish)',
+            'S8': 'Breakdown Confirmed (Bearish)'
+        };
+
+        // Populate signal grid
+        const signalGrid = document.getElementById('signalGrid');
+        signals.forEach(signal => {
+            const div = document.createElement('div');
+            div.className = 'signal-checkbox selected';
+            div.innerHTML = `
+                <input type="checkbox" id="${signal}" checked>
+                <label for="${signal}">${signal}: ${signalDescriptions[signal]}</label>
+            `;
+            div.onclick = () => toggleSignal(signal);
+            signalGrid.appendChild(div);
+        });
+
+        function toggleSignal(signal) {
+            const checkbox = document.getElementById(signal);
+            checkbox.checked = !checkbox.checked;
+            const div = checkbox.parentElement;
+            div.classList.toggle('selected');
+        }
+
+        function selectAllSignals() {
+            signals.forEach(signal => {
+                document.getElementById(signal).checked = true;
+                document.getElementById(signal).parentElement.classList.add('selected');
+            });
+        }
+
+        function deselectAllSignals() {
+            signals.forEach(signal => {
+                document.getElementById(signal).checked = false;
+                document.getElementById(signal).parentElement.classList.remove('selected');
+            });
+        }
+
+        function switchTab(tabName) {
+            // Update tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
+
+        async function runBacktest() {
+            const selectedSignals = signals.filter(s => document.getElementById(s).checked);
+            
+            if (selectedSignals.length === 0) {
+                alert('Please select at least one signal');
+                return;
+            }
+
+            const params = {
+                from_date: document.getElementById('fromDate').value,
+                to_date: document.getElementById('toDate').value,
+                initial_capital: parseFloat(document.getElementById('initialCapital').value),
+                lots_to_trade: parseInt(document.getElementById('lotsToTrade').value),
+                signals_to_test: selectedSignals,
+                use_hedging: document.getElementById('useHedging').checked,
+                hedge_offset: parseInt(document.getElementById('hedgeOffset').value),
+                commission_per_lot: parseFloat(document.getElementById('commissionPerLot').value),
+                slippage_percent: parseFloat(document.getElementById('slippagePercent').value),
+                wednesday_exit_enabled: document.getElementById('wednesdayExit').checked,
+                auto_fetch_missing_data: document.getElementById('autoFetchData').checked
+            };
+
+            // Show progress
+            document.getElementById('progressSection').style.display = 'block';
+            document.getElementById('runBtn').disabled = true;
+            
+            // Update status
+            updateProgress(10, 'Connecting to server...');
+
+            try {
+                const response = await fetch('http://localhost:8000/backtest', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(params)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Backtest failed:', errorText);
+                    throw new Error(`Backtest failed: ${response.status} ${response.statusText}`);
+                }
+
+                const results = await response.json();
+                console.log('Backtest results:', results);
+                
+                // Store results for dashboard
+                sessionStorage.setItem('lastBacktestResults', JSON.stringify(results));
+                
+                // Notify parent window if in iframe
+                if (window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'backtestComplete',
+                        results: results
+                    }, '*');
+                }
+                
+                updateProgress(100, 'Backtest completed!');
+                displayResults(results);
+                
+                // Switch to results tab
+                document.querySelector('.tab:nth-child(2)').click();
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('statusText').textContent = 'Error: ' + error.message;
+                document.querySelector('.status-message').className = 'status-message error';
+            } finally {
+                document.getElementById('runBtn').disabled = false;
+                setTimeout(() => {
+                    document.getElementById('progressSection').style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        function updateProgress(percent, message) {
+            document.getElementById('progressFill').style.width = percent + '%';
+            document.getElementById('statusText').textContent = message;
+        }
+
+        function displayResults(results) {
+            // Handle the actual API response format
+            const summary = results.summary || {};
+            const exitComparison = results.exit_comparison || {};
+            const trades = results.trades || [];
+            
+            // Calculate metrics from the response
+            const totalPnl = summary.total_pnl || 0;
+            const winRate = summary.win_rate || 0;
+            const totalTrades = summary.total_trades || 0;
+            const finalCapital = summary.final_capital || 500000;
+            const initialCapital = 500000;
+            const returnPercentage = ((finalCapital - initialCapital) / initialCapital) * 100;
+            
+            // Calculate max drawdown from trades
+            let currentCapital = initialCapital;
+            let maxCapital = initialCapital;
+            let maxDrawdown = 0;
+            let equityCurve = [initialCapital];
+            
+            // Only add points for actual trades
+            if (trades && trades.length > 0) {
+                trades.forEach(trade => {
+                    currentCapital += (trade.total_pnl || 0);
+                    equityCurve.push(currentCapital);
+                    maxCapital = Math.max(maxCapital, currentCapital);
+                    const drawdown = maxCapital - currentCapital;
+                    maxDrawdown = Math.max(maxDrawdown, drawdown);
+                });
+            }
+            
+            // Calculate Sharpe ratio (simplified)
+            const avgReturn = totalPnl / Math.max(totalTrades, 1);
+            const sharpeRatio = totalTrades > 0 ? (avgReturn / Math.max(Math.abs(avgReturn * 0.3), 1)) : 0;
+            
+            // Update metrics
+            document.getElementById('totalPL').textContent = '₹' + totalPnl.toLocaleString();
+            document.getElementById('totalPL').className = totalPnl >= 0 ? 'metric-value positive' : 'metric-value negative';
+            
+            document.getElementById('winRate').textContent = winRate.toFixed(1) + '%';
+            document.getElementById('totalTrades').textContent = totalTrades;
+            document.getElementById('maxDrawdown').textContent = '₹' + Math.abs(maxDrawdown).toLocaleString();
+            document.getElementById('sharpeRatio').textContent = sharpeRatio.toFixed(2);
+            document.getElementById('returnPercent').textContent = returnPercentage.toFixed(2) + '%';
+            document.getElementById('returnPercent').className = returnPercentage >= 0 ? 'metric-value positive' : 'metric-value negative';
+
+            // Update charts
+            updateEquityChart(equityCurve);
+            
+            // Create trade distribution from signals
+            const tradeDistribution = {};
+            trades.forEach(trade => {
+                const signal = trade.signal_type || 'Unknown';
+                tradeDistribution[signal] = (tradeDistribution[signal] || 0) + 1;
+            });
+            updateTradeChart(tradeDistribution);
+            
+            // Add Wednesday vs Thursday comparison if available
+            if (exitComparison.wednesday_315pm && exitComparison.thursday_expiry) {
+                const comparisonHtml = `
+                    <div class="card" style="margin-top: 20px;">
+                        <h3 style="margin-bottom: 16px;">Exit Comparison</h3>
+                        <div class="metric-grid">
+                            <div class="metric-card">
+                                <div class="metric-label">Wednesday 3:15 PM</div>
+                                <div class="metric-value">₹${exitComparison.wednesday_315pm.total_pnl.toLocaleString()}</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Thursday Expiry</div>
+                                <div class="metric-value">₹${exitComparison.thursday_expiry.total_pnl.toLocaleString()}</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Better Exit</div>
+                                <div class="metric-value">${exitComparison.difference.better_exit}</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Difference</div>
+                                <div class="metric-value ${exitComparison.difference.pnl >= 0 ? 'positive' : 'negative'}">
+                                    ₹${Math.abs(exitComparison.difference.pnl).toLocaleString()}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.querySelector('.results-section').insertAdjacentHTML('beforeend', comparisonHtml);
+            }
+            
+            // Store full results for history
+            results._calculated = {
+                total_pnl: totalPnl,
+                win_rate: winRate,
+                total_trades: totalTrades,
+                return_percentage: returnPercentage,
+                max_drawdown: maxDrawdown,
+                sharpe_ratio: sharpeRatio
+            };
+            
+            // Add to history
+            addToHistory(results);
+        }
+
+        let equityChartInstance = null;
+        let tradeChartInstance = null;
+        
+        function updateEquityChart(equityCurve) {
+            const ctx = document.getElementById('equityChart').getContext('2d');
+            
+            // Destroy existing chart if it exists
+            if (equityChartInstance) {
+                equityChartInstance.destroy();
+            }
+            
+            // Create proper labels
+            const labels = [];
+            if (equityCurve.length > 0) {
+                labels.push('Start');
+                for (let i = 1; i < equityCurve.length; i++) {
+                    labels.push(`Trade ${i}`);
+                }
+            }
+            
+            equityChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Equity',
+                        data: equityCurve,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 800,
+                        easing: 'easeInOutQuart'
+                    },
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Capital: ₹' + context.parsed.y.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            },
+                            ticks: {
+                                color: '#999',
+                                callback: function(value) {
+                                    return '₹' + (value/1000).toFixed(0) + 'K';
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            },
+                            ticks: {
+                                color: '#999',
+                                maxRotation: 0
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateTradeChart(distribution) {
+            const ctx = document.getElementById('tradeChart').getContext('2d');
+            
+            // Destroy existing chart if it exists
+            if (tradeChartInstance) {
+                tradeChartInstance.destroy();
+            }
+            
+            tradeChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(distribution),
+                    datasets: [{
+                        label: 'Trades',
+                        data: Object.values(distribution),
+                        backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                        borderColor: '#667eea',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 800,
+                        easing: 'easeInOutQuart'
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed.y + ' trade' + (context.parsed.y !== 1 ? 's' : '');
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            },
+                            ticks: {
+                                color: '#999',
+                                stepSize: 1,
+                                precision: 0
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: '#999'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function addToHistory(results) {
+            const tbody = document.getElementById('historyTableBody');
+            const row = tbody.insertRow(0);
+            
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            const selectedSignals = signals.filter(s => document.getElementById(s).checked);
+            
+            // Use calculated values or summary values
+            const metrics = results._calculated || results.summary || {};
+            const totalPnl = metrics.total_pnl || 0;
+            const winRate = metrics.win_rate || 0;
+            
+            row.innerHTML = `
+                <td>${new Date().toLocaleDateString()}</td>
+                <td>${fromDate} to ${toDate}</td>
+                <td>${selectedSignals.join(', ')}</td>
+                <td class="${totalPnl >= 0 ? 'positive' : 'negative'}">
+                    ₹${totalPnl.toLocaleString()}
+                </td>
+                <td>${winRate.toFixed(1)}%</td>
+                <td>
+                    <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick='viewDetails(${JSON.stringify(results)})'>
+                        View
+                    </button>
+                </td>
+            `;
+        }
+        
+        function viewDetails(results) {
+            // Switch to results tab and display the results
+            document.querySelector('.tab:nth-child(2)').click();
+            displayResults(results);
+        }
+
+        function resetForm() {
+            document.getElementById('fromDate').value = '2025-07-14';
+            document.getElementById('toDate').value = '2025-07-18';
+            document.getElementById('initialCapital').value = '500000';
+            document.getElementById('lotsToTrade').value = '10';
+            selectAllSignals();
+        }
+        
+        // Load history on page load
+        async function loadBacktestHistory() {
+            try {
+                const response = await fetch('http://localhost:8000/backtest/history?limit=20');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.status === 'success' && data.history) {
+                        const tbody = document.getElementById('historyTableBody');
+                        tbody.innerHTML = ''; // Clear existing
+                        
+                        data.history.forEach(item => {
+                            const row = tbody.insertRow();
+                            const runDate = new Date(item.run_date).toLocaleDateString();
+                            const dateRange = `${item.from_date?.split('T')[0]} to ${item.to_date?.split('T')[0]}`;
+                            const signals = item.signals_tested?.join(', ') || 'N/A';
+                            
+                            row.innerHTML = `
+                                <td>${runDate}</td>
+                                <td>${dateRange}</td>
+                                <td>${signals}</td>
+                                <td class="${item.total_pnl >= 0 ? 'positive' : 'negative'}">
+                                    ₹${item.total_pnl.toLocaleString()}
+                                </td>
+                                <td>${item.win_rate}%</td>
+                                <td>
+                                    <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" 
+                                            onclick='loadBacktestDetails("${item.id}")'>
+                                        View
+                                    </button>
+                                </td>
+                            `;
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load backtest history:', error);
+            }
+        }
+        
+        // Load specific backtest details
+        async function loadBacktestDetails(backtestId) {
+            try {
+                const response = await fetch(`http://localhost:8000/backtest/${backtestId}/details`);
+                if (response.ok) {
+                    const results = await response.json();
+                    viewDetails(results);
+                } else {
+                    alert('Failed to load backtest details');
+                }
+            } catch (error) {
+                console.error('Failed to load backtest details:', error);
+                alert('Error loading backtest details');
+            }
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set default dates
+            const today = new Date().toISOString().split('T')[0];
+            const weekAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0];
+            
+            if (!document.getElementById('fromDate').value) {
+                document.getElementById('fromDate').value = '2025-07-14';
+            }
+            if (!document.getElementById('toDate').value) {
+                document.getElementById('toDate').value = '2025-07-18';
+            }
+            
+            // Load history from database
+            loadBacktestHistory();
+            
+            // Refresh history every 30 seconds if on history tab
+            setInterval(() => {
+                const historyTab = document.querySelector('.tab-content:nth-child(2)');
+                if (historyTab && historyTab.classList.contains('active')) {
+                    loadBacktestHistory();
+                }
+            }, 30000);
+        });
+    </script>
+</body>
+</html>

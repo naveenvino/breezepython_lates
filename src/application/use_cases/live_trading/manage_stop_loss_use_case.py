@@ -21,6 +21,17 @@ class ManageStopLossUseCase:
         self.kite_client = kite_client
         self.order_service = KiteOrderService(kite_client)
         self.db_manager = db_manager
+
+    def _send_notification(self, message: str, level: str = "info"):
+        """Send a notification (currently logs the message)"""
+        if level == "info":
+            logger.info(f"NOTIFICATION: {message}")
+        elif level == "warning":
+            logger.warning(f"NOTIFICATION: {message}")
+        elif level == "error":
+            logger.error(f"NOTIFICATION: {message}")
+        else:
+            logger.debug(f"NOTIFICATION: {message}")
         
     def execute(self) -> Dict[str, any]:
         """
@@ -71,10 +82,12 @@ class ManageStopLossUseCase:
                         'details': details,
                         'exit_orders': exit_result
                     })
+                    self._send_notification(f"Stop loss hit for trade {trade['id']}: {details}", "warning")
                     
         except Exception as e:
             logger.error(f"Stop loss monitoring failed: {e}")
             result['errors'].append(str(e))
+            self._send_notification(f"Stop loss monitoring failed: {e}", "error")
         
         return result
     

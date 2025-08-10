@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Trading - BreezeConnect Trading System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 24px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-active {
+            background: #10b981;
+            color: white;
+            animation: pulse 2s infinite;
+        }
+
+        .status-inactive {
+            background: #ef4444;
+            color: white;
+        }
+
+        .status-paused {
+            background: #f59e0b;
+            color: white;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Main Container */
+        .container {
+            flex: 1;
+            padding: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Grid Layout */
+        .trading-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 1200px) {
+            .trading-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Card Styles */
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a2e;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Trading Controls */
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-label {
+            display: block;
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .control-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .control-select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .signal-checkboxes {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .signal-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .signal-checkbox input {
+            cursor: pointer;
+        }
+
+        .signal-checkbox label {
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+
+        .btn-pause {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Market Data */
+        .market-data {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .market-item {
+            padding: 15px;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .market-label {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .market-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1a1a2e;
+        }
+
+        .market-change {
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .positive {
+            color: #10b981;
+        }
+
+        .negative {
+            color: #ef4444;
+        }
+
+        /* Active Positions */
+        .positions-table {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 10px;
+            background: rgba(102, 126, 234, 0.1);
+            color: #1a1a2e;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 10px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            font-size: 14px;
+        }
+
+        tr:hover {
+            background: rgba(102, 126, 234, 0.03);
+        }
+
+        .position-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .position-open {
+            background: #d4f4dd;
+            color: #0e6333;
+        }
+
+        .position-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        /* Trading Log */
+        .log-container {
+            max-height: 400px;
+            overflow-y: auto;
+            background: rgba(26, 26, 46, 0.05);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .log-entry {
+            padding: 8px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: monospace;
+        }
+
+        .log-info {
+            background: rgba(59, 130, 246, 0.1);
+            color: #1e40af;
+        }
+
+        .log-success {
+            background: rgba(16, 185, 129, 0.1);
+            color: #065f46;
+        }
+
+        .log-warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: #92400e;
+        }
+
+        .log-error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #991b1b;
+        }
+
+        /* Statistics */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .stat-item {
+            padding: 10px;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 8px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 11px;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1a1a2e;
+        }
+
+        /* Emergency Stop */
+        .emergency-stop {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #ef4444;
+            border: 4px solid white;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.4);
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .emergency-stop:hover {
+            transform: scale(1.1);
+            box-shadow: 0 15px 40px rgba(239, 68, 68, 0.5);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>
+            <i class="fas fa-play-circle"></i>
+            Live Trading
+            <span id="tradingStatus" class="status-badge status-inactive">INACTIVE</span>
+        </h1>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn" style="background: rgba(255,255,255,0.1); padding: 10px 20px;" onclick="window.location.href='/'">
+                <i class="fas fa-arrow-left"></i> Dashboard
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <div class="trading-grid">
+            <!-- Left Column: Trading Controls -->
+            <div>
+                <!-- Trading Configuration -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-cog"></i>
+                            Trading Configuration
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label class="control-label">Trading Capital</label>
+                        <input type="number" class="control-input" id="tradingCapital" value="500000">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label class="control-label">Lots per Trade</label>
+                        <input type="number" class="control-input" id="lotsPerTrade" value="10">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label class="control-label">Max Open Positions</label>
+                        <input type="number" class="control-input" id="maxPositions" value="3">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label class="control-label">Stop Loss %</label>
+                        <input type="number" class="control-input" id="stopLoss" value="2" step="0.1">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label class="control-label">Active Signals</label>
+                        <div class="signal-checkboxes">
+                            <div class="signal-checkbox">
+                                <input type="checkbox" id="S1" checked>
+                                <label for="S1">S1</label>
+                            </div>
+                            <div class="signal-checkbox">
+                                <input type="checkbox" id="S2" checked>
+                                <label for="S2">S2</label>
+                            </div>
+                            <div class="signal-checkbox">
+                                <input type="checkbox" id="S3" checked>
+                                <label for="S3">S3</label>
+                            </div>
+                            <div class="signal-checkbox">
+                                <input type="checkbox" id="S4" checked>
+                                <label for="S4">S4</label>
+                            </div>
+                            <div class="signal-checkbox">
+                                <input type="checkbox" id="S5">
+                                <label for="S5">S5</label>
+                            </div>
+                            <div class="signal-checkbox">
+                                <input type="checkbox" id="S6">
+                                <label for="S6">S6</label>
+                            </div>
+                            <div class="signal-checkbox">
+                                <input type="checkbox" id="S7">
+                                <label for="S7">S7</label>
+                            </div>
+                            <div class="signal-checkbox">
+                                <input type="checkbox" id="S8">
+                                <label for="S8">S8</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="btn btn-start" id="startBtn" onclick="startTrading()">
+                            <i class="fas fa-play"></i> START
+                        </button>
+                        <button class="btn btn-pause" id="pauseBtn" onclick="pauseTrading()" disabled>
+                            <i class="fas fa-pause"></i> PAUSE
+                        </button>
+                        <button class="btn btn-stop" id="stopBtn" onclick="stopTrading()" disabled>
+                            <i class="fas fa-stop"></i> STOP
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Today's Statistics -->
+                <div class="card" style="margin-top: 20px;">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-chart-pie"></i>
+                            Today's Statistics
+                        </div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-label">Trades</div>
+                            <div class="stat-value" id="todayTrades">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Win Rate</div>
+                            <div class="stat-value" id="todayWinRate">0%</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">P&L</div>
+                            <div class="stat-value positive" id="todayPnL">₹0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Active</div>
+                            <div class="stat-value" id="activePositions">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Middle Column: Active Positions & Market Data -->
+            <div>
+                <!-- Market Data -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-chart-line"></i>
+                            Market Data
+                        </div>
+                        <span style="color: #666; font-size: 12px;" id="lastUpdate">Last update: --</span>
+                    </div>
+                    <div class="market-data">
+                        <div class="market-item">
+                            <div class="market-label">NIFTY</div>
+                            <div class="market-value" id="niftyPrice">--</div>
+                            <div class="market-change positive" id="niftyChange">--</div>
+                        </div>
+                        <div class="market-item">
+                            <div class="market-label">VIX</div>
+                            <div class="market-value" id="vixValue">--</div>
+                            <div class="market-change" id="vixChange">--</div>
+                        </div>
+                        <div class="market-item">
+                            <div class="market-label">PCR</div>
+                            <div class="market-value" id="pcrValue">--</div>
+                            <div class="market-change" id="pcrChange">--</div>
+                        </div>
+                        <div class="market-item">
+                            <div class="market-label">OI</div>
+                            <div class="market-value" id="oiValue">--</div>
+                            <div class="market-change" id="oiChange">--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Positions -->
+                <div class="card" style="margin-top: 20px;">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-briefcase"></i>
+                            Active Positions
+                        </div>
+                    </div>
+                    <div class="positions-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Signal</th>
+                                    <th>Strike</th>
+                                    <th>Type</th>
+                                    <th>Entry</th>
+                                    <th>Current</th>
+                                    <th>P&L</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="positionsTableBody">
+                                <tr>
+                                    <td colspan="8" class="empty-state">
+                                        No active positions. Start trading to see positions here.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Trading Log -->
+            <div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-terminal"></i>
+                            Trading Log
+                        </div>
+                        <button class="btn" style="padding: 5px 10px; font-size: 12px;" onclick="clearLog()">
+                            Clear
+                        </button>
+                    </div>
+                    <div class="log-container" id="tradingLog">
+                        <div class="log-entry log-info">
+                            <i class="fas fa-info-circle"></i> System ready. Configure settings and click START to begin trading.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Emergency Stop Button -->
+    <button class="emergency-stop" onclick="emergencyStop()">
+        <i class="fas fa-exclamation-triangle" style="font-size: 24px;"></i>
+        <span>EMERGENCY<br>STOP</span>
+    </button>
+
+    <script>
+        let tradingActive = false;
+        let tradingPaused = false;
+        let updateInterval = null;
+        let positions = [];
+
+        // Start Trading
+        async function startTrading() {
+            const capital = document.getElementById('tradingCapital').value;
+            const lots = document.getElementById('lotsPerTrade').value;
+            const maxPos = document.getElementById('maxPositions').value;
+            const stopLoss = document.getElementById('stopLoss').value;
+            
+            // Get selected signals
+            const signals = [];
+            for (let i = 1; i <= 8; i++) {
+                if (document.getElementById(`S${i}`).checked) {
+                    signals.push(`S${i}`);
+                }
+            }
+            
+            if (signals.length === 0) {
+                alert('Please select at least one signal');
+                return;
+            }
+            
+            addLog('Starting live trading...', 'info');
+            addLog(`Capital: ₹${parseInt(capital).toLocaleString()}`, 'info');
+            addLog(`Active signals: ${signals.join(', ')}`, 'info');
+            
+            // Update UI
+            tradingActive = true;
+            document.getElementById('tradingStatus').className = 'status-badge status-active';
+            document.getElementById('tradingStatus').textContent = 'ACTIVE';
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('pauseBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = false;
+            
+            // Start market data updates
+            startMarketUpdates();
+            
+            // Simulate signal detection
+            setTimeout(() => {
+                if (tradingActive && !tradingPaused) {
+                    simulateSignal();
+                }
+            }, 5000);
+            
+            addLog('Live trading started successfully', 'success');
+        }
+
+        // Pause Trading
+        function pauseTrading() {
+            tradingPaused = !tradingPaused;
+            
+            if (tradingPaused) {
+                document.getElementById('tradingStatus').className = 'status-badge status-paused';
+                document.getElementById('tradingStatus').textContent = 'PAUSED';
+                document.getElementById('pauseBtn').innerHTML = '<i class="fas fa-play"></i> RESUME';
+                addLog('Trading paused', 'warning');
+            } else {
+                document.getElementById('tradingStatus').className = 'status-badge status-active';
+                document.getElementById('tradingStatus').textContent = 'ACTIVE';
+                document.getElementById('pauseBtn').innerHTML = '<i class="fas fa-pause"></i> PAUSE';
+                addLog('Trading resumed', 'success');
+            }
+        }
+
+        // Stop Trading
+        function stopTrading() {
+            if (positions.length > 0) {
+                if (!confirm(`You have ${positions.length} open positions. Close all positions and stop trading?`)) {
+                    return;
+                }
+            }
+            
+            tradingActive = false;
+            tradingPaused = false;
+            
+            document.getElementById('tradingStatus').className = 'status-badge status-inactive';
+            document.getElementById('tradingStatus').textContent = 'INACTIVE';
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('pauseBtn').innerHTML = '<i class="fas fa-pause"></i> PAUSE';
+            
+            // Stop updates
+            if (updateInterval) {
+                clearInterval(updateInterval);
+                updateInterval = null;
+            }
+            
+            addLog('Trading stopped', 'warning');
+            
+            // Close all positions
+            if (positions.length > 0) {
+                positions.forEach(pos => {
+                    addLog(`Closing position: ${pos.strike}${pos.type}`, 'warning');
+                });
+                positions = [];
+                updatePositionsTable();
+            }
+        }
+
+        // Emergency Stop
+        function emergencyStop() {
+            if (confirm('EMERGENCY STOP: This will immediately close all positions and stop trading. Continue?')) {
+                addLog('EMERGENCY STOP ACTIVATED!', 'error');
+                stopTrading();
+                alert('Emergency stop executed. All positions closed.');
+            }
+        }
+
+        // Add log entry
+        function addLog(message, type = 'info') {
+            const logContainer = document.getElementById('tradingLog');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            
+            const time = new Date().toLocaleTimeString();
+            const icon = type === 'success' ? 'check-circle' : 
+                        type === 'warning' ? 'exclamation-triangle' : 
+                        type === 'error' ? 'times-circle' : 'info-circle';
+            
+            entry.innerHTML = `<i class="fas fa-${icon}"></i> [${time}] ${message}`;
+            
+            logContainer.insertBefore(entry, logContainer.firstChild);
+            
+            // Keep only last 100 entries
+            while (logContainer.children.length > 100) {
+                logContainer.removeChild(logContainer.lastChild);
+            }
+        }
+
+        // Clear log
+        function clearLog() {
+            const logContainer = document.getElementById('tradingLog');
+            logContainer.innerHTML = '<div class="log-entry log-info"><i class="fas fa-info-circle"></i> Log cleared</div>';
+        }
+
+        // Start market data updates
+        function startMarketUpdates() {
+            updateMarketData();
+            updateInterval = setInterval(updateMarketData, 5000); // Update every 5 seconds
+        }
+
+        // Update market data
+        async function updateMarketData() {
+            // Simulate market data (replace with actual API call)
+            const nifty = 25000 + Math.random() * 200 - 100;
+            const change = Math.random() * 2 - 1;
+            
+            document.getElementById('niftyPrice').textContent = nifty.toFixed(2);
+            document.getElementById('niftyChange').textContent = `${change > 0 ? '+' : ''}${change.toFixed(2)}%`;
+            document.getElementById('niftyChange').className = `market-change ${change > 0 ? 'positive' : 'negative'}`;
+            
+            document.getElementById('vixValue').textContent = (12 + Math.random() * 3).toFixed(2);
+            document.getElementById('pcrValue').textContent = (0.8 + Math.random() * 0.4).toFixed(2);
+            document.getElementById('oiValue').textContent = '2.5M';
+            
+            document.getElementById('lastUpdate').textContent = `Last update: ${new Date().toLocaleTimeString()}`;
+        }
+
+        // Simulate signal detection
+        function simulateSignal() {
+            if (!tradingActive || tradingPaused) return;
+            
+            const signals = ['S1', 'S2', 'S3', 'S4'];
+            const signal = signals[Math.floor(Math.random() * signals.length)];
+            
+            addLog(`Signal detected: ${signal}`, 'success');
+            
+            // Create position
+            const position = {
+                id: Date.now(),
+                time: new Date().toLocaleTimeString(),
+                signal: signal,
+                strike: Math.round(25000 / 50) * 50,
+                type: ['S1', 'S2', 'S4', 'S7'].includes(signal) ? 'PE' : 'CE',
+                entry: 150 + Math.random() * 50,
+                current: 0,
+                pnl: 0,
+                status: 'OPEN'
+            };
+            
+            position.current = position.entry + (Math.random() * 20 - 10);
+            position.pnl = (position.current - position.entry) * 750;
+            
+            positions.push(position);
+            updatePositionsTable();
+            
+            addLog(`Position opened: ${position.strike}${position.type} @ ₹${position.entry.toFixed(2)}`, 'info');
+            
+            // Update statistics
+            updateStatistics();
+            
+            // Schedule next signal check
+            setTimeout(() => {
+                if (tradingActive && !tradingPaused) {
+                    simulateSignal();
+                }
+            }, 15000 + Math.random() * 30000); // Random between 15-45 seconds
+        }
+
+        // Update positions table
+        function updatePositionsTable() {
+            const tbody = document.getElementById('positionsTableBody');
+            
+            if (positions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No active positions</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = positions.map(pos => `
+                <tr>
+                    <td>${pos.time}</td>
+                    <td><strong>${pos.signal}</strong></td>
+                    <td>${pos.strike}</td>
+                    <td>${pos.type}</td>
+                    <td>₹${pos.entry.toFixed(2)}</td>
+                    <td>₹${pos.current.toFixed(2)}</td>
+                    <td class="${pos.pnl >= 0 ? 'positive' : 'negative'}">
+                        ₹${pos.pnl.toFixed(0)}
+                    </td>
+                    <td>
+                        <span class="position-badge position-open">OPEN</span>
+                    </td>
+                </tr>
+            `).join('');
+            
+            document.getElementById('activePositions').textContent = positions.length;
+        }
+
+        // Update statistics
+        function updateStatistics() {
+            const trades = positions.length;
+            const wins = positions.filter(p => p.pnl > 0).length;
+            const totalPnl = positions.reduce((sum, p) => sum + p.pnl, 0);
+            
+            document.getElementById('todayTrades').textContent = trades;
+            document.getElementById('todayWinRate').textContent = trades > 0 ? `${Math.round(wins/trades*100)}%` : '0%';
+            document.getElementById('todayPnL').textContent = `₹${totalPnl.toFixed(0)}`;
+            document.getElementById('todayPnL').className = totalPnl >= 0 ? 'stat-value positive' : 'stat-value negative';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set current time
+            document.getElementById('lastUpdate').textContent = `Last update: ${new Date().toLocaleTimeString()}`;
+        });
+    </script>
+</body>
+</html>

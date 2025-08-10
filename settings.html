@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - BreezeConnect Trading System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 24px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        /* Container */
+        .container {
+            flex: 1;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Settings Navigation */
+        .settings-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            overflow-x: auto;
+        }
+
+        .nav-item {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .nav-item.active {
+            background: white;
+            color: #667eea;
+        }
+
+        .nav-item:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Settings Content */
+        .settings-content {
+            display: none;
+        }
+
+        .settings-content.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Card */
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a2e;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Toggle Switch */
+        .toggle-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .toggle-label {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .toggle-title {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .toggle-desc {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            display: none;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #ccc;
+            transition: 0.4s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background: #667eea;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        /* Info Box */
+        .info-box {
+            padding: 15px;
+            background: rgba(102, 126, 234, 0.05);
+            border-left: 4px solid #667eea;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .info-title {
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 5px;
+        }
+
+        .info-text {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* Alert Box */
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-success {
+            background: #d4f4dd;
+            color: #0e6333;
+            border: 1px solid #86efac;
+        }
+
+        .alert-danger {
+            background: #fecaca;
+            color: #991b1b;
+            border: 1px solid #f87171;
+        }
+
+        /* Settings Grid */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        /* Quick Settings */
+        .quick-setting {
+            padding: 15px;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .quick-setting-label {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .quick-setting-value {
+            font-weight: 600;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>
+            <i class="fas fa-cog"></i>
+            System Settings
+        </h1>
+        <div class="header-actions">
+            <button class="btn btn-secondary" onclick="window.location.href='/'">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </button>
+            <button class="btn btn-success" onclick="saveAllSettings()">
+                <i class="fas fa-save"></i> Save All Settings
+            </button>
+        </div>
+    </div>
+
+    <!-- Container -->
+    <div class="container">
+        <!-- Settings Navigation -->
+        <div class="settings-nav">
+            <button class="nav-item active" onclick="showSection('trading')">
+                <i class="fas fa-chart-line"></i> Trading
+            </button>
+            <button class="nav-item" onclick="showSection('risk')">
+                <i class="fas fa-shield-alt"></i> Risk Management
+            </button>
+            <button class="nav-item" onclick="showSection('signals')">
+                <i class="fas fa-signal"></i> Signals
+            </button>
+            <button class="nav-item" onclick="showSection('database')">
+                <i class="fas fa-database"></i> Database
+            </button>
+            <button class="nav-item" onclick="showSection('notifications')">
+                <i class="fas fa-bell"></i> Notifications
+            </button>
+            <button class="nav-item" onclick="showSection('advanced')">
+                <i class="fas fa-tools"></i> Advanced
+            </button>
+        </div>
+
+        <!-- Alert Container -->
+        <div id="alertContainer"></div>
+
+        <!-- Trading Settings -->
+        <div id="trading" class="settings-content active">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-chart-line"></i>
+                        Trading Configuration
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Default Position Size (Lots)</label>
+                        <input type="number" class="form-input" id="positionSize" value="10" min="1" max="100">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Lot Quantity</label>
+                        <input type="number" class="form-input" id="lotQuantity" value="75" min="25" max="1000">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Trading Start Time</label>
+                        <input type="time" class="form-input" id="tradingStart" value="09:15">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Trading End Time</label>
+                        <input type="time" class="form-input" id="tradingEnd" value="15:30">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Initial Capital</label>
+                    <input type="number" class="form-input" id="initialCapital" value="500000" min="100000">
+                </div>
+                
+                <div class="toggle-group">
+                    <div class="toggle-label">
+                        <span class="toggle-title">Auto-Fetch Missing Data</span>
+                        <span class="toggle-desc">Automatically download missing options data during backtests</span>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="autoFetch" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="toggle-group">
+                    <div class="toggle-label">
+                        <span class="toggle-title">Wednesday 3:15 PM Exit</span>
+                        <span class="toggle-desc">Exit all positions on Wednesday at 3:15 PM to avoid theta decay</span>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="wednesdayExit" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-rupee-sign"></i>
+                        Commission & Charges
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Commission per Lot (₹)</label>
+                        <input type="number" class="form-input" id="commission" value="40" min="0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Slippage (%)</label>
+                        <input type="number" class="form-input" id="slippage" value="0.05" min="0" step="0.01">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Risk Management Settings -->
+        <div id="risk" class="settings-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-shield-alt"></i>
+                        Risk Parameters
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Max Risk per Trade (%)</label>
+                        <input type="number" class="form-input" id="maxRiskPerTrade" value="2" min="0.5" max="5" step="0.5">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Max Drawdown (%)</label>
+                        <input type="number" class="form-input" id="maxDrawdown" value="15" min="5" max="30">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Stop Loss Type</label>
+                        <select class="form-select" id="stopLossType">
+                            <option value="fixed">Fixed at Strike Price</option>
+                            <option value="percentage">Percentage Based</option>
+                            <option value="atr">ATR Based</option>
+                            <option value="trailing">Trailing Stop</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Stop Loss Value</label>
+                        <input type="number" class="form-input" id="stopLossValue" value="100" min="0">
+                    </div>
+                </div>
+                
+                <div class="toggle-group">
+                    <div class="toggle-label">
+                        <span class="toggle-title">Enable Hedging</span>
+                        <span class="toggle-desc">Buy protective options to hedge main positions</span>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="enableHedging" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Hedge Offset (Points)</label>
+                    <input type="number" class="form-input" id="hedgeOffset" value="200" min="50" max="500" step="50">
+                </div>
+                
+                <div class="toggle-group">
+                    <div class="toggle-label">
+                        <span class="toggle-title">Breakeven Stop</span>
+                        <span class="toggle-desc">Move stop to breakeven after reaching profit target</span>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="breakevenStop">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Breakeven Trigger (%)</label>
+                    <input type="number" class="form-input" id="breakevenTrigger" value="10" min="5" max="20">
+                </div>
+            </div>
+        </div>
+
+        <!-- Signals Settings -->
+        <div id="signals" class="settings-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-signal"></i>
+                        Signal Configuration
+                    </div>
+                </div>
+                
+                <div class="info-box">
+                    <div class="info-title">Active Signals</div>
+                    <div class="info-text">
+                        Select which signals to use for trading. ML analysis recommends focusing on S1, S2, S3, and S7 for best performance.
+                    </div>
+                </div>
+                
+                <div class="settings-grid">
+                    <div class="toggle-group">
+                        <div class="toggle-label">
+                            <span class="toggle-title">S1 - Bear Trap (Bullish)</span>
+                            <span class="toggle-desc">Win Rate: 72%</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="signalS1" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="toggle-group">
+                        <div class="toggle-label">
+                            <span class="toggle-title">S2 - Support Hold (Bullish)</span>
+                            <span class="toggle-desc">Win Rate: 68%</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="signalS2" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="toggle-group">
+                        <div class="toggle-label">
+                            <span class="toggle-title">S3 - Resistance Hold (Bearish)</span>
+                            <span class="toggle-desc">Win Rate: 70%</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="signalS3" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="toggle-group">
+                        <div class="toggle-label">
+                            <span class="toggle-title">S4 - Bias Failure Bull</span>
+                            <span class="toggle-desc">Win Rate: 65%</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="signalS4">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="toggle-group">
+                        <div class="toggle-label">
+                            <span class="toggle-title">S5 - Bias Failure Bear</span>
+                            <span class="toggle-desc">Win Rate: 63%</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="signalS5">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="toggle-group">
+                        <div class="toggle-label">
+                            <span class="toggle-title">S6 - Weakness Confirmed</span>
+                            <span class="toggle-desc">Win Rate: 64%</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="signalS6">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="toggle-group">
+                        <div class="toggle-label">
+                            <span class="toggle-title">S7 - Breakout Confirmed</span>
+                            <span class="toggle-desc">Win Rate: 71%</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="signalS7" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="toggle-group">
+                        <div class="toggle-label">
+                            <span class="toggle-title">S8 - Breakdown Confirmed</span>
+                            <span class="toggle-desc">Win Rate: 67%</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="signalS8">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group" style="margin-top: 20px;">
+                    <label class="form-label">Signal Entry Delay (Candles)</label>
+                    <input type="number" class="form-input" id="signalDelay" value="2" min="1" max="5">
+                </div>
+            </div>
+        </div>
+
+        <!-- Database Settings -->
+        <div id="database" class="settings-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-database"></i>
+                        Database Configuration
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Database Server</label>
+                    <input type="text" class="form-input" id="dbServer" value="(localdb)\mssqllocaldb" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Database Name</label>
+                    <input type="text" class="form-input" id="dbName" value="KiteConnectApi" readonly>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Connection Timeout (seconds)</label>
+                        <input type="number" class="form-input" id="dbTimeout" value="30" min="10" max="120">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Max Pool Size</label>
+                        <input type="number" class="form-input" id="dbPoolSize" value="10" min="5" max="50">
+                    </div>
+                </div>
+                
+                <div class="toggle-group">
+                    <div class="toggle-label">
+                        <span class="toggle-title">Auto Backup</span>
+                        <span class="toggle-desc">Automatically backup database daily</span>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="autoBackup">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Backup Path</label>
+                    <input type="text" class="form-input" id="backupPath" value="C:\Backups\TradingSystem">
+                </div>
+            </div>
+        </div>
+
+        <!-- Notifications Settings -->
+        <div id="notifications" class="settings-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-bell"></i>
+                        Notification Preferences
+                    </div>
+                </div>
+                
+                <div class="toggle-group">
+                    <div class="toggle-label">
+                        <span class="toggle-title">Trade Execution Alerts</span>
+                        <span class="toggle-desc">Notify when trades are executed</span>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="tradeAlerts" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="toggle-group">
+                    <div class="toggle-label">
+                        <span class="toggle-title">Stop Loss Alerts</span>
+                        <span class="toggle-desc">Alert when stop loss is triggered</span>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="stopLossAlerts" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="toggle-group">
+                    <div class="toggle-label">
+                        <span class="toggle-title">Signal Alerts</span>
+                        <span class="toggle-desc">Notify when new signals are detected</span>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="signalAlerts" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="toggle-group">
+                    <div class="toggle-label">
+                        <span class="toggle-title">Daily Summary</span>
+                        <span class="toggle-desc">Send daily P&L summary at market close</span>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="dailySummary" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Email for Notifications</label>
+                    <input type="email" class="form-input" id="notificationEmail" placeholder="your.email@example.com">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Telegram Chat ID (Optional)</label>
+                    <input type="text" class="form-input" id="telegramChatId" placeholder="Enter Telegram chat ID">
+                </div>
+            </div>
+        </div>
+
+        <!-- Advanced Settings -->
+        <div id="advanced" class="settings-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-tools"></i>
+                        Advanced Configuration
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">API Request Timeout (seconds)</label>
+                    <input type="number" class="form-input" id="apiTimeout" value="60" min="30" max="300">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Max Retry Attempts</label>
+                    <input type="number" class="form-input" id="maxRetries" value="3" min="1" max="10">
+                </div>
+                
+                <div class="toggle-group">
+                    <div class="toggle-label">
+                        <span class="toggle-title">Debug Mode</span>
+                        <span class="toggle-desc">Enable detailed logging for troubleshooting</span>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="debugMode">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="toggle-group">
+                    <div class="toggle-label">
+                        <span class="toggle-title">Paper Trading Mode</span>
+                        <span class="toggle-desc">Simulate trades without real money</span>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="paperTrading">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Log Level</label>
+                    <select class="form-select" id="logLevel">
+                        <option value="ERROR">Error</option>
+                        <option value="WARNING">Warning</option>
+                        <option value="INFO" selected>Info</option>
+                        <option value="DEBUG">Debug</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Cache TTL (minutes)</label>
+                    <input type="number" class="form-input" id="cacheTTL" value="15" min="5" max="60">
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-sync"></i>
+                        System Actions
+                    </div>
+                </div>
+                
+                <button class="btn btn-danger" style="width: 100%; margin-bottom: 10px;" onclick="clearCache()">
+                    <i class="fas fa-trash"></i> Clear Cache
+                </button>
+                
+                <button class="btn btn-secondary" style="width: 100%; margin-bottom: 10px;" onclick="resetToDefaults()">
+                    <i class="fas fa-undo"></i> Reset to Defaults
+                </button>
+                
+                <button class="btn" style="width: 100%;" onclick="exportSettings()">
+                    <i class="fas fa-download"></i> Export Settings
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSettings();
+        });
+
+        // Show section
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.settings-content').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Remove active from all nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName).classList.add('active');
+            
+            // Mark nav item as active
+            event.target.classList.add('active');
+        }
+
+        // Load settings
+        function loadSettings() {
+            // Load from localStorage or API
+            const settings = JSON.parse(localStorage.getItem('tradingSettings') || '{}');
+            
+            // Apply settings to form fields
+            if (settings.positionSize) document.getElementById('positionSize').value = settings.positionSize;
+            if (settings.lotQuantity) document.getElementById('lotQuantity').value = settings.lotQuantity;
+            if (settings.initialCapital) document.getElementById('initialCapital').value = settings.initialCapital;
+            if (settings.commission) document.getElementById('commission').value = settings.commission;
+            if (settings.hedgeOffset) document.getElementById('hedgeOffset').value = settings.hedgeOffset;
+            
+            // Load toggles
+            if (settings.autoFetch !== undefined) document.getElementById('autoFetch').checked = settings.autoFetch;
+            if (settings.wednesdayExit !== undefined) document.getElementById('wednesdayExit').checked = settings.wednesdayExit;
+            if (settings.enableHedging !== undefined) document.getElementById('enableHedging').checked = settings.enableHedging;
+            
+            // Load signals
+            if (settings.signals) {
+                Object.keys(settings.signals).forEach(signal => {
+                    const checkbox = document.getElementById(signal);
+                    if (checkbox) checkbox.checked = settings.signals[signal];
+                });
+            }
+        }
+
+        // Save all settings
+        function saveAllSettings() {
+            const settings = {
+                // Trading settings
+                positionSize: parseInt(document.getElementById('positionSize').value),
+                lotQuantity: parseInt(document.getElementById('lotQuantity').value),
+                tradingStart: document.getElementById('tradingStart').value,
+                tradingEnd: document.getElementById('tradingEnd').value,
+                initialCapital: parseInt(document.getElementById('initialCapital').value),
+                commission: parseFloat(document.getElementById('commission').value),
+                slippage: parseFloat(document.getElementById('slippage').value),
+                autoFetch: document.getElementById('autoFetch').checked,
+                wednesdayExit: document.getElementById('wednesdayExit').checked,
+                
+                // Risk settings
+                maxRiskPerTrade: parseFloat(document.getElementById('maxRiskPerTrade').value),
+                maxDrawdown: parseFloat(document.getElementById('maxDrawdown').value),
+                stopLossType: document.getElementById('stopLossType').value,
+                stopLossValue: parseFloat(document.getElementById('stopLossValue').value),
+                enableHedging: document.getElementById('enableHedging').checked,
+                hedgeOffset: parseInt(document.getElementById('hedgeOffset').value),
+                breakevenStop: document.getElementById('breakevenStop').checked,
+                breakevenTrigger: parseFloat(document.getElementById('breakevenTrigger').value),
+                
+                // Signals
+                signals: {
+                    signalS1: document.getElementById('signalS1').checked,
+                    signalS2: document.getElementById('signalS2').checked,
+                    signalS3: document.getElementById('signalS3').checked,
+                    signalS4: document.getElementById('signalS4').checked,
+                    signalS5: document.getElementById('signalS5').checked,
+                    signalS6: document.getElementById('signalS6').checked,
+                    signalS7: document.getElementById('signalS7').checked,
+                    signalS8: document.getElementById('signalS8').checked
+                },
+                signalDelay: parseInt(document.getElementById('signalDelay').value),
+                
+                // Notifications
+                tradeAlerts: document.getElementById('tradeAlerts').checked,
+                stopLossAlerts: document.getElementById('stopLossAlerts').checked,
+                signalAlerts: document.getElementById('signalAlerts').checked,
+                dailySummary: document.getElementById('dailySummary').checked,
+                notificationEmail: document.getElementById('notificationEmail').value,
+                telegramChatId: document.getElementById('telegramChatId').value,
+                
+                // Advanced
+                apiTimeout: parseInt(document.getElementById('apiTimeout').value),
+                maxRetries: parseInt(document.getElementById('maxRetries').value),
+                debugMode: document.getElementById('debugMode').checked,
+                paperTrading: document.getElementById('paperTrading').checked,
+                logLevel: document.getElementById('logLevel').value,
+                cacheTTL: parseInt(document.getElementById('cacheTTL').value)
+            };
+            
+            // Save to localStorage
+            localStorage.setItem('tradingSettings', JSON.stringify(settings));
+            
+            // Show success message
+            showAlert('Settings saved successfully!', 'success');
+            
+            // In real implementation, also save to backend
+            // saveSettingsToAPI(settings);
+        }
+
+        // Show alert
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} show`;
+            alert.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                ${message}
+            `;
+            
+            alertContainer.innerHTML = '';
+            alertContainer.appendChild(alert);
+            
+            // Auto-hide after 3 seconds
+            setTimeout(() => {
+                alert.remove();
+            }, 3000);
+        }
+
+        // Clear cache
+        function clearCache() {
+            if (confirm('Are you sure you want to clear all cached data?')) {
+                localStorage.clear();
+                showAlert('Cache cleared successfully!', 'success');
+            }
+        }
+
+        // Reset to defaults
+        function resetToDefaults() {
+            if (confirm('Are you sure you want to reset all settings to defaults?')) {
+                localStorage.removeItem('tradingSettings');
+                location.reload();
+            }
+        }
+
+        // Export settings
+        function exportSettings() {
+            const settings = localStorage.getItem('tradingSettings') || '{}';
+            const blob = new Blob([settings], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `trading_settings_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+            
+            showAlert('Settings exported successfully!', 'success');
+        }
+    </script>
+</body>
+</html>

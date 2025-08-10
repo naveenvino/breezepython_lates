@@ -56,6 +56,7 @@ class ExecuteLiveTradeUseCase:
         # Safety checks
         if not self.enabled:
             result['message'] = "Live trading is disabled"
+            self._send_notification("Live trading is disabled", "warning")
             return result
         
         if signal.signal_type == "NO_SIGNAL":
@@ -65,11 +66,13 @@ class ExecuteLiveTradeUseCase:
         # Check if we already have open positions
         if not self._can_take_new_position():
             result['message'] = "Maximum positions limit reached"
+            self._send_notification("Maximum positions limit reached", "warning")
             return result
         
         # Check market hours
         if not self._is_market_open():
             result['message'] = "Market is closed"
+            self._send_notification("Market is closed", "warning")
             return result
         
         try:
@@ -84,6 +87,7 @@ class ExecuteLiveTradeUseCase:
             is_valid, error_msg = self.signal_converter.validate_order_params(order_params)
             if not is_valid:
                 result['message'] = f"Invalid order parameters: {error_msg}"
+                self._send_notification(f"Invalid order parameters: {error_msg}", "error")
                 return result
             
             # Create trade record in database
@@ -111,6 +115,7 @@ class ExecuteLiveTradeUseCase:
                 
                 # Update trade record with order IDs
                 self._update_trade_orders(trade_id, main_order_id, hedge_order_id)
+                self._send_notification(f"Spread trade opened for {signal.signal_type} with main order {main_order_id} and hedge order {hedge_order_id}", "info")
                 
             else:
                 # Place single order
@@ -126,6 +131,7 @@ class ExecuteLiveTradeUseCase:
                 
                 result['orders'] = {'main': order_id}
                 self._update_trade_orders(trade_id, order_id)
+                self._send_notification(f"Single trade opened for {signal.signal_type} with order {order_id}", "info")
             
             result['success'] = True
             result['message'] = f"Trade executed successfully for signal {signal.signal_type}"
@@ -135,6 +141,7 @@ class ExecuteLiveTradeUseCase:
         except Exception as e:
             logger.error(f"Trade execution failed: {e}")
             result['message'] = f"Trade execution failed: {str(e)}"
+            self._send_notification(f"Trade execution failed: {str(e)}", "error")
             
             # Mark trade as failed in database
             if result['trade_id']:
@@ -246,3 +253,15 @@ class ExecuteLiveTradeUseCase:
         """Disable live trading"""
         self.enabled = False
         logger.info("Live trading disabled")
+        self._send_notification("Live trading disabled", "info")
+
+    def _send_notification(self, message: str, level: str = "info"):
+        """Send a notification (currently logs the message)"""
+        if level == "info":
+            logger.info(f"NOTIFICATION: {message}")
+        elif level == "warning":
+            logger.warning(f"NOTIFICATION: {message}")
+        elif level == "error":
+            logger.error(f"NOTIFICATION: {message}")
+        else:
+            logger.debug(f"NOTIFICATION: {message}")

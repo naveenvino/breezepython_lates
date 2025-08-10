@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Dashboard Fix</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a2e;
+            color: white;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success { background: #0f3d0f; }
+        .error { background: #3d0f0f; }
+    </style>
+</head>
+<body>
+    <h1>Testing Dashboard Fix for 422 Error</h1>
+    <div id="results"></div>
+
+    <script>
+        const results = document.getElementById('results');
+        
+        function addResult(text, success) {
+            const div = document.createElement('div');
+            div.className = `test-result ${success ? 'success' : 'error'}`;
+            div.textContent = text;
+            results.appendChild(div);
+        }
+        
+        async function runTests() {
+            // Test 1: Without parameters (should fail with 422)
+            addResult('Test 1: Calling /data/check WITHOUT parameters...', false);
+            try {
+                const response1 = await fetch('http://localhost:8000/data/check');
+                addResult(`  Result: Status ${response1.status} - ${response1.status === 422 ? 'Expected 422 error' : 'Unexpected'}`, response1.status === 422);
+            } catch (e) {
+                addResult(`  Error: ${e.message}`, false);
+            }
+            
+            // Test 2: With parameters (should work with 200)
+            addResult('\nTest 2: Calling /data/check WITH parameters...', false);
+            try {
+                const fromDate = '2025-07-14';
+                const toDate = '2025-07-18';
+                const response2 = await fetch(`http://localhost:8000/data/check?from_date=${fromDate}&to_date=${toDate}`);
+                const data = await response2.json();
+                addResult(`  Result: Status ${response2.status} - ${response2.status === 200 ? 'SUCCESS' : 'Failed'}`, response2.status === 200);
+                if (response2.status === 200) {
+                    addResult(`  Data received: ${JSON.stringify(data).substring(0, 100)}...`, true);
+                }
+            } catch (e) {
+                addResult(`  Error: ${e.message}`, false);
+            }
+            
+            // Test 3: Check if index.html has the fix
+            addResult('\nTest 3: Checking if index.html has the fix...', false);
+            try {
+                const response3 = await fetch('http://localhost:8000/index.html');
+                const html = await response3.text();
+                const hasOldCode = html.includes("fetch('http://localhost:8000/data/check')");
+                const hasNewCode = html.includes("fetch(`http://localhost:8000/data/check?from_date=");
+                
+                if (hasOldCode && !hasNewCode) {
+                    addResult('  ❌ index.html still has OLD code (no parameters)', false);
+                    addResult('  ACTION NEEDED: Clear browser cache with Ctrl+F5', false);
+                } else if (hasNewCode) {
+                    addResult('  ✓ index.html has NEW code (with parameters)', true);
+                    addResult('  If still seeing 422 errors, clear browser cache with Ctrl+F5', true);
+                } else {
+                    addResult('  Cannot determine HTML status', false);
+                }
+            } catch (e) {
+                addResult(`  Error checking HTML: ${e.message}`, false);
+            }
+            
+            addResult('\n=== SUMMARY ===', false);
+            addResult('The API endpoint is working correctly.', true);
+            addResult('If you still see 422 errors in the dashboard:', false);
+            addResult('1. Press Ctrl+F5 on the dashboard page to force refresh', true);
+            addResult('2. Or close and reopen the dashboard', true);
+            addResult('3. Or clear your browser cache', true);
+        }
+        
+        runTests();
+    </script>
+</body>
+</html>

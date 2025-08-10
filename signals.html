@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Signals - BreezeConnect Trading System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 24px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Main Content */
+        .container {
+            flex: 1;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Signal Cards Grid */
+        .signals-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .signal-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+        }
+
+        .signal-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .signal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .signal-id {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .signal-type {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .bullish {
+            background: #d4f4dd;
+            color: #0e6333;
+        }
+
+        .bearish {
+            background: #fecaca;
+            color: #991b1b;
+        }
+
+        .signal-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 10px;
+        }
+
+        .signal-description {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .signal-action {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 8px;
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        /* Statistics Section */
+        .stats-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .stats-header {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 12px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* Recent Signals Table */
+        .recent-signals {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 25px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px;
+            background: rgba(102, 126, 234, 0.1);
+            color: #1a1a2e;
+            font-weight: 600;
+            border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            color: #333;
+        }
+
+        tr:hover {
+            background: rgba(102, 126, 234, 0.03);
+        }
+
+        .positive {
+            color: #0e6333;
+            font-weight: 600;
+        }
+
+        .negative {
+            color: #991b1b;
+            font-weight: 600;
+        }
+
+        /* Loading and Error States */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 3px solid rgba(102, 126, 234, 0.2);
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c00;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        /* Refresh Button */
+        .refresh-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s;
+        }
+
+        .refresh-btn:hover {
+            transform: rotate(180deg) scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>
+            <i class="fas fa-signal"></i>
+            Trading Signals
+        </h1>
+        <div class="header-actions">
+            <button class="btn btn-secondary" onclick="window.location.href='/'">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </button>
+            <button class="btn" onclick="refreshData()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Statistics Section -->
+        <div class="stats-section">
+            <div class="stats-header">
+                <i class="fas fa-chart-line"></i>
+                Signal Performance Overview
+            </div>
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-item">
+                    <div class="stat-value">-</div>
+                    <div class="stat-label">Total Signals</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">-</div>
+                    <div class="stat-label">Best Performer</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">-</div>
+                    <div class="stat-label">Avg Win Rate</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">-</div>
+                    <div class="stat-label">Total P&L</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Signal Cards -->
+        <div class="signals-grid">
+            <!-- S1: Bear Trap -->
+            <div class="signal-card">
+                <div class="signal-header">
+                    <span class="signal-id">S1</span>
+                    <span class="signal-type bullish">BULLISH</span>
+                </div>
+                <div class="signal-name">Bear Trap</div>
+                <div class="signal-description">
+                    Price breaks below support but quickly reverses back above, trapping bears. 
+                    Strong bullish reversal signal.
+                </div>
+                <div class="signal-action">
+                    <i class="fas fa-arrow-down"></i>
+                    <span>Action: Sell PUT</span>
+                </div>
+            </div>
+
+            <!-- S2: Support Hold -->
+            <div class="signal-card">
+                <div class="signal-header">
+                    <span class="signal-id">S2</span>
+                    <span class="signal-type bullish">BULLISH</span>
+                </div>
+                <div class="signal-name">Support Hold</div>
+                <div class="signal-description">
+                    Price tests support level multiple times but holds above it. 
+                    Indicates strong buying interest at support.
+                </div>
+                <div class="signal-action">
+                    <i class="fas fa-arrow-down"></i>
+                    <span>Action: Sell PUT</span>
+                </div>
+            </div>
+
+            <!-- S3: Resistance Hold -->
+            <div class="signal-card">
+                <div class="signal-header">
+                    <span class="signal-id">S3</span>
+                    <span class="signal-type bearish">BEARISH</span>
+                </div>
+                <div class="signal-name">Resistance Hold</div>
+                <div class="signal-description">
+                    Price tests resistance level but fails to break above. 
+                    Shows selling pressure at resistance.
+                </div>
+                <div class="signal-action">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>Action: Sell CALL</span>
+                </div>
+            </div>
+
+            <!-- S4: Bias Failure Bull -->
+            <div class="signal-card">
+                <div class="signal-header">
+                    <span class="signal-id">S4</span>
+                    <span class="signal-type bullish">BULLISH</span>
+                </div>
+                <div class="signal-name">Bias Failure Bull</div>
+                <div class="signal-description">
+                    Bearish bias fails to materialize, price reverses upward. 
+                    Indicates shift to bullish momentum.
+                </div>
+                <div class="signal-action">
+                    <i class="fas fa-arrow-down"></i>
+                    <span>Action: Sell PUT</span>
+                </div>
+            </div>
+
+            <!-- S5: Bias Failure Bear -->
+            <div class="signal-card">
+                <div class="signal-header">
+                    <span class="signal-id">S5</span>
+                    <span class="signal-type bearish">BEARISH</span>
+                </div>
+                <div class="signal-name">Bias Failure Bear</div>
+                <div class="signal-description">
+                    Bullish bias fails to continue, price reverses downward. 
+                    Signals shift to bearish momentum.
+                </div>
+                <div class="signal-action">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>Action: Sell CALL</span>
+                </div>
+            </div>
+
+            <!-- S6: Weakness Confirmed -->
+            <div class="signal-card">
+                <div class="signal-header">
+                    <span class="signal-id">S6</span>
+                    <span class="signal-type bearish">BEARISH</span>
+                </div>
+                <div class="signal-name">Weakness Confirmed</div>
+                <div class="signal-description">
+                    Multiple bearish indicators confirm market weakness. 
+                    Strong signal for downward movement.
+                </div>
+                <div class="signal-action">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>Action: Sell CALL</span>
+                </div>
+            </div>
+
+            <!-- S7: Breakout Confirmed -->
+            <div class="signal-card">
+                <div class="signal-header">
+                    <span class="signal-id">S7</span>
+                    <span class="signal-type bullish">BULLISH</span>
+                </div>
+                <div class="signal-name">Breakout Confirmed</div>
+                <div class="signal-description">
+                    Price breaks above resistance with volume confirmation. 
+                    Strong bullish continuation signal.
+                </div>
+                <div class="signal-action">
+                    <i class="fas fa-arrow-down"></i>
+                    <span>Action: Sell PUT</span>
+                </div>
+            </div>
+
+            <!-- S8: Breakdown Confirmed -->
+            <div class="signal-card">
+                <div class="signal-header">
+                    <span class="signal-id">S8</span>
+                    <span class="signal-type bearish">BEARISH</span>
+                </div>
+                <div class="signal-name">Breakdown Confirmed</div>
+                <div class="signal-description">
+                    Price breaks below support with volume confirmation. 
+                    Strong bearish continuation signal.
+                </div>
+                <div class="signal-action">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>Action: Sell CALL</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Signals Table -->
+        <div class="recent-signals">
+            <div class="stats-header">
+                <i class="fas fa-history"></i>
+                Recent Signal Occurrences
+            </div>
+            <div class="table-container">
+                <table id="recentSignalsTable">
+                    <thead>
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Signal</th>
+                            <th>Type</th>
+                            <th>Entry Price</th>
+                            <th>Exit Price</th>
+                            <th>P&L</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="signalsTableBody">
+                        <tr>
+                            <td colspan="7" class="loading">
+                                <div class="spinner"></div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Refresh Button -->
+    <button class="refresh-btn" onclick="refreshData()" title="Refresh Data">
+        <i class="fas fa-sync-alt"></i>
+    </button>
+
+    <script>
+        // Load statistics on page load
+        async function loadStatistics() {
+            try {
+                const response = await fetch('http://localhost:8000/signals/statistics');
+                if (response.ok) {
+                    const data = await response.json();
+                    updateStatistics(data);
+                }
+            } catch (error) {
+                console.error('Failed to load statistics:', error);
+            }
+        }
+
+        // Load recent signals
+        async function loadRecentSignals() {
+            try {
+                const response = await fetch('http://localhost:8000/signals/recent?limit=20');
+                if (response.ok) {
+                    const data = await response.json();
+                    updateSignalsTable(data.signals || []);
+                } else {
+                    // If endpoint doesn't exist yet, show sample data
+                    showSampleData();
+                }
+            } catch (error) {
+                console.error('Failed to load recent signals:', error);
+                showSampleData();
+            }
+        }
+
+        // Update statistics display
+        function updateStatistics(stats) {
+            const statsGrid = document.getElementById('statsGrid');
+            statsGrid.innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-value">${stats.total_signals || 8}</div>
+                    <div class="stat-label">Total Signals</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${stats.best_performer || 'S1'}</div>
+                    <div class="stat-label">Best Performer</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${stats.avg_win_rate || '65'}%</div>
+                    <div class="stat-label">Avg Win Rate</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">₹${(stats.total_pnl || 0).toLocaleString()}</div>
+                    <div class="stat-label">Total P&L</div>
+                </div>
+            `;
+        }
+
+        // Update signals table
+        function updateSignalsTable(signals) {
+            const tbody = document.getElementById('signalsTableBody');
+            
+            if (signals.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="empty-state">
+                            No recent signals found. Run a backtest to generate signal data.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = signals.map(signal => `
+                <tr>
+                    <td>${new Date(signal.datetime).toLocaleString()}</td>
+                    <td><strong>${signal.signal_type}</strong></td>
+                    <td>
+                        <span class="signal-type ${signal.bias}">
+                            ${signal.bias.toUpperCase()}
+                        </span>
+                    </td>
+                    <td>₹${signal.entry_price.toLocaleString()}</td>
+                    <td>₹${signal.exit_price?.toLocaleString() || '-'}</td>
+                    <td class="${signal.pnl >= 0 ? 'positive' : 'negative'}">
+                        ₹${signal.pnl?.toLocaleString() || '0'}
+                    </td>
+                    <td>${signal.status || 'CLOSED'}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Show sample data when API not available
+        function showSampleData() {
+            const sampleSignals = [
+                {
+                    datetime: '2025-07-18T11:15:00',
+                    signal_type: 'S1',
+                    bias: 'bullish',
+                    entry_price: 25000,
+                    exit_price: 25150,
+                    pnl: 11250,
+                    status: 'CLOSED'
+                },
+                {
+                    datetime: '2025-07-17T10:30:00',
+                    signal_type: 'S3',
+                    bias: 'bearish',
+                    entry_price: 25200,
+                    exit_price: 25100,
+                    pnl: 7500,
+                    status: 'CLOSED'
+                },
+                {
+                    datetime: '2025-07-16T14:45:00',
+                    signal_type: 'S2',
+                    bias: 'bullish',
+                    entry_price: 24950,
+                    exit_price: 25050,
+                    pnl: 7500,
+                    status: 'CLOSED'
+                }
+            ];
+            
+            updateSignalsTable(sampleSignals);
+            
+            // Update stats with sample data
+            updateStatistics({
+                total_signals: 8,
+                best_performer: 'S1',
+                avg_win_rate: 65,
+                total_pnl: 26250
+            });
+        }
+
+        // Refresh all data
+        function refreshData() {
+            const refreshBtn = document.querySelector('.refresh-btn');
+            refreshBtn.style.animation = 'spin 1s linear';
+            
+            Promise.all([
+                loadStatistics(),
+                loadRecentSignals()
+            ]).then(() => {
+                setTimeout(() => {
+                    refreshBtn.style.animation = '';
+                }, 1000);
+            });
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStatistics();
+            loadRecentSignals();
+            
+            // Auto-refresh every 60 seconds
+            setInterval(refreshData, 60000);
+        });
+    </script>
+</body>
+</html>

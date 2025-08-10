@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Platform - Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #0f0f1e;
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16161d 100%);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s;
+        }
+
+        .sidebar.collapsed {
+            width: 70px;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            transition: opacity 0.3s;
+        }
+
+        .sidebar.collapsed .logo-text {
+            opacity: 0;
+            display: none;
+        }
+
+        .toggle-btn {
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            padding: 5px;
+            transition: color 0.3s;
+        }
+
+        .toggle-btn:hover {
+            color: #999;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 20px 0;
+            overflow-y: auto;
+        }
+
+        .nav-section {
+            margin-bottom: 30px;
+        }
+
+        .nav-section-title {
+            padding: 0 20px;
+            margin-bottom: 10px;
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #666;
+            letter-spacing: 0.5px;
+            transition: opacity 0.3s;
+        }
+
+        .sidebar.collapsed .nav-section-title {
+            opacity: 0;
+            height: 0;
+            margin: 0;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: #999;
+            text-decoration: none;
+            transition: all 0.3s;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .nav-item:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: #fff;
+        }
+
+        .nav-item.active {
+            background: rgba(102, 126, 234, 0.15);
+            color: #667eea;
+        }
+
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: #667eea;
+        }
+
+        .nav-icon {
+            width: 20px;
+            margin-right: 12px;
+            text-align: center;
+        }
+
+        .nav-text {
+            transition: opacity 0.3s;
+        }
+
+        .sidebar.collapsed .nav-text {
+            opacity: 0;
+            display: none;
+        }
+
+        .nav-badge {
+            margin-left: auto;
+            background: #667eea;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .sidebar.collapsed .nav-badge {
+            display: none;
+        }
+
+        /* User Profile */
+        .sidebar-footer {
+            padding: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .user-info {
+            flex: 1;
+            transition: opacity 0.3s;
+        }
+
+        .sidebar.collapsed .user-info {
+            display: none;
+        }
+
+        .user-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .user-role {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #0f0f1e;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(26, 26, 46, 0.5);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 16px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .breadcrumb a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .header-btn {
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            padding: 8px;
+            position: relative;
+            transition: color 0.3s;
+        }
+
+        .header-btn:hover {
+            color: #fff;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+        }
+
+        /* Content Area */
+        .content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .content-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .stat-title {
+            font-size: 14px;
+            color: #999;
+        }
+
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .stat-icon.green {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+        }
+
+        .stat-icon.blue {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+
+        .stat-icon.yellow {
+            background: rgba(251, 146, 60, 0.1);
+            color: #fb923c;
+        }
+        
+        .stat-icon.purple {
+            background: rgba(139, 92, 246, 0.1);
+            color: #8b5cf6;
+        }
+
+        .stat-icon.red {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .stat-change {
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stat-change.positive {
+            color: #22c55e;
+        }
+
+        .stat-change.negative {
+            color: #ef4444;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .action-btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .action-btn.secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Command Palette */
+        .command-palette {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 0;
+            z-index: 10000;
+            display: none;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .command-palette.active {
+            display: block;
+        }
+
+        .command-input {
+            width: 100%;
+            padding: 20px;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+        }
+
+        .command-input:focus {
+            outline: none;
+        }
+
+        .command-list {
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .command-item {
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: background 0.2s;
+        }
+
+        .command-item:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .command-item.selected {
+            background: rgba(102, 126, 234, 0.2);
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            display: none;
+        }
+
+        .overlay.active {
+            display: block;
+        }
+        
+        /* Light Theme (Bright) - Default */
+        [data-theme="light"] {
+            background: #ffffff !important;
+        }
+        
+        [data-theme="light"] body {
+            background: linear-gradient(135deg, #f0f4ff 0%, #e8efff 100%) !important;
+        }
+        
+        [data-theme="light"] .sidebar {
+            background: #ffffff !important;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        [data-theme="light"] .header {
+            background: #ffffff !important;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        [data-theme="light"] .card {
+            background: #ffffff !important;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        [data-theme="light"] .main-content {
+            background: transparent !important;
+        }
+        
+        [data-theme="light"] .menu-item {
+            color: #2d3748 !important;
+        }
+        
+        [data-theme="light"] .menu-item:hover {
+            background: rgba(102, 126, 234, 0.1) !important;
+            color: #667eea !important;
+        }
+        
+        [data-theme="light"] .stat-label {
+            color: #718096 !important;
+        }
+        
+        [data-theme="light"] .stat-value {
+            color: #1a202c !important;
+        }
+        
+        [data-theme="light"] table th {
+            background: #f7fafc !important;
+            color: #2d3748 !important;
+        }
+        
+        [data-theme="light"] table td {
+            color: #4a5568 !important;
+            border-color: #e2e8f0 !important;
+        }
+        
+        [data-theme="light"] .header-btn {
+            background: rgba(102, 126, 234, 0.1) !important;
+            color: #4a5568 !important;
+        }
+        
+        [data-theme="light"] .header-btn:hover {
+            background: rgba(102, 126, 234, 0.2) !important;
+        }
+        
+        [data-theme="light"] .logo {
+            color: #2d3748 !important;
+        }
+        
+        [data-theme="light"] .quick-action {
+            background: #ffffff !important;
+            border-color: #e2e8f0 !important;
+            color: #4a5568 !important;
+        }
+        
+        [data-theme="light"] .quick-action:hover {
+            background: #f7fafc !important;
+            border-color: #667eea !important;
+        }
+        
+        /* Light theme - Additional text colors */
+        [data-theme="light"] {
+            color: #2d3748 !important;
+        }
+        
+        [data-theme="light"] h1, 
+        [data-theme="light"] h2, 
+        [data-theme="light"] h3 {
+            color: #1a202c !important;
+        }
+        
+        [data-theme="light"] .card p,
+        [data-theme="light"] .card span {
+            color: #4a5568 !important;
+        }
+        
+        [data-theme="light"] .stat-change {
+            color: #718096 !important;
+        }
+        
+        [data-theme="light"] .action-btn {
+            color: white !important; /* Keep buttons readable */
+        }
+        
+        [data-theme="light"] .menu-item.active {
+            color: white !important; /* Active menu items stay white */
+        }
+        
+        /* Gray Theme (Medium) */
+        [data-theme="gray"] {
+            background: #4a5568 !important;
+        }
+        
+        [data-theme="gray"] body {
+            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%) !important;
+        }
+        
+        [data-theme="gray"] .sidebar {
+            background: #2d3748 !important;
+            border-right: 1px solid #1a202c;
+        }
+        
+        [data-theme="gray"] .header {
+            background: #2d3748 !important;
+            border-bottom: 1px solid #1a202c;
+        }
+        
+        [data-theme="gray"] .card {
+            background: #374151 !important;
+            color: #e5e7eb !important;
+            border: 1px solid #4a5568;
+        }
+        
+        [data-theme="gray"] .card h3,
+        [data-theme="gray"] .card-title {
+            color: #f3f4f6 !important;
+        }
+        
+        [data-theme="gray"] .menu-item {
+            color: #cbd5e0 !important;
+        }
+        
+        [data-theme="gray"] .menu-item:hover {
+            background: rgba(102, 126, 234, 0.2) !important;
+            color: #fff !important;
+        }
+        
+        [data-theme="gray"] .stat-label {
+            color: #cbd5e0 !important;
+        }
+        
+        [data-theme="gray"] .stat-value {
+            color: #f7fafc !important;
+        }
+        
+        [data-theme="gray"] table th {
+            background: rgba(102, 126, 234, 0.2) !important;
+            color: #e5e7eb !important;
+        }
+        
+        [data-theme="gray"] table td {
+            color: #e2e8f0 !important;
+            border-color: rgba(255, 255, 255, 0.1) !important;
+        }
+        
+        [data-theme="gray"] .header-btn {
+            background: rgba(255, 255, 255, 0.15) !important;
+            color: #f7fafc !important;
+        }
+        
+        [data-theme="gray"] .logo {
+            color: #f7fafc !important;
+        }
+        
+        [data-theme="gray"] .main-content {
+            background: transparent !important;
+        }
+        
+        /* Gray theme - Additional text colors */
+        [data-theme="gray"] {
+            color: #e2e8f0 !important;
+        }
+        
+        [data-theme="gray"] h1,
+        [data-theme="gray"] h2,
+        [data-theme="gray"] h3 {
+            color: #f7fafc !important;
+        }
+        
+        [data-theme="gray"] .card p,
+        [data-theme="gray"] .card span {
+            color: #cbd5e0 !important;
+        }
+        
+        [data-theme="gray"] .stat-change {
+            color: #a0aec0 !important;
+        }
+        
+        [data-theme="gray"] .quick-action {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border-color: rgba(255, 255, 255, 0.2) !important;
+            color: #e2e8f0 !important;
+        }
+        
+        [data-theme="gray"] .quick-action:hover {
+            background: rgba(255, 255, 255, 0.15) !important;
+        }
+        
+        [data-theme="gray"] .menu-item.active {
+            color: white !important;
+        }
+        
+        [data-theme="gray"] .action-btn {
+            color: white !important;
+        }
+        
+        /* Dark Theme (Full Dark) */
+        [data-theme="dark"] {
+            background: #0f0f23 !important;
+        }
+        
+        [data-theme="dark"] body {
+            background: #0f0f23 !important;
+        }
+        
+        [data-theme="dark"] .app-container {
+            background: #0f0f23 !important;
+        }
+        
+        [data-theme="dark"] .sidebar {
+            background: #1a1a2e !important;
+            border-right: 1px solid #2a2a3e;
+        }
+        
+        [data-theme="dark"] .header {
+            background: #1a1a2e !important;
+            border-bottom: 1px solid #2a2a3e;
+        }
+        
+        [data-theme="dark"] .card {
+            background: #1e1e32 !important;
+            color: #e5e7eb !important;
+            border: 1px solid #2a2a3e;
+        }
+        
+        [data-theme="dark"] .card h3,
+        [data-theme="dark"] .card-title {
+            color: #f3f4f6 !important;
+        }
+        
+        [data-theme="dark"] .menu-item {
+            color: #9ca3af !important;
+        }
+        
+        [data-theme="dark"] .menu-item:hover {
+            background: rgba(102, 126, 234, 0.15) !important;
+            color: #fff !important;
+        }
+        
+        [data-theme="dark"] .menu-item.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: white !important;
+        }
+        
+        [data-theme="dark"] .stat-label {
+            color: #9ca3af !important;
+        }
+        
+        [data-theme="dark"] .stat-value {
+            color: #f3f4f6 !important;
+        }
+        
+        [data-theme="dark"] .quick-action {
+            background: rgba(102, 126, 234, 0.1) !important;
+            border-color: rgba(102, 126, 234, 0.3) !important;
+            color: #e5e7eb !important;
+        }
+        
+        [data-theme="dark"] .quick-action:hover {
+            background: rgba(102, 126, 234, 0.2) !important;
+        }
+        
+        [data-theme="dark"] table th {
+            background: rgba(102, 126, 234, 0.15) !important;
+            color: #e5e7eb !important;
+        }
+        
+        [data-theme="dark"] table td {
+            color: #d1d5db !important;
+            border-color: rgba(255, 255, 255, 0.05) !important;
+        }
+        
+        [data-theme="dark"] table tr:hover {
+            background: rgba(102, 126, 234, 0.08) !important;
+        }
+        
+        [data-theme="dark"] .command-palette {
+            background: rgba(26, 26, 46, 0.98) !important;
+        }
+        
+        [data-theme="dark"] .command-input {
+            background: rgba(15, 15, 35, 0.8) !important;
+            color: #f3f4f6 !important;
+            border-color: rgba(102, 126, 234, 0.3) !important;
+        }
+        
+        [data-theme="dark"] .command-item {
+            color: #d1d5db !important;
+        }
+        
+        [data-theme="dark"] .command-item:hover {
+            background: rgba(102, 126, 234, 0.15) !important;
+        }
+        
+        [data-theme="dark"] .status-online {
+            background: rgba(16, 185, 129, 0.2) !important;
+        }
+        
+        [data-theme="dark"] .chart-container {
+            background: rgba(15, 15, 35, 0.5) !important;
+        }
+        
+        [data-theme="dark"] .logo {
+            color: #f3f4f6 !important;
+        }
+        
+        [data-theme="dark"] .header-btn {
+            background: rgba(255, 255, 255, 0.1) !important;
+            color: #e5e7eb !important;
+        }
+        
+        [data-theme="dark"] .main-content {
+            background: #0f0f23 !important;
+        }
+        
+        /* Dark theme - Additional text colors */
+        [data-theme="dark"] {
+            color: #e5e7eb !important;
+        }
+        
+        [data-theme="dark"] h1,
+        [data-theme="dark"] h2,
+        [data-theme="dark"] h3 {
+            color: #f9fafb !important;
+        }
+        
+        [data-theme="dark"] .card p,
+        [data-theme="dark"] .card span {
+            color: #d1d5db !important;
+        }
+        
+        [data-theme="dark"] .stat-change {
+            color: #9ca3af !important;
+        }
+        
+        [data-theme="dark"] .action-btn {
+            color: white !important;
+        }
+        
+        [data-theme="dark"] .menu-item.active {
+            color: white !important;
+        }
+        
+        /* Special color classes that should override theme colors */
+        .positive {
+            color: #10b981 !important;
+        }
+        
+        .negative {
+            color: #ef4444 !important;
+        }
+        
+        /* Ensure status badges maintain their colors */
+        .status-online {
+            color: #10b981 !important;
+        }
+        
+        .status-offline {
+            color: #ef4444 !important;
+        }
+        
+        /* Keep success/error messages readable in all themes */
+        .text-success {
+            color: #10b981 !important;
+        }
+        
+        .text-danger {
+            color: #ef4444 !important;
+        }
+        
+        .text-warning {
+            color: #f59e0b !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">TP</div>
+                    <span class="logo-text">Trading Platform</span>
+                </div>
+                <button class="toggle-btn" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Main</div>
+                    <a class="nav-item active" onclick="loadModule('dashboard')">
+                        <i class="fas fa-home nav-icon"></i>
+                        <span class="nav-text">Dashboard</span>
+                    </a>
+                    <a class="nav-item" onclick="loadModule('positions')">
+                        <i class="fas fa-chart-line nav-icon"></i>
+                        <span class="nav-text">Positions</span>
+                        <span class="nav-badge">3</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Trading</div>
+                    <a class="nav-item" onclick="loadModule('backtest')">
+                        <i class="fas fa-history nav-icon"></i>
+                        <span class="nav-text">Backtesting</span>
+                    </a>
+                    <a class="nav-item" onclick="loadModule('signals')">
+                        <i class="fas fa-signal nav-icon"></i>
+                        <span class="nav-text">Signals</span>
+                    </a>
+                    <a class="nav-item" onclick="loadModule('live-trading')">
+                        <i class="fas fa-play-circle nav-icon"></i>
+                        <span class="nav-text">Live Trading</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Machine Learning</div>
+                    <a class="nav-item" onclick="loadModule('ml-validation')">
+                        <i class="fas fa-brain nav-icon"></i>
+                        <span class="nav-text">ML Validation</span>
+                    </a>
+                    <a class="nav-item" onclick="loadModule('ml-analysis')">
+                        <i class="fas fa-microscope nav-icon"></i>
+                        <span class="nav-text">ML Analysis</span>
+                    </a>
+                    <a class="nav-item" onclick="loadModule('ml-optimization')">
+                        <i class="fas fa-cogs nav-icon"></i>
+                        <span class="nav-text">Optimization</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Data</div>
+                    <a class="nav-item" onclick="loadModule('data-collection')">
+                        <i class="fas fa-database nav-icon"></i>
+                        <span class="nav-text">Data Collection</span>
+                    </a>
+                    <a class="nav-item" onclick="loadModule('data-management')">
+                        <i class="fas fa-folder nav-icon"></i>
+                        <span class="nav-text">Data Management</span>
+                    </a>
+                    <a class="nav-item" onclick="loadModule('holidays')">
+                        <i class="fas fa-calendar nav-icon"></i>
+                        <span class="nav-text">Holidays</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">System</div>
+                    <a class="nav-item" onclick="loadModule('session')">
+                        <i class="fas fa-key nav-icon"></i>
+                        <span class="nav-text">Session</span>
+                    </a>
+                    <a class="nav-item" onclick="loadModule('settings')">
+                        <i class="fas fa-cog nav-icon"></i>
+                        <span class="nav-text">Settings</span>
+                    </a>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar" id="userAvatar">A</div>
+                    <div class="user-info">
+                        <div class="user-name" id="userName">Admin</div>
+                        <div class="user-role" id="userRole">Administrator</div>
+                    </div>
+                    <button class="header-btn" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <div class="breadcrumb" id="breadcrumb">
+                        <a href="#">Home</a>
+                        <span>/</span>
+                        <span>Dashboard</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="header-btn" onclick="openCommandPalette()">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <button class="header-btn">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge"></span>
+                    </button>
+                    <button class="header-btn" onclick="toggleTheme()" title="Toggle theme (Light/Gray/Dark)">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
+            </header>
+
+            <div class="content" id="content">
+                <!-- Dashboard Content -->
+                <div id="dashboard-content">
+                    <h1 style="margin-bottom: 30px; font-size: 28px;">Dashboard</h1>
+                    
+                    <div class="quick-actions">
+                        <button class="action-btn" onclick="loadModule('backtest')">
+                            <i class="fas fa-play"></i> Run Backtest
+                        </button>
+                        <button class="action-btn secondary" onclick="loadModule('ml-validation')">
+                            <i class="fas fa-brain"></i> ML Validation
+                        </button>
+                        <button class="action-btn secondary" onclick="loadModule('data-collection')">
+                            <i class="fas fa-download"></i> Collect Data
+                        </button>
+                        <button class="action-btn secondary" onclick="refreshDashboard()">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-title">Last Backtest P&L</span>
+                                <div class="stat-icon green">
+                                    <i class="fas fa-dollar-sign"></i>
+                                </div>
+                            </div>
+                            <div class="stat-value" id="totalPnl">₹0</div>
+                            <div class="stat-change" id="pnlChange">
+                                <span>No data available</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-title">Win Rate</span>
+                                <div class="stat-icon blue">
+                                    <i class="fas fa-percentage"></i>
+                                </div>
+                            </div>
+                            <div class="stat-value" id="winRate">0%</div>
+                            <div class="stat-change" id="winRateChange">
+                                <span>From last backtest</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-title">Total Trades</span>
+                                <div class="stat-icon yellow">
+                                    <i class="fas fa-chart-pie"></i>
+                                </div>
+                            </div>
+                            <div class="stat-value" id="totalTrades">0</div>
+                            <div class="stat-change" id="tradesInfo">
+                                <span>No trades executed</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-title">Data Status</span>
+                                <div class="stat-icon red">
+                                    <i class="fas fa-database"></i>
+                                </div>
+                            </div>
+                            <div class="stat-value" id="dataRecords">0</div>
+                            <div class="stat-change" id="dataRange">
+                                <span>No data loaded</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-grid" style="margin-top: 20px;">
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-title">API Status</span>
+                                <div class="stat-icon green" id="apiStatusIcon">
+                                    <i class="fas fa-server"></i>
+                                </div>
+                            </div>
+                            <div class="stat-value" id="apiStatus">Online</div>
+                            <div class="stat-change" id="apiInfo">
+                                <span>Connected to localhost:8000</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-title">Breeze (ICICI) Status</span>
+                                <div class="stat-icon blue" id="breezeStatusIcon">
+                                    <i class="fas fa-database"></i>
+                                </div>
+                            </div>
+                            <div class="stat-value" id="breezeStatus">Checking...</div>
+                            <div class="stat-change" id="breezeInfo">
+                                <span>Historical data & backtesting</span>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-title">Kite (Zerodha) Status</span>
+                                <div class="stat-icon purple" id="kiteStatusIcon">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                            </div>
+                            <div class="stat-value" id="kiteStatus">Checking...</div>
+                            <div class="stat-change" id="kiteInfo">
+                                <span>Live trading execution</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-title">Database</span>
+                                <div class="stat-icon yellow">
+                                    <i class="fas fa-database"></i>
+                                </div>
+                            </div>
+                            <div class="stat-value" id="dbStatus">Connected</div>
+                            <div class="stat-change" id="dbInfo">
+                                <span>SQL Server LocalDB</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-title">Last Update</span>
+                                <div class="stat-icon red">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                            </div>
+                            <div class="stat-value" id="lastUpdate">Never</div>
+                            <div class="stat-change">
+                                <span id="updateTime">Not refreshed yet</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Module content will be loaded here -->
+                <iframe id="moduleFrame" class="content-frame" style="display: none;"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- Command Palette -->
+    <div class="overlay" id="overlay" onclick="closeCommandPalette()"></div>
+    <div class="command-palette" id="commandPalette">
+        <input type="text" class="command-input" placeholder="Type a command or search..." id="commandInput">
+        <div class="command-list" id="commandList">
+            <div class="command-item" onclick="loadModule('backtest')">
+                <i class="fas fa-history"></i>
+                <span>Run Backtest</span>
+            </div>
+            <div class="command-item" onclick="loadModule('ml-validation')">
+                <i class="fas fa-brain"></i>
+                <span>ML Validation</span>
+            </div>
+            <div class="command-item" onclick="loadModule('data-collection')">
+                <i class="fas fa-database"></i>
+                <span>Collect Data</span>
+            </div>
+            <div class="command-item" onclick="loadModule('signals')">
+                <i class="fas fa-signal"></i>
+                <span>View Signals</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check authentication
+        const user = sessionStorage.getItem('user');
+        const token = sessionStorage.getItem('token');
+        
+        if (!user || !token) {
+            window.location.href = 'login.html';
+        }
+
+        // Set user info
+        document.getElementById('userName').textContent = user.charAt(0).toUpperCase() + user.slice(1);
+        document.getElementById('userAvatar').textContent = user.charAt(0).toUpperCase();
+
+        // Module mapping
+        const moduleMap = {
+            'dashboard': null,
+            'backtest': 'backtest.html',
+            'ml-validation': 'ml_validation_form.html',
+            'data-collection': 'data_collection.html',
+            'signals': 'signals.html',
+            'live-trading': 'live_trading.html',
+            'ml-analysis': 'ml_analysis.html',
+            'ml-optimization': 'ml_optimization.html',
+            'data-management': 'data_management.html',
+            'holidays': 'holidays.html',
+            'session': 'session.html',
+            'settings': 'settings.html',
+            'positions': 'positions.html'
+        };
+
+        // Load module
+        function loadModule(moduleName) {
+            // Get the clicked element and module title
+            const clickedElement = event ? event.target.closest('.nav-item') : null;
+            let moduleTitle = moduleName.charAt(0).toUpperCase() + moduleName.slice(1).replace('-', ' ');
+            
+            if (clickedElement) {
+                // Update active nav item
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                clickedElement.classList.add('active');
+                
+                // Get module title from nav text
+                const navText = clickedElement.querySelector('.nav-text');
+                if (navText) {
+                    moduleTitle = navText.textContent;
+                }
+            }
+
+            // Update breadcrumb
+            const breadcrumb = document.getElementById('breadcrumb');
+            breadcrumb.innerHTML = `
+                <a href="#" onclick="loadModule('dashboard')">Home</a>
+                <span>/</span>
+                <span>${moduleTitle}</span>
+            `;
+
+            // Load content
+            const dashboardContent = document.getElementById('dashboard-content');
+            const moduleFrame = document.getElementById('moduleFrame');
+            
+            if (moduleName === 'dashboard') {
+                dashboardContent.style.display = 'block';
+                moduleFrame.style.display = 'none';
+            } else {
+                dashboardContent.style.display = 'none';
+                moduleFrame.style.display = 'block';
+                const moduleFile = moduleMap[moduleName];
+                
+                // Always set srcdoc first to show placeholder, then try to load the actual file
+                const placeholderHtml = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <style>
+                            body {
+                                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                                background: #0f0f1e;
+                                color: #e0e0e0;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                height: 100vh;
+                                margin: 0;
+                            }
+                            .coming-soon {
+                                text-align: center;
+                            }
+                            .icon {
+                                font-size: 48px;
+                                margin-bottom: 20px;
+                                color: #667eea;
+                            }
+                            h2 {
+                                margin-bottom: 10px;
+                                color: #fff;
+                            }
+                            p {
+                                color: #999;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="coming-soon">
+                            <div class="icon">🚧</div>
+                            <h2>${moduleTitle}</h2>
+                            <p>This module is under development</p>
+                        </div>
+                    </body>
+                    </html>
+                `;
+                
+                if (moduleFile) {
+                    // Try to load the actual file
+                    moduleFrame.src = moduleFile;
+                    
+                    // Add error handler to show placeholder if file doesn't exist
+                    moduleFrame.onerror = function() {
+                        moduleFrame.srcdoc = placeholderHtml;
+                    };
+                    
+                    // Also check if iframe loads but shows 404
+                    moduleFrame.onload = function() {
+                        try {
+                            // Check if iframe loaded successfully
+                            const iframeDoc = moduleFrame.contentDocument || moduleFrame.contentWindow.document;
+                            if (!iframeDoc || iframeDoc.body.innerHTML.includes('404') || iframeDoc.body.innerHTML.includes('Cannot GET')) {
+                                moduleFrame.srcdoc = placeholderHtml;
+                            }
+                        } catch(e) {
+                            // Cross-origin or other error, assume it's OK
+                        }
+                    };
+                } else {
+                    // No module file defined, show placeholder
+                    moduleFrame.srcdoc = placeholderHtml;
+                }
+            }
+        }
+
+        // Toggle sidebar
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+        }
+
+        // Toggle theme (3 modes: dark, gray, light)
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme') || 'dark'; // Changed default to 'dark'
+            let newTheme;
+            
+            // Cycle through themes: dark -> light -> gray -> dark
+            if (currentTheme === 'dark') {
+                newTheme = 'light';
+            } else if (currentTheme === 'light') {
+                newTheme = 'gray';
+            } else {
+                newTheme = 'dark';
+            }
+            
+            console.log('Switching theme from', currentTheme, 'to', newTheme);
+            
+            body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            // Update theme icon based on current theme
+            const themeBtn = document.querySelector('[onclick="toggleTheme()"]');
+            if (themeBtn) {
+                const icon = themeBtn.querySelector('i');
+                if (icon) {
+                    if (newTheme === 'dark') {
+                        icon.className = 'fas fa-sun'; // Sun icon in dark mode
+                    } else if (newTheme === 'gray') {
+                        icon.className = 'fas fa-adjust'; // Half-moon icon in gray mode
+                    } else {
+                        icon.className = 'fas fa-moon'; // Moon icon in light mode
+                    }
+                }
+            }
+        }
+
+        // Command palette
+        function openCommandPalette() {
+            document.getElementById('overlay').classList.add('active');
+            document.getElementById('commandPalette').classList.add('active');
+            document.getElementById('commandInput').focus();
+        }
+
+        function closeCommandPalette() {
+            document.getElementById('overlay').classList.remove('active');
+            document.getElementById('commandPalette').classList.remove('active');
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                openCommandPalette();
+            }
+            if (e.key === 'Escape') {
+                closeCommandPalette();
+            }
+        });
+
+        // Logout
+        function logout() {
+            sessionStorage.clear();
+            window.location.href = 'login.html';
+        }
+
+        // Filter commands
+        document.getElementById('commandInput').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const items = document.querySelectorAll('.command-item');
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(query) ? 'flex' : 'none';
+            });
+        });
+        
+        // Dashboard data fetching functions
+        async function refreshDashboard() {
+            console.log('Refreshing dashboard...');
+            
+            // Update last update time
+            const now = new Date();
+            document.getElementById('lastUpdate').textContent = now.toLocaleTimeString();
+            document.getElementById('updateTime').textContent = 'Updated at ' + now.toLocaleString();
+            
+            // Fetch various data
+            await Promise.all([
+                fetchAPIStatus(),
+                fetchBreezeStatus(),  // Check Breeze (ICICI) session
+                fetchKiteStatus(),    // Check Kite (Zerodha) session
+                fetchDataStatus(),
+                fetchLatestBacktest(),
+                fetchDashboardStats()  // NEW: Fetch cumulative stats from database
+            ]);
+        }
+        
+        // NEW: Fetch real cumulative statistics from database
+        async function fetchDashboardStats() {
+            try {
+                const response = await fetch('http://localhost:8000/dashboard/stats');
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Update title to show this is cumulative data
+                    const pnlTitle = document.querySelector('#totalPnl').parentElement.querySelector('.stat-title');
+                    if (pnlTitle && data.total_backtests > 0) {
+                        pnlTitle.textContent = `Total P&L (${data.total_backtests} backtests)`;
+                        
+                        // Update P&L with cumulative value
+                        document.getElementById('totalPnl').textContent = '₹' + data.total_pnl.toLocaleString();
+                        document.getElementById('totalPnl').style.color = data.total_pnl >= 0 ? '#22c55e' : '#ef4444';
+                        
+                        if (data.total_pnl >= 0) {
+                            document.getElementById('pnlChange').innerHTML = '<i class="fas fa-arrow-up"></i> <span>Total profit</span>';
+                            document.getElementById('pnlChange').style.color = '#22c55e';
+                        } else {
+                            document.getElementById('pnlChange').innerHTML = '<i class="fas fa-arrow-down"></i> <span>Total loss</span>';
+                            document.getElementById('pnlChange').style.color = '#ef4444';
+                        }
+                        
+                        // Update Win Rate with overall rate
+                        document.getElementById('winRate').textContent = data.win_rate.toFixed(1) + '%';
+                        document.getElementById('winRateChange').innerHTML = '<span>Overall win rate</span>';
+                        
+                        // Update total trades if we have the element
+                        const totalTradesEl = document.getElementById('totalTrades');
+                        if (totalTradesEl && data.today_trades !== undefined) {
+                            const tradesTitle = totalTradesEl.parentElement.querySelector('.stat-title');
+                            if (tradesTitle) {
+                                tradesTitle.textContent = 'Today\'s Trades';
+                            }
+                            totalTradesEl.textContent = data.today_trades;
+                            document.getElementById('tradesInfo').innerHTML = `<span>Active signals: ${data.active_signals}</span>`;
+                        }
+                    }
+                } else {
+                    console.log('Dashboard stats API not available, using local data only');
+                }
+            } catch (error) {
+                console.log('Could not fetch dashboard stats, using local data:', error);
+            }
+        }
+        
+        async function fetchAPIStatus() {
+            try {
+                const response = await fetch('http://localhost:8000/health');
+                const data = await response.json();
+                
+                document.getElementById('apiStatus').textContent = 'Online';
+                document.getElementById('apiStatusIcon').className = 'stat-icon green';
+                document.getElementById('apiInfo').innerHTML = '<span>Connected to localhost:8000</span>';
+                
+                // Update database status
+                if (data.database === 'connected') {
+                    document.getElementById('dbStatus').textContent = 'Connected';
+                    document.getElementById('dbInfo').innerHTML = '<span>SQL Server LocalDB</span>';
+                } else {
+                    document.getElementById('dbStatus').textContent = 'Disconnected';
+                    document.getElementById('dbInfo').innerHTML = '<span style="color: #ef4444;">Connection failed</span>';
+                }
+            } catch (error) {
+                document.getElementById('apiStatus').textContent = 'Offline';
+                document.getElementById('apiStatusIcon').className = 'stat-icon red';
+                document.getElementById('apiInfo').innerHTML = '<span style="color: #ef4444;">Cannot connect to API</span>';
+            }
+        }
+        
+        async function fetchBreezeStatus() {
+            try {
+                const response = await fetch('http://localhost:8000/session/validate?api_type=breeze');
+                const data = await response.json();
+                
+                if (data.is_valid) {
+                    document.getElementById('breezeStatus').textContent = 'Valid';
+                    document.getElementById('breezeStatusIcon').className = 'stat-icon green';
+                    document.getElementById('breezeInfo').innerHTML = '<span style="color: #22c55e;">Session active</span>';
+                } else {
+                    document.getElementById('breezeStatus').textContent = 'Invalid';
+                    document.getElementById('breezeStatusIcon').className = 'stat-icon red';
+                    document.getElementById('breezeInfo').innerHTML = '<span style="color: #ef4444;">Session expired</span>';
+                }
+            } catch (error) {
+                document.getElementById('breezeStatus').textContent = 'Offline';
+                document.getElementById('breezeInfo').innerHTML = '<span>Cannot check session</span>';
+            }
+        }
+        
+        async function fetchKiteStatus() {
+            try {
+                const response = await fetch('http://localhost:8000/live/auth/status');
+                const data = await response.json();
+                
+                if (data.is_authenticated) {
+                    document.getElementById('kiteStatus').textContent = 'Connected';
+                    document.getElementById('kiteStatusIcon').className = 'stat-icon green';
+                    document.getElementById('kiteInfo').innerHTML = '<span style="color: #22c55e;">Ready for trading</span>';
+                } else {
+                    document.getElementById('kiteStatus').textContent = 'Not Connected';
+                    document.getElementById('kiteStatusIcon').className = 'stat-icon yellow';
+                    document.getElementById('kiteInfo').innerHTML = '<span style="color: #fb923c;">Login required</span>';
+                }
+            } catch (error) {
+                document.getElementById('kiteStatus').textContent = 'Offline';
+                document.getElementById('kiteInfo').innerHTML = '<span>Cannot check status</span>';
+            }
+        }
+        
+        async function fetchDataStatus() {
+            try {
+                // Use last 7 days as default range for data check
+                const toDate = new Date();
+                const fromDate = new Date();
+                fromDate.setDate(fromDate.getDate() - 7);
+                
+                const fromDateStr = fromDate.toISOString().split('T')[0];
+                const toDateStr = toDate.toISOString().split('T')[0];
+                
+                const response = await fetch(`http://localhost:8000/data/check?from_date=${fromDateStr}&to_date=${toDateStr}`);
+                const data = await response.json();
+                
+                const totalRecords = (data.nifty_records || 0) + (data.options_records || 0);
+                document.getElementById('dataRecords').textContent = totalRecords.toLocaleString();
+                
+                if (data.date_range) {
+                    document.getElementById('dataRange').innerHTML = `<span>${data.date_range}</span>`;
+                } else if (totalRecords > 0) {
+                    document.getElementById('dataRange').innerHTML = `<span>NIFTY: ${data.nifty_records || 0}, Options: ${data.options_records || 0}</span>`;
+                } else {
+                    document.getElementById('dataRange').innerHTML = '<span>No data loaded</span>';
+                }
+            } catch (error) {
+                console.error('Error fetching data status:', error);
+            }
+        }
+        
+        async function fetchLatestBacktest() {
+            try {
+                // Try to get stored backtest results from sessionStorage
+                const storedResults = sessionStorage.getItem('lastBacktestResults');
+                
+                if (storedResults) {
+                    const results = JSON.parse(storedResults);
+                    const summary = results.summary || {};
+                    
+                    // Update P&L
+                    const pnl = summary.total_pnl || 0;
+                    document.getElementById('totalPnl').textContent = '₹' + pnl.toLocaleString();
+                    document.getElementById('totalPnl').style.color = pnl >= 0 ? '#22c55e' : '#ef4444';
+                    
+                    if (pnl >= 0) {
+                        document.getElementById('pnlChange').innerHTML = '<i class="fas fa-arrow-up"></i> <span>Profit from last run</span>';
+                        document.getElementById('pnlChange').style.color = '#22c55e';
+                    } else {
+                        document.getElementById('pnlChange').innerHTML = '<i class="fas fa-arrow-down"></i> <span>Loss from last run</span>';
+                        document.getElementById('pnlChange').style.color = '#ef4444';
+                    }
+                    
+                    // Update Win Rate
+                    const winRate = summary.win_rate || 0;
+                    document.getElementById('winRate').textContent = winRate.toFixed(1) + '%';
+                    document.getElementById('winRateChange').innerHTML = '<span>From ' + (summary.total_trades || 0) + ' trades</span>';
+                    
+                    // Update Total Trades
+                    const totalTrades = summary.total_trades || 0;
+                    document.getElementById('totalTrades').textContent = totalTrades;
+                    
+                    // Count trades by type
+                    if (results.trades && results.trades.length > 0) {
+                        const tradeTypes = {};
+                        results.trades.forEach(trade => {
+                            const signal = trade.signal_type || 'Unknown';
+                            tradeTypes[signal] = (tradeTypes[signal] || 0) + 1;
+                        });
+                        const tradeInfo = Object.entries(tradeTypes).map(([signal, count]) => `${signal}: ${count}`).join(', ');
+                        document.getElementById('tradesInfo').innerHTML = `<span>${tradeInfo}</span>`;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading backtest results:', error);
+            }
+        }
+        
+        // Store backtest results when they're received
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'backtestComplete') {
+                sessionStorage.setItem('lastBacktestResults', JSON.stringify(event.data.results));
+                refreshDashboard();
+            }
+        });
+        
+        // Load saved theme on page load (default to dark)
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'dark'; // Changed default to 'dark'
+            document.body.setAttribute('data-theme', savedTheme);
+            
+            // Update theme icon based on saved theme
+            const themeBtn = document.querySelector('[onclick="toggleTheme()"]');
+            if (themeBtn) {
+                const icon = themeBtn.querySelector('i');
+                if (icon) {
+                    if (savedTheme === 'dark') {
+                        icon.className = 'fas fa-sun';
+                    } else if (savedTheme === 'gray') {
+                        icon.className = 'fas fa-adjust';
+                    } else {
+                        icon.className = 'fas fa-moon';
+                    }
+                }
+            }
+        }
+        
+        // Refresh dashboard on load
+        window.addEventListener('load', function() {
+            loadTheme();  // Initialize theme
+            refreshDashboard();
+            // Auto-refresh every 30 seconds
+            setInterval(refreshDashboard, 30000);
+        });
+    </script>
+</body>
+</html>

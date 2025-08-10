@@ -42,19 +42,29 @@ class BacktestParameters:
         use_hedging: bool = True,
         hedge_offset: int = 200,
         commission_per_lot: float = 40,
-        slippage_percent: float = 0.001
+        slippage_percent: float = 0.001,
+        wednesday_exit_enabled: bool = True,
+        wednesday_exit_time: str = "15:15",
+        risk_per_trade: float = 2.0, # New parameter
+        auto_fetch_missing_data: bool = True,  # Auto-fetch missing options
+        fetch_batch_size: int = 100  # Strikes per API call
     ):
         self.from_date = from_date
         self.to_date = to_date
         self.initial_capital = initial_capital
         self.lot_size = lot_size
         self.lots_to_trade = lots_to_trade
-        self.lots_per_signal = lots_per_signal or {}  # e.g., {"S1": 10, "S2": 5, ...}
+        self.lots_per_signal = lots_per_signal or {} # e.g., {"S1": 10, "S2": 5, ...}
         self.signals_to_test = signals_to_test or ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8"]
         self.use_hedging = use_hedging
         self.hedge_offset = hedge_offset
         self.commission_per_lot = commission_per_lot
         self.slippage_percent = slippage_percent
+        self.wednesday_exit_enabled = wednesday_exit_enabled
+        self.wednesday_exit_time = wednesday_exit_time
+        self.risk_per_trade = risk_per_trade
+        self.auto_fetch_missing_data = auto_fetch_missing_data
+        self.fetch_batch_size = fetch_batch_size
 
 
 class RunBacktestUseCase:
@@ -75,6 +85,10 @@ class RunBacktestUseCase:
         self.holiday_service = HolidayService()
         self.db_manager = get_db_manager()
         self.enable_risk_management = enable_risk_management
+        
+        # Track missing options data for auto-fetch
+        self.missing_options_data = set()  # (strike, option_type, expiry_date)
+        self.missing_data_info = None  # Store info for API response
         
         # Initialize new services only if risk management is enabled
         if enable_risk_management:
@@ -115,7 +129,7 @@ class RunBacktestUseCase:
             await self._update_backtest_status(backtest_run.id, BacktestStatus.RUNNING)
             
             # Ensure data is available
-            await self._ensure_data_available(params.from_date, params.to_date)
+            await self._ensure_data_available(params.from_date, params.to_date, params.auto_fetch_missing_data)
             
             # Get NIFTY data for the period (including buffer for previous week)
             buffer_start = params.from_date - timedelta(days=7)
@@ -130,6 +144,21 @@ class RunBacktestUseCase:
             results = await self._run_backtest_logic(
                 backtest_run, nifty_data, params
             )
+            
+            # Auto-fetch ALL missing options data if enabled
+            if params.auto_fetch_missing_data and self.missing_options_data:
+                logger.info("Starting auto-fetch of missing options data...")
+                fetched_count = await self._auto_fetch_all_missing_options(params)
+                
+                # Store fetch info for API response
+                self.missing_data_info = {
+                    'total_missing': len(self.missing_options_data),
+                    'records_fetched': fetched_count,
+                    'unique_strikes': len(set(s[0] for s in self.missing_options_data))
+                }
+                
+                # Store fetch info in results
+                results['missing_data_fetched'] = self.missing_data_info
             
             # Update backtest run with results
             await self._update_backtest_results(backtest_run.id, results)
@@ -171,14 +200,14 @@ class RunBacktestUseCase:
         
         return backtest_run
     
-    async def _ensure_data_available(self, from_date: datetime, to_date: datetime):
+    async def _ensure_data_available(self, from_date: datetime, to_date: datetime, auto_fetch: bool = False):
         """Ensure all required data is available"""
         # Add buffer for previous week data needed for zone calculation
         buffer_start = from_date - timedelta(days=7)
         
-        # Ensure NIFTY data - don't fetch from API during backtesting
+        # Ensure NIFTY data - fetch from API if auto_fetch is enabled
         added = await self.data_collection.ensure_nifty_data_available(
-            buffer_start, to_date, fetch_missing=False
+            buffer_start, to_date, fetch_missing=auto_fetch
         )
         
         if added > 0:
@@ -208,7 +237,7 @@ class RunBacktestUseCase:
             # Only fetch data up to expiry date
             end_date = min(expiry, to_date)
             added = await self.data_collection.ensure_options_data_available(
-                from_date, end_date, strikes, [expiry], fetch_missing=False
+                from_date, end_date, strikes, [expiry], fetch_missing=auto_fetch
             )
             
             if added > 0:
@@ -330,6 +359,11 @@ class RunBacktestUseCase:
                 open_trades, current_bar, backtest_run.id
             )
             current_capital += sl_pnl
+            
+            # Calculate Wednesday exit P&L for comparison (but don't actually exit)
+            await self._calculate_wednesday_exit_pnl(
+                open_trades, current_bar, backtest_run.id, params
+            )
             
             # Evaluate signals (only if no open position)
             if not open_trades and not context.signal_triggered_this_week:
@@ -493,6 +527,8 @@ class RunBacktestUseCase:
             )
             
             if not main_price:
+                # Track missing strike for auto-fetch
+                self.missing_options_data.add((main_strike, option_type, expiry.date()))
                 logger.warning(f"No option price found for main position {main_strike} {option_type} at {current_bar.timestamp}")
                 return None  # Cannot create trade without option data
             
@@ -504,6 +540,8 @@ class RunBacktestUseCase:
                 )
                 
                 if not hedge_price:
+                    # Track missing strike for auto-fetch
+                    self.missing_options_data.add((hedge_strike, option_type, expiry.date()))
                     logger.warning(f"No option price found for hedge position {hedge_strike} {option_type} at {current_bar.timestamp}")
                     return None  # Cannot create trade without hedge data when hedging is enabled
             
@@ -687,6 +725,78 @@ class RunBacktestUseCase:
         
         return total_pnl
     
+    async def _calculate_wednesday_exit_pnl(
+        self,
+        open_trades: List[BacktestTrade],
+        current_bar: BarData,
+        backtest_run_id: str,
+        params: BacktestParameters
+    ) -> None:
+        """Calculate what P&L would be if we exited on Wednesday 3:15 PM (but don't actually close)"""
+        
+        # Check if it's Wednesday (weekday == 2) and time is >= exit time
+        if current_bar.timestamp.weekday() == 2:  # Wednesday
+            exit_hour, exit_minute = map(int, params.wednesday_exit_time.split(':'))
+            
+            # Check if current time is at or past the exit time
+            if (current_bar.timestamp.hour > exit_hour or 
+                (current_bar.timestamp.hour == exit_hour and current_bar.timestamp.minute >= exit_minute)):
+                
+                logger.info(f"Calculating Wednesday {params.wednesday_exit_time} exit P&L at {current_bar.timestamp}")
+                
+                for trade in open_trades:
+                    if trade.outcome != TradeOutcome.OPEN:
+                        continue
+                    
+                    # Skip if we already calculated Wednesday exit for this trade
+                    if trade.wednesday_exit_time:
+                        continue
+                    
+                    # Calculate what P&L would be if we exited now
+                    wednesday_pnl = 0.0
+                    commission = 0.0
+                    
+                    for position in trade.positions:
+                        exit_price = await self.option_pricing.get_option_price_at_time(
+                            current_bar.timestamp,
+                            position.strike_price,
+                            position.option_type,
+                            position.expiry_date
+                        )
+                        
+                        if not exit_price:
+                            # Track missing strike for auto-fetch
+                            self.missing_options_data.add((position.strike_price, position.option_type, position.expiry_date.date()))
+                        
+                        if position.position_type == "MAIN":
+                            # Main position (sold option)
+                            position_pnl = (float(position.entry_price) - exit_price) * abs(position.quantity)
+                        else:
+                            # Hedge position (bought option)
+                            position_pnl = (exit_price - float(position.entry_price)) * abs(position.quantity)
+                        
+                        wednesday_pnl += position_pnl
+                        
+                        # Add commission
+                        lots = abs(position.quantity) / params.lot_size
+                        commission += lots * params.commission_per_lot
+                    
+                    # Store Wednesday exit data (but don't close the trade)
+                    trade.wednesday_exit_time = current_bar.timestamp
+                    trade.wednesday_exit_pnl = Decimal(str(wednesday_pnl - commission))
+                    trade.wednesday_index_price = Decimal(str(current_bar.close))
+                    
+                    logger.info(f"Trade {trade.id} Wednesday exit P&L would be: {wednesday_pnl - commission:.2f}")
+                    
+                    # Update in database
+                    with self.db_manager.get_session() as session:
+                        db_trade = session.query(BacktestTrade).filter_by(id=trade.id).first()
+                        if db_trade:
+                            db_trade.wednesday_exit_time = trade.wednesday_exit_time
+                            db_trade.wednesday_exit_pnl = trade.wednesday_exit_pnl
+                            db_trade.wednesday_index_price = trade.wednesday_index_price
+                            session.commit()
+    
     async def _close_trade(
         self,
         trade: BacktestTrade,
@@ -817,6 +927,70 @@ class RunBacktestUseCase:
                 if error_message:
                     backtest_run.error_message = error_message
                 session.commit()
+    
+    async def _auto_fetch_all_missing_options(self, params: BacktestParameters) -> int:
+        """Fetch ALL missing options data encountered during backtest"""
+        if not self.missing_options_data:
+            return 0
+        
+        logger.info(f"Found {len(self.missing_options_data)} missing option contracts during backtest")
+        
+        # Group by date ranges for efficient fetching
+        from collections import defaultdict
+        grouped_by_week = defaultdict(set)
+        
+        for strike, option_type, expiry_date in self.missing_options_data:
+            # Group by week for efficient API calls
+            week_start = expiry_date - timedelta(days=expiry_date.weekday() + 3)  # Monday before expiry
+            week_key = (week_start, expiry_date)
+            grouped_by_week[week_key].add(strike)
+        
+        total_fetched = 0
+        total_batches = sum((len(strikes) - 1) // params.fetch_batch_size + 1 for strikes in grouped_by_week.values())
+        current_batch = 0
+        
+        for (from_date, to_date), strikes in grouped_by_week.items():
+            unique_strikes = sorted(list(strikes))
+            logger.info(f"Fetching {len(unique_strikes)} unique strikes for period {from_date} to {to_date}")
+            
+            # Process in batches for API efficiency
+            for i in range(0, len(unique_strikes), params.fetch_batch_size):
+                batch = unique_strikes[i:i+params.fetch_batch_size]
+                current_batch += 1
+                
+                logger.info(f"Batch {current_batch}/{total_batches}: Fetching {len(batch)} strikes...")
+                
+                try:
+                    # Use the existing API endpoint
+                    import requests
+                    url = "http://localhost:8000/collect/options-specific"
+                    request_data = {
+                        "from_date": from_date.strftime("%Y-%m-%d"),
+                        "to_date": to_date.strftime("%Y-%m-%d"),
+                        "strikes": batch,
+                        "option_types": ["CE", "PE"],
+                        "symbol": "NIFTY"
+                    }
+                    
+                    response = requests.post(url, json=request_data, timeout=120)
+                    if response.status_code == 200:
+                        result = response.json()
+                        records = result.get('records_added', 0)
+                        total_fetched += records
+                        logger.info(f"  ✓ Fetched {records} records")
+                    else:
+                        logger.warning(f"  ⚠ Failed batch {current_batch}: {response.status_code}")
+                        
+                    # Small delay between batches to avoid overload
+                    await asyncio.sleep(1)
+                    
+                except Exception as e:
+                    logger.warning(f"  ⚠ Error fetching batch {current_batch}: {e}")
+                    continue
+        
+        logger.info(f"Auto-fetch complete: {total_fetched} total records added to database")
+        logger.info("Missing options data has been fetched for future backtest runs")
+        return total_fetched
     
     async def _update_backtest_results(self, backtest_run_id: str, results: Dict):
         """Update backtest run with final results"""

@@ -55,7 +55,19 @@
       "Bash(xcopy:*)",
       "Bash(copy unified_api_correct.py backup_20250805unified_api_correct.py)",
       "Bash(touch:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(ren:*)",
+      "Bash(start cmd /c:*)",
+      "Bash(restart_and_test.bat)",
+      "WebFetch(domain:generativelanguage.googleapis.com)",
+      "Bash(where gemini)",
+      "Bash(gemini:*)",
+      "Bash(setup_gemini_cli.bat)",
+      "Bash(setx:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(start_api_and_test.bat)",
+      "Bash(start ml_validation_form.html)",
+      "Bash(start test_dashboard_fix.html)"
     ],
     "deny": []
   }

@@ -25,6 +25,17 @@ class MonitorPositionsUseCase:
         # Configuration
         self.expiry_square_off_time = time(15, 15)  # 3:15 PM
         self.last_entry_time = time(15, 0)  # No new positions after 3 PM on expiry
+
+    def _send_notification(self, message: str, level: str = "info"):
+        """Send a notification (currently logs the message)"""
+        if level == "info":
+            logger.info(f"NOTIFICATION: {message}")
+        elif level == "warning":
+            logger.warning(f"NOTIFICATION: {message}")
+        elif level == "error":
+            logger.error(f"NOTIFICATION: {message}")
+        else:
+            logger.debug(f"NOTIFICATION: {message}")
         
     def execute(self) -> Dict[str, any]:
         """
@@ -73,6 +84,7 @@ class MonitorPositionsUseCase:
         except Exception as e:
             logger.error(f"Position monitoring failed: {e}")
             result['error'] = str(e)
+            self._send_notification(f"Position monitoring failed: {e}", "error")
         
         return result
     
@@ -120,10 +132,12 @@ class MonitorPositionsUseCase:
                 session.commit()
             
             logger.info(f"Expiry square-off completed. Orders: {order_ids}")
+            self._send_notification(f"Expiry square-off completed. Orders: {order_ids}", "info")
             return order_ids
             
         except Exception as e:
             logger.error(f"Expiry square-off failed: {e}")
+            self._send_notification(f"Expiry square-off failed: {e}", "error")
             raise
     
     def _update_position_status(self, positions: List[Dict]):

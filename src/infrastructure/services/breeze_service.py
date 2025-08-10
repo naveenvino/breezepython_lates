@@ -10,6 +10,7 @@ from datetime import timedelta
 # from breeze_connect import BreezeConnect  # Commented out for testing
 
 from ...config.settings import get_settings
+from .session_validator import get_session_validator
 
 logger = logging.getLogger(__name__)
 
@@ -22,10 +23,20 @@ class BreezeService:
         self._breeze = None
         self._initialized = False
     
-    def _initialize(self):
-        """Initialize Breeze connection"""
+    async def _initialize(self):
+        """Initialize Breeze connection with session validation"""
         if not self._initialized:
             try:
+                # Validate session first
+                validator = get_session_validator()
+                is_valid, error = await validator.validate_breeze_session()
+                
+                if not is_valid:
+                    instructions = validator.get_session_update_instructions("breeze")
+                    logger.error(f"Breeze session validation failed: {error}")
+                    logger.info(instructions)
+                    raise ConnectionError(f"{error}\n\n{instructions}")
+                
                 # Import here to avoid issues if breeze_connect is not installed
                 try:
                     from breeze_connect import BreezeConnect
@@ -45,7 +56,7 @@ class BreezeService:
                             session_token=session_token
                         )
                         self._initialized = True
-                        logger.info("Breeze API session generated successfully")
+                        logger.info("Breeze API session validated and initialized successfully")
                     except Exception as session_error:
                         # Log but don't fail - session might still work
                         logger.warning(f"Session generation warning: {session_error}")
@@ -86,8 +97,8 @@ class BreezeService:
         Returns:
             Dict containing historical data
         """
-        # Initialize connection
-        self._initialize()
+        # Initialize connection with session validation
+        await self._initialize()
         
         # Check if Breeze is available
         if self._breeze is None:

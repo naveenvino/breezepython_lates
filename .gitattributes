@@ -1,0 +1,37 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# These files should always have CRLF line endings on checkout (Windows)
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# These files should always have LF line endings on checkout
+*.sh text eol=lf
+*.py text eol=lf
+
+# HTML, CSS, JS files - use LF
+*.html text eol=lf
+*.css text eol=lf
+*.js text eol=lf
+
+# Markdown files
+*.md text eol=lf
+
+# SQL files
+*.sql text eol=lf
+
+# JSON files
+*.json text eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.pkl binary
+*.pyc binary
+*.pyd binary
+*.db binary
+*.sqlite binary
