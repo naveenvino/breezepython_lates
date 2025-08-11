@@ -1516,7 +1516,9 @@
             };
 
             showLoading(true);
-            animateProgress();
+            // Generate a unique task ID for this validation run
+            const taskId = `ml_validation_${Date.now()}`;
+            animateProgress(taskId);
 
             try {
                 const response = await fetch('http://localhost:8000/ml/validate', {
@@ -1771,19 +1773,51 @@
             document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
         }
 
-        function animateProgress() {
-            let progress = 0;
-            const interval = setInterval(() => {
-                progress += Math.random() * 10;
-                if (progress > 90) progress = 90;
-                document.getElementById('progressBar').style.width = progress + '%';
+        function animateProgress(taskId) {
+            // Poll real training progress from API
+            const interval = setInterval(async () => {
+                try {
+                    const response = await fetch(`http://localhost:8000/ml/training/progress/${taskId || 'current'}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        const progress = data.progress || 0;
+                        
+                        document.getElementById('progressBar').style.width = progress + '%';
+                        
+                        // Update progress text if element exists
+                        const progressText = document.querySelector('.progress-text');
+                        if (progressText) {
+                            progressText.textContent = `${progress}% - ${data.current_step || 'Processing...'}`;
+                        }
+                        
+                        // Check if completed
+                        if (progress >= 100 || data.status === 'completed') {
+                            clearInterval(interval);
+                            document.getElementById('progressBar').style.width = '100%';
+                            setTimeout(() => {
+                                showLoading(false);
+                            }, 500);
+                        } else if (data.status === 'error' || data.status === 'failed') {
+                            clearInterval(interval);
+                            showLoading(false);
+                            showNotification('Error', 'Training failed: ' + (data.message || 'Unknown error'), 'error');
+                        }
+                    } else {
+                        // If API not available, show static progress
+                        document.getElementById('progressBar').style.width = '50%';
+                    }
+                } catch (error) {
+                    console.error('Error fetching training progress:', error);
+                    // Continue with static progress if API fails
+                    document.getElementById('progressBar').style.width = '75%';
+                }
                 
+                // Stop if loading overlay is hidden
                 if (!document.getElementById('loadingOverlay').style.display || 
                     document.getElementById('loadingOverlay').style.display === 'none') {
                     clearInterval(interval);
-                    document.getElementById('progressBar').style.width = '100%';
                 }
-            }, 500);
+            }, 1000); // Check every second
         }
 
         function openCommandPalette() {

@@ -789,33 +789,35 @@
                 });
                 
                 if (response.ok) {
-                    alert('Default holidays loaded successfully!');
+                    showNotification('Default holidays loaded successfully!', 'success');
                     loadHolidays(currentYear);
                 } else {
-                    alert('Failed to load default holidays');
+                    showNotification('Failed to load default holidays', 'error');
                 }
             } catch (error) {
                 console.error('Error loading defaults:', error);
-                alert('Error loading default holidays');
+                showNotification('Error loading default holidays', 'error');
             }
         }
 
         // Sync with NSE
         async function syncWithNSE() {
             try {
+                showNotification('Syncing with NSE...', 'info');
                 const response = await fetch('http://localhost:8000/api/v1/holidays/fetch-from-nse', {
                     method: 'POST'
                 });
                 
                 if (response.ok) {
-                    alert('Synced with NSE successfully!');
+                    const data = await response.json();
+                    showNotification(`Synced with NSE successfully! ${data.holidays_count || 0} holidays loaded`, 'success');
                     loadHolidays(currentYear);
                 } else {
-                    alert('Failed to sync with NSE');
+                    showNotification('Failed to sync with NSE', 'error');
                 }
             } catch (error) {
                 console.error('Error syncing with NSE:', error);
-                alert('Error syncing with NSE');
+                showNotification('Error syncing with NSE', 'error');
             }
         }
 
@@ -828,38 +830,146 @@
                 if (response.ok) {
                     const data = await response.json();
                     if (data.is_holiday) {
-                        alert(`Today is a holiday: ${data.holiday_name || 'NSE Holiday'}`);
+                        showNotification(`Today is a holiday: ${data.holiday_name || 'NSE Holiday'}`, 'warning');
                     } else {
-                        alert('Today is a trading day!');
+                        showNotification('Today is a trading day!', 'success');
                     }
                 }
             } catch (error) {
                 console.error('Error checking today:', error);
+                showNotification('Error checking today status', 'error');
             }
         }
 
         // Get trading days
         async function getTradingDays() {
-            const fromDate = prompt('Enter from date (YYYY-MM-DD):', new Date().toISOString().split('T')[0]);
-            const toDate = prompt('Enter to date (YYYY-MM-DD):', 
-                new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+            // Create modal for date input
+            const modal = createDateRangeModal();
+            document.body.appendChild(modal);
             
-            if (fromDate && toDate) {
-                try {
-                    const response = await fetch(
-                        `http://localhost:8000/api/v1/holidays/trading-days?from_date=${fromDate}&to_date=${toDate}`
-                    );
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        alert(`Trading days between ${fromDate} and ${toDate}: ${data.trading_days_count}`);
+            // Handle form submission
+            modal.querySelector('#dateRangeForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const fromDate = modal.querySelector('#fromDateInput').value;
+                const toDate = modal.querySelector('#toDateInput').value;
+                
+                if (fromDate && toDate) {
+                    try {
+                        const response = await fetch(
+                            `http://localhost:8000/api/v1/holidays/trading-days?from_date=${fromDate}&to_date=${toDate}`
+                        );
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            showNotification(`Trading days between ${fromDate} and ${toDate}: ${data.trading_days_count}`, 'info');
+                            displayTradingDaysResult(data);
+                        } else {
+                            showNotification('Failed to get trading days', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Error getting trading days:', error);
+                        showNotification('Error getting trading days', 'error');
                     }
-                } catch (error) {
-                    console.error('Error getting trading days:', error);
+                    modal.remove();
                 }
-            }
+            });
         }
 
+        // Helper function to show notifications
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : '#3b82f6'};
+                color: white;
+                border-radius: 8px;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                z-index: 1000;
+                animation: slideIn 0.3s ease;
+            `;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
+        
+        // Create date range modal
+        function createDateRangeModal() {
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 999;
+            `;
+            
+            const defaultFromDate = new Date().toISOString().split('T')[0];
+            const defaultToDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            
+            modal.innerHTML = `
+                <div style="background: white; padding: 30px; border-radius: 12px; width: 400px;">
+                    <h3 style="margin-bottom: 20px;">Select Date Range</h3>
+                    <form id="dateRangeForm">
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px;">From Date:</label>
+                            <input type="date" id="fromDateInput" value="${defaultFromDate}" 
+                                style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required>
+                        </div>
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 5px;">To Date:</label>
+                            <input type="date" id="toDateInput" value="${defaultToDate}" 
+                                style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button type="submit" style="flex: 1; padding: 10px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">Get Trading Days</button>
+                            <button type="button" onclick="this.closest('.notification').remove()" 
+                                style="flex: 1; padding: 10px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer;">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            
+            // Close modal on cancel
+            modal.querySelector('button[type="button"]').onclick = () => modal.remove();
+            
+            return modal;
+        }
+        
+        // Display trading days result
+        function displayTradingDaysResult(data) {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'trading-days-result';
+            resultDiv.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: white;
+                padding: 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                max-width: 300px;
+                z-index: 998;
+            `;
+            resultDiv.innerHTML = `
+                <h4 style="margin-bottom: 10px;">Trading Days Analysis</h4>
+                <p><strong>Total Trading Days:</strong> ${data.trading_days_count || 0}</p>
+                <p><strong>Total Calendar Days:</strong> ${data.total_days || 0}</p>
+                <p><strong>Holidays:</strong> ${data.holidays_count || 0}</p>
+                <button onclick="this.parentElement.remove()" 
+                    style="margin-top: 10px; padding: 5px 10px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer;">Close</button>
+            `;
+            document.body.appendChild(resultDiv);
+        }
+        
         // Export calendar
         function exportCalendar() {
             const csvContent = 'Date,Holiday,Day,Type\n' + 

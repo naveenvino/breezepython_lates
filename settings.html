@@ -890,9 +890,25 @@
         }
 
         // Load settings
-        function loadSettings() {
-            // Load from localStorage or API
-            const settings = JSON.parse(localStorage.getItem('tradingSettings') || '{}');
+        async function loadSettings() {
+            let settings = {};
+            
+            // Try to load from backend API first
+            try {
+                const response = await fetch('http://localhost:8000/settings');
+                if (response.ok) {
+                    settings = await response.json();
+                    // Also save to localStorage for offline access
+                    localStorage.setItem('tradingSettings', JSON.stringify(settings));
+                } else {
+                    // Fallback to localStorage if API not available
+                    settings = JSON.parse(localStorage.getItem('tradingSettings') || '{}');
+                }
+            } catch (error) {
+                console.error('Error loading settings from backend:', error);
+                // Fallback to localStorage
+                settings = JSON.parse(localStorage.getItem('tradingSettings') || '{}');
+            }
             
             // Apply settings to form fields
             if (settings.positionSize) document.getElementById('positionSize').value = settings.positionSize;
@@ -900,11 +916,22 @@
             if (settings.initialCapital) document.getElementById('initialCapital').value = settings.initialCapital;
             if (settings.commission) document.getElementById('commission').value = settings.commission;
             if (settings.hedgeOffset) document.getElementById('hedgeOffset').value = settings.hedgeOffset;
+            if (settings.tradingStart) document.getElementById('tradingStart').value = settings.tradingStart;
+            if (settings.tradingEnd) document.getElementById('tradingEnd').value = settings.tradingEnd;
+            if (settings.slippage) document.getElementById('slippage').value = settings.slippage;
+            
+            // Load risk settings
+            if (settings.maxRiskPerTrade) document.getElementById('maxRiskPerTrade').value = settings.maxRiskPerTrade;
+            if (settings.maxDrawdown) document.getElementById('maxDrawdown').value = settings.maxDrawdown;
+            if (settings.stopLossType) document.getElementById('stopLossType').value = settings.stopLossType;
+            if (settings.stopLossValue) document.getElementById('stopLossValue').value = settings.stopLossValue;
+            if (settings.breakevenTrigger) document.getElementById('breakevenTrigger').value = settings.breakevenTrigger;
             
             // Load toggles
             if (settings.autoFetch !== undefined) document.getElementById('autoFetch').checked = settings.autoFetch;
             if (settings.wednesdayExit !== undefined) document.getElementById('wednesdayExit').checked = settings.wednesdayExit;
             if (settings.enableHedging !== undefined) document.getElementById('enableHedging').checked = settings.enableHedging;
+            if (settings.breakevenStop !== undefined) document.getElementById('breakevenStop').checked = settings.breakevenStop;
             
             // Load signals
             if (settings.signals) {
@@ -913,10 +940,27 @@
                     if (checkbox) checkbox.checked = settings.signals[signal];
                 });
             }
+            
+            // Load notifications
+            if (settings.tradeAlerts !== undefined) document.getElementById('tradeAlerts').checked = settings.tradeAlerts;
+            if (settings.stopLossAlerts !== undefined) document.getElementById('stopLossAlerts').checked = settings.stopLossAlerts;
+            if (settings.signalAlerts !== undefined) document.getElementById('signalAlerts').checked = settings.signalAlerts;
+            if (settings.dailySummary !== undefined) document.getElementById('dailySummary').checked = settings.dailySummary;
+            if (settings.notificationEmail) document.getElementById('notificationEmail').value = settings.notificationEmail;
+            if (settings.telegramChatId) document.getElementById('telegramChatId').value = settings.telegramChatId;
+            
+            // Load advanced settings
+            if (settings.apiTimeout) document.getElementById('apiTimeout').value = settings.apiTimeout;
+            if (settings.maxRetries) document.getElementById('maxRetries').value = settings.maxRetries;
+            if (settings.debugMode !== undefined) document.getElementById('debugMode').checked = settings.debugMode;
+            if (settings.paperTrading !== undefined) document.getElementById('paperTrading').checked = settings.paperTrading;
+            if (settings.logLevel) document.getElementById('logLevel').value = settings.logLevel;
+            if (settings.cacheTTL) document.getElementById('cacheTTL').value = settings.cacheTTL;
+            if (settings.signalDelay) document.getElementById('signalDelay').value = settings.signalDelay;
         }
 
         // Save all settings
-        function saveAllSettings() {
+        async function saveAllSettings() {
             const settings = {
                 // Trading settings
                 positionSize: parseInt(document.getElementById('positionSize').value),
@@ -972,11 +1016,27 @@
             // Save to localStorage
             localStorage.setItem('tradingSettings', JSON.stringify(settings));
             
-            // Show success message
-            showAlert('Settings saved successfully!', 'success');
-            
-            // In real implementation, also save to backend
-            // saveSettingsToAPI(settings);
+            // Save to backend API
+            try {
+                const response = await fetch('http://localhost:8000/settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(settings)
+                });
+                
+                if (response.ok) {
+                    showAlert('Settings saved successfully!', 'success');
+                } else {
+                    // If backend save fails, still show success for localStorage
+                    showAlert('Settings saved locally!', 'success');
+                }
+            } catch (error) {
+                console.error('Error saving settings to backend:', error);
+                // Still show success since localStorage save worked
+                showAlert('Settings saved locally!', 'success');
+            }
         }
 
         // Show alert

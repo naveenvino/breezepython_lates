@@ -543,12 +543,12 @@
                     const data = await response.json();
                     updateSignalsTable(data.signals || []);
                 } else {
-                    // If endpoint doesn't exist yet, show sample data
-                    showSampleData();
+                    // Show empty state if API not available
+                    updateSignalsTable([]);
                 }
             } catch (error) {
                 console.error('Failed to load recent signals:', error);
-                showSampleData();
+                updateSignalsTable([]);
             }
         }
 
@@ -609,48 +609,6 @@
             `).join('');
         }
 
-        // Show sample data when API not available
-        function showSampleData() {
-            const sampleSignals = [
-                {
-                    datetime: '2025-07-18T11:15:00',
-                    signal_type: 'S1',
-                    bias: 'bullish',
-                    entry_price: 25000,
-                    exit_price: 25150,
-                    pnl: 11250,
-                    status: 'CLOSED'
-                },
-                {
-                    datetime: '2025-07-17T10:30:00',
-                    signal_type: 'S3',
-                    bias: 'bearish',
-                    entry_price: 25200,
-                    exit_price: 25100,
-                    pnl: 7500,
-                    status: 'CLOSED'
-                },
-                {
-                    datetime: '2025-07-16T14:45:00',
-                    signal_type: 'S2',
-                    bias: 'bullish',
-                    entry_price: 24950,
-                    exit_price: 25050,
-                    pnl: 7500,
-                    status: 'CLOSED'
-                }
-            ];
-            
-            updateSignalsTable(sampleSignals);
-            
-            // Update stats with sample data
-            updateStatistics({
-                total_signals: 8,
-                best_performer: 'S1',
-                avg_win_rate: 65,
-                total_pnl: 26250
-            });
-        }
 
         // Refresh all data
         function refreshData() {

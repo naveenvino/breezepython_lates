@@ -832,26 +832,65 @@
         }
 
         // Load session history
-        function loadSessionHistory() {
-            const history = [
-                { time: new Date().toLocaleTimeString(), action: 'Session Check', status: 'success' },
-                { time: '10:30:00 AM', action: 'Session Updated', status: 'success' },
-                { time: '09:15:00 AM', action: 'Login Attempt', status: 'success' },
-                { time: 'Yesterday 3:30 PM', action: 'Session Expired', status: 'warning' }
-            ];
-            
-            const tbody = document.getElementById('sessionHistory');
-            tbody.innerHTML = history.map(item => `
-                <tr>
-                    <td>${item.time}</td>
-                    <td>${item.action}</td>
-                    <td>
-                        <span class="badge badge-${item.status === 'success' ? 'success' : item.status === 'warning' ? 'warning' : 'danger'}">
-                            ${item.status.toUpperCase()}
-                        </span>
-                    </td>
-                </tr>
-            `).join('');
+        async function loadSessionHistory() {
+            try {
+                const response = await fetch('http://localhost:8000/session/history?limit=10');
+                const tbody = document.getElementById('sessionHistory');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const events = data.events || [];
+                    
+                    if (events.length === 0) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="3" style="text-align: center; color: #999;">
+                                    No session events recorded yet
+                                </td>
+                            </tr>
+                        `;
+                        return;
+                    }
+                    
+                    tbody.innerHTML = events.map(item => {
+                        const time = item.timestamp ? new Date(item.timestamp).toLocaleString() : 'Unknown';
+                        const statusClass = item.status === 'success' ? 'success' : 
+                                          item.status === 'warning' ? 'warning' : 
+                                          item.status === 'error' ? 'danger' : 'info';
+                        
+                        return `
+                            <tr>
+                                <td>${time}</td>
+                                <td>${item.action || 'Unknown Action'}</td>
+                                <td>
+                                    <span class="badge badge-${statusClass}">
+                                        ${(item.status || 'unknown').toUpperCase()}
+                                    </span>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else {
+                    // If API not available, show empty state
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="3" style="text-align: center; color: #999;">
+                                Session history unavailable
+                            </td>
+                        </tr>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading session history:', error);
+                const tbody = document.getElementById('sessionHistory');
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="3" style="text-align: center; color: #999;">
+                            Failed to load session history
+                        </td>
+                    </tr>
+                `;
+            }
         }
 
         // Update Breeze form

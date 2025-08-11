@@ -937,25 +937,75 @@
         }
 
         // Load risk analysis
-        function loadRiskAnalysis() {
-            // This would calculate risk metrics from positions
-            // For now, showing sample calculations
-            
-            const portfolioRisk = 15;
-            const maxDrawdown = 25000;
-            const marginUtil = 45;
-            
-            document.getElementById('portfolioRisk').textContent = `${portfolioRisk}%`;
-            document.getElementById('portfolioRiskBar').style.width = `${portfolioRisk}%`;
-            
-            document.getElementById('maxDrawdown').textContent = `₹${maxDrawdown.toLocaleString()}`;
-            document.getElementById('drawdownBar').style.width = `${Math.min(100, maxDrawdown/100000 * 100)}%`;
-            
-            document.getElementById('marginUtil').textContent = `${marginUtil}%`;
-            document.getElementById('marginBar').style.width = `${marginUtil}%`;
-            
-            // Update bar colors based on values
-            updateRiskColors(portfolioRisk, maxDrawdown, marginUtil);
+        async function loadRiskAnalysis() {
+            try {
+                const response = await fetch('http://localhost:8000/risk/analysis');
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Update portfolio risk
+                    const portfolioRisk = data.portfolio_risk || 0;
+                    document.getElementById('portfolioRisk').textContent = `${portfolioRisk.toFixed(1)}%`;
+                    document.getElementById('portfolioRiskBar').style.width = `${Math.min(100, portfolioRisk)}%`;
+                    
+                    // Update max drawdown
+                    const maxDrawdown = data.max_drawdown || 0;
+                    document.getElementById('maxDrawdown').textContent = `₹${maxDrawdown.toLocaleString()}`;
+                    document.getElementById('drawdownBar').style.width = `${Math.min(100, Math.abs(maxDrawdown)/100000 * 100)}%`;
+                    
+                    // Update margin utilization
+                    const marginUtil = data.margin_utilization || 0;
+                    document.getElementById('marginUtil').textContent = `${marginUtil.toFixed(1)}%`;
+                    document.getElementById('marginBar').style.width = `${Math.min(100, marginUtil)}%`;
+                    
+                    // Update Greeks exposure
+                    if (data.greeks) {
+                        document.getElementById('greeksExposure').textContent = 
+                            `Delta: ${data.greeks.delta?.toFixed(2) || 0} | Theta: ${data.greeks.theta?.toFixed(2) || 0}`;
+                    }
+                    
+                    // Update position distribution
+                    if (data.position_distribution) {
+                        const tbody = document.getElementById('distributionTable');
+                        tbody.innerHTML = `
+                            <tr>
+                                <td>CALL Options</td>
+                                <td>${data.position_distribution.call_count || 0}</td>
+                                <td>₹${(data.position_distribution.call_exposure || 0).toLocaleString()}</td>
+                                <td>${data.position_distribution.call_risk || 'Low'}</td>
+                            </tr>
+                            <tr>
+                                <td>PUT Options</td>
+                                <td>${data.position_distribution.put_count || 0}</td>
+                                <td>₹${(data.position_distribution.put_exposure || 0).toLocaleString()}</td>
+                                <td>${data.position_distribution.put_risk || 'Low'}</td>
+                            </tr>
+                        `;
+                    }
+                    
+                    // Update bar colors based on values
+                    updateRiskColors(portfolioRisk, maxDrawdown, marginUtil);
+                } else {
+                    // Fallback to default values if API fails
+                    console.log('Risk analysis API not available, using defaults');
+                    const portfolioRisk = 0;
+                    const maxDrawdown = 0;
+                    const marginUtil = 0;
+                    
+                    document.getElementById('portfolioRisk').textContent = `${portfolioRisk}%`;
+                    document.getElementById('portfolioRiskBar').style.width = `${portfolioRisk}%`;
+                    
+                    document.getElementById('maxDrawdown').textContent = `₹${maxDrawdown}`;
+                    document.getElementById('drawdownBar').style.width = `0%`;
+                    
+                    document.getElementById('marginUtil').textContent = `${marginUtil}%`;
+                    document.getElementById('marginBar').style.width = `${marginUtil}%`;
+                    
+                    updateRiskColors(portfolioRisk, maxDrawdown, marginUtil);
+                }
+            } catch (error) {
+                console.error('Error loading risk analysis:', error);
+            }
         }
 
         // Update risk colors

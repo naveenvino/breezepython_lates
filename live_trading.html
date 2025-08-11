@@ -674,10 +674,10 @@
             // Start market data updates
             startMarketUpdates();
             
-            // Simulate signal detection
+            // Start real signal detection
             setTimeout(() => {
                 if (tradingActive && !tradingPaused) {
-                    simulateSignal();
+                    detectSignals();
                 }
             }, 5000);
             
@@ -781,61 +781,113 @@
 
         // Update market data
         async function updateMarketData() {
-            // Simulate market data (replace with actual API call)
-            const nifty = 25000 + Math.random() * 200 - 100;
-            const change = Math.random() * 2 - 1;
-            
-            document.getElementById('niftyPrice').textContent = nifty.toFixed(2);
-            document.getElementById('niftyChange').textContent = `${change > 0 ? '+' : ''}${change.toFixed(2)}%`;
-            document.getElementById('niftyChange').className = `market-change ${change > 0 ? 'positive' : 'negative'}`;
-            
-            document.getElementById('vixValue').textContent = (12 + Math.random() * 3).toFixed(2);
-            document.getElementById('pcrValue').textContent = (0.8 + Math.random() * 0.4).toFixed(2);
-            document.getElementById('oiValue').textContent = '2.5M';
-            
-            document.getElementById('lastUpdate').textContent = `Last update: ${new Date().toLocaleTimeString()}`;
+            try {
+                const response = await fetch('http://localhost:8000/market/live');
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Update NIFTY price
+                    document.getElementById('niftyPrice').textContent = data.nifty.price.toFixed(2);
+                    document.getElementById('niftyChange').textContent = 
+                        `${data.nifty.change_percent > 0 ? '+' : ''}${data.nifty.change_percent.toFixed(2)}%`;
+                    document.getElementById('niftyChange').className = 
+                        `market-change ${data.nifty.change_percent > 0 ? 'positive' : 'negative'}`;
+                    
+                    // Update market indicators
+                    document.getElementById('vixValue').textContent = data.vix.toFixed(2);
+                    document.getElementById('pcrValue').textContent = data.pcr.toFixed(2);
+                    document.getElementById('oiValue').textContent = data.open_interest;
+                    
+                    document.getElementById('lastUpdate').textContent = 
+                        `Last update: ${new Date(data.timestamp).toLocaleTimeString()}`;
+                    
+                    // Update market status indicator
+                    if (data.market_status === 'OPEN' && tradingActive) {
+                        document.getElementById('statusText').textContent = 'Trading Active';
+                    }
+                } else {
+                    console.log('Market data API not available');
+                }
+            } catch (error) {
+                console.error('Error fetching market data:', error);
+            }
         }
 
-        // Simulate signal detection
-        function simulateSignal() {
+        // Detect signals from real market data
+        async function detectSignals() {
             if (!tradingActive || tradingPaused) return;
             
-            const signals = ['S1', 'S2', 'S3', 'S4'];
-            const signal = signals[Math.floor(Math.random() * signals.length)];
-            
-            addLog(`Signal detected: ${signal}`, 'success');
-            
-            // Create position
-            const position = {
-                id: Date.now(),
-                time: new Date().toLocaleTimeString(),
-                signal: signal,
-                strike: Math.round(25000 / 50) * 50,
-                type: ['S1', 'S2', 'S4', 'S7'].includes(signal) ? 'PE' : 'CE',
-                entry: 150 + Math.random() * 50,
-                current: 0,
-                pnl: 0,
-                status: 'OPEN'
-            };
-            
-            position.current = position.entry + (Math.random() * 20 - 10);
-            position.pnl = (position.current - position.entry) * 750;
-            
-            positions.push(position);
-            updatePositionsTable();
-            
-            addLog(`Position opened: ${position.strike}${position.type} @ ₹${position.entry.toFixed(2)}`, 'info');
-            
-            // Update statistics
-            updateStatistics();
+            try {
+                const response = await fetch('http://localhost:8000/signals/detect');
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.signals && data.signals.length > 0) {
+                        // Process each detected signal
+                        for (const signal of data.signals) {
+                            // Check if we already have this signal
+                            const existingPosition = positions.find(p => 
+                                p.signal === signal.signal_type && 
+                                p.status === 'OPEN' &&
+                                Math.abs(p.strike - Math.round(signal.entry_price / 50) * 50) < 100
+                            );
+                            
+                            if (!existingPosition) {
+                                addLog(`Signal detected: ${signal.signal_type}`, 'success');
+                                
+                                // Create position from real signal
+                                const position = {
+                                    id: Date.now(),
+                                    time: new Date(signal.datetime).toLocaleTimeString(),
+                                    signal: signal.signal_type,
+                                    strike: Math.round(signal.entry_price / 50) * 50,
+                                    type: signal.option_type === 'PUT' ? 'PE' : 'CE',
+                                    entry: 0, // Will be fetched from options data
+                                    current: 0,
+                                    pnl: 0,
+                                    status: 'OPEN',
+                                    stop_loss: signal.stop_loss
+                                };
+                                
+                                // Fetch actual option price
+                                const optionPriceResponse = await fetch(
+                                    `http://localhost:8000/options/price?strike=${position.strike}&type=${position.type}`
+                                );
+                                
+                                if (optionPriceResponse.ok) {
+                                    const optionData = await optionPriceResponse.json();
+                                    position.entry = optionData.price || 150;
+                                    position.current = position.entry;
+                                } else {
+                                    // If option price not available, skip this signal
+                                    continue;
+                                }
+                                
+                                positions.push(position);
+                                updatePositionsTable();
+                                
+                                addLog(`Position opened: ${position.strike}${position.type} @ ₹${position.entry.toFixed(2)}`, 'info');
+                                
+                                // Update statistics
+                                updateStatistics();
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error detecting signals:', error);
+            }
             
             // Schedule next signal check
             setTimeout(() => {
                 if (tradingActive && !tradingPaused) {
-                    simulateSignal();
+                    detectSignals();
                 }
-            }, 15000 + Math.random() * 30000); // Random between 15-45 seconds
+            }, 30000); // Check every 30 seconds
         }
+        
+        // Rename simulateSignal to detectSignals for backward compatibility
+        const simulateSignal = detectSignals;
 
         // Update positions table
         function updatePositionsTable() {
