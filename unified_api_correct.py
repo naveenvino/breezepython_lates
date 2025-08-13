@@ -36,6 +36,12 @@ from src.ml.validation.market_classifier import MarketClassifier
 from src.ml.validation.breakeven_optimizer import BreakevenOptimizer
 from src.ml.validation.gemini_analyzer import GeminiAnalyzer
 
+# Import Live Trading API router
+from src.trading.live_trading_api import router as live_trading_router
+
+# Import Option Chain API router
+from src.api.routers.option_chain_router import router as option_chain_router
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -59,6 +65,8 @@ app.include_router(ml_router)
 app.include_router(ml_exit_router)
 app.include_router(ml_backtest_router)
 app.include_router(ml_optimization_router)
+app.include_router(live_trading_router)
+app.include_router(option_chain_router)
 
 job_status = {}
 

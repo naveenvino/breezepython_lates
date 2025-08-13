@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Option Chain - BreezeConnect Trading System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 24px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .symbol-selector {
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .expiry-selector {
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .refresh-btn {
+            padding: 8px 15px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Main Container */
+        .container {
+            flex: 1;
+            padding: 20px;
+            max-width: 1800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Info Cards */
+        .info-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-label {
+            color: #666;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1a1a2e;
+        }
+
+        .info-change {
+            font-size: 14px;
+            margin-top: 3px;
+        }
+
+        .positive {
+            color: #10b981;
+        }
+
+        .negative {
+            color: #ef4444;
+        }
+
+        /* Option Chain Table */
+        .option-chain-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+        }
+
+        .chain-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .chain-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+
+        .greeks-toggle {
+            display: flex;
+            gap: 10px;
+        }
+
+        .toggle-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            background: white;
+            color: #666;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .toggle-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: center;
+            padding: 10px 5px;
+            background: rgba(102, 126, 234, 0.1);
+            color: #1a1a2e;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        td {
+            text-align: center;
+            padding: 8px 5px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            font-size: 13px;
+        }
+
+        tr:hover {
+            background: rgba(102, 126, 234, 0.03);
+        }
+
+        /* Call side styling */
+        .call-side {
+            background: rgba(34, 197, 94, 0.03);
+        }
+
+        .call-header {
+            background: rgba(34, 197, 94, 0.1);
+        }
+
+        /* Put side styling */
+        .put-side {
+            background: rgba(239, 68, 68, 0.03);
+        }
+
+        .put-header {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        /* Strike styling */
+        .strike-cell {
+            font-weight: bold;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .atm-row {
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .itm-call {
+            background: rgba(34, 197, 94, 0.1);
+        }
+
+        .itm-put {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        /* OI Bars */
+        .oi-bar {
+            height: 4px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
+            margin-top: 2px;
+        }
+
+        /* Greeks styling */
+        .greeks-column {
+            display: none;
+            font-size: 11px;
+            color: #666;
+        }
+
+        .greeks-visible .greeks-column {
+            display: table-cell;
+        }
+
+        .delta-positive {
+            color: #10b981;
+        }
+
+        .delta-negative {
+            color: #ef4444;
+        }
+
+        .theta-value {
+            color: #f59e0b;
+        }
+
+        /* Loading indicator */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .spinner {
+            border: 3px solid rgba(102, 126, 234, 0.1);
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Trade button */
+        .trade-btn {
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: none;
+            background: #667eea;
+            color: white;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.3s;
+        }
+
+        .trade-btn:hover {
+            background: #764ba2;
+            transform: scale(1.05);
+        }
+
+        /* IV Skew Chart */
+        .iv-chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            max-height: 300px;
+        }
+        
+        .chart-wrapper {
+            position: relative;
+            height: 200px;
+            width: 100%;
+        }
+
+        /* Last Update */
+        .last-update {
+            color: #999;
+            font-size: 12px;
+            margin-left: auto;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>
+            <i class="fas fa-th"></i>
+            Option Chain
+        </h1>
+        <div class="header-controls">
+            <select id="symbolSelect" class="symbol-selector">
+                <option value="NIFTY">NIFTY</option>
+                <option value="BANKNIFTY">BANKNIFTY</option>
+                <option value="FINNIFTY">FINNIFTY</option>
+                <option value="MIDCAPNIFTY">MIDCAPNIFTY</option>
+                <option value="SENSEX">SENSEX</option>
+            </select>
+            <select id="expirySelect" class="expiry-selector">
+                <option value="current">Current Week</option>
+                <option value="next">Next Week</option>
+                <option value="monthly">Monthly</option>
+            </select>
+            <button class="refresh-btn" onclick="refreshOptionChain()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <button class="refresh-btn" style="background: rgba(255,255,255,0.1);" onclick="window.location.href='/'">
+                <i class="fas fa-arrow-left"></i> Dashboard
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Info Cards -->
+        <div class="info-cards">
+            <div class="info-card">
+                <div class="info-label">Spot Price</div>
+                <div class="info-value" id="spotPrice">--</div>
+                <div class="info-change" id="spotChange">--</div>
+            </div>
+            <div class="info-card">
+                <div class="info-label">ATM Strike</div>
+                <div class="info-value" id="atmStrike">--</div>
+                <div class="info-change" id="expiryDays">--</div>
+            </div>
+            <div class="info-card">
+                <div class="info-label">PCR (OI)</div>
+                <div class="info-value" id="pcrOI">--</div>
+                <div class="info-change" id="pcrTrend">--</div>
+            </div>
+            <div class="info-card">
+                <div class="info-label">Max Pain</div>
+                <div class="info-value" id="maxPain">--</div>
+                <div class="info-change" id="maxPainDiff">--</div>
+            </div>
+            <div class="info-card">
+                <div class="info-label">Total OI</div>
+                <div class="info-value" id="totalOI">--</div>
+                <div class="info-change" id="oiChange">--</div>
+            </div>
+        </div>
+
+        <!-- Option Chain Table -->
+        <div class="option-chain-container">
+            <div class="chain-header">
+                <div class="chain-title">
+                    <i class="fas fa-table"></i> Option Chain
+                </div>
+                <div class="greeks-toggle">
+                    <button class="toggle-btn active" onclick="toggleView('basic')">Basic</button>
+                    <button class="toggle-btn" onclick="toggleView('greeks')">Greeks</button>
+                    <button class="toggle-btn" onclick="toggleView('all')">All</button>
+                </div>
+                <div class="last-update" id="lastUpdate">Last update: --</div>
+            </div>
+            
+            <div id="chainTableContainer">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading option chain...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- IV Skew Chart -->
+        <div class="iv-chart-container">
+            <div class="chain-header">
+                <div class="chain-title">
+                    <i class="fas fa-chart-line"></i> Implied Volatility Skew
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="ivChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let currentView = 'basic';
+        let optionChainData = null;
+        let autoRefreshInterval = null;
+        let ivChart = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadExpiryDates();
+            loadOptionChain();
+            
+            // Auto-refresh every 30 seconds
+            autoRefreshInterval = setInterval(loadOptionChain, 30000);
+        });
+
+        // Load expiry dates
+        async function loadExpiryDates() {
+            try {
+                const response = await fetch('http://localhost:8000/option-chain/expiry-dates');
+                if (response.ok) {
+                    const data = await response.json();
+                    const select = document.getElementById('expirySelect');
+                    select.innerHTML = `
+                        <option value="${data.data.current_weekly}">Current (${formatDate(data.data.current_weekly)})</option>
+                        <option value="${data.data.next_weekly}">Next (${formatDate(data.data.next_weekly)})</option>
+                        <option value="${data.data.monthly}">Monthly (${formatDate(data.data.monthly)})</option>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading expiry dates:', error);
+            }
+        }
+
+        // Load option chain
+        async function loadOptionChain() {
+            const symbol = document.getElementById('symbolSelect').value;
+            const expiry = document.getElementById('expirySelect').value;
+            
+            try {
+                const response = await fetch(`http://localhost:8000/option-chain/greeks?symbol=${symbol}&expiry=${expiry}&strikes=20`);
+                if (response.ok) {
+                    const data = await response.json();
+                    optionChainData = data.data;
+                    updateInfoCards(data.data);
+                    renderOptionChain(data.data);
+                    updateIVChart(data.data);
+                    document.getElementById('lastUpdate').textContent = `Last update: ${new Date().toLocaleTimeString()}`;
+                }
+            } catch (error) {
+                console.error('Error loading option chain:', error);
+                document.getElementById('chainTableContainer').innerHTML = `
+                    <div class="loading">
+                        <p style="color: #ef4444;">Error loading option chain. Please check API connection.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Update info cards
+        function updateInfoCards(data) {
+            // Show data source
+            if (data.source) {
+                document.getElementById('lastUpdate').textContent = `Last update: ${new Date().toLocaleTimeString()} (${data.source})`;
+            }
+            
+            // Spot Price
+            document.getElementById('spotPrice').textContent = data.spot_price.toFixed(2);
+            
+            // ATM Strike
+            document.getElementById('atmStrike').textContent = data.atm_strike;
+            document.getElementById('expiryDays').textContent = `${data.time_to_expiry.toFixed(0)} days to expiry`;
+            
+            // PCR
+            document.getElementById('pcrOI').textContent = data.pcr.pcr_oi.toFixed(3);
+            const pcrTrend = data.pcr.pcr_oi > 1 ? 'Bullish' : 'Bearish';
+            document.getElementById('pcrTrend').textContent = pcrTrend;
+            document.getElementById('pcrTrend').className = `info-change ${data.pcr.pcr_oi > 1 ? 'positive' : 'negative'}`;
+            
+            // Max Pain
+            document.getElementById('maxPain').textContent = data.max_pain.max_pain_strike;
+            const diff = data.max_pain.difference;
+            document.getElementById('maxPainDiff').textContent = `${diff > 0 ? '+' : ''}${diff.toFixed(0)} from spot`;
+            document.getElementById('maxPainDiff').className = `info-change ${diff > 0 ? 'positive' : 'negative'}`;
+            
+            // Total OI
+            const totalOI = data.pcr.total_call_oi + data.pcr.total_put_oi;
+            document.getElementById('totalOI').textContent = formatNumber(totalOI);
+        }
+
+        // Render option chain table
+        function renderOptionChain(data) {
+            const container = document.getElementById('chainTableContainer');
+            const tableClass = currentView === 'greeks' || currentView === 'all' ? 'greeks-visible' : '';
+            
+            let html = `
+                <table class="${tableClass}">
+                    <thead>
+                        <tr>
+                            <th colspan="${currentView === 'all' ? 10 : currentView === 'greeks' ? 7 : 6}" class="call-header">CALLS</th>
+                            <th rowspan="2" class="strike-cell">STRIKE</th>
+                            <th colspan="${currentView === 'all' ? 10 : currentView === 'greeks' ? 7 : 6}" class="put-header">PUTS</th>
+                        </tr>
+                        <tr>
+                            <th>OI</th>
+                            <th>Volume</th>
+                            <th>IV</th>
+                            ${currentView !== 'basic' ? '<th class="greeks-column">Delta</th><th class="greeks-column">Gamma</th><th class="greeks-column">Theta</th><th class="greeks-column">Vega</th>' : ''}
+                            <th>Bid</th>
+                            <th>LTP</th>
+                            <th>Ask</th>
+                            
+                            <th>Bid</th>
+                            <th>LTP</th>
+                            <th>Ask</th>
+                            ${currentView !== 'basic' ? '<th class="greeks-column">Delta</th><th class="greeks-column">Gamma</th><th class="greeks-column">Theta</th><th class="greeks-column">Vega</th>' : ''}
+                            <th>IV</th>
+                            <th>Volume</th>
+                            <th>OI</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            // Find max OI for bar visualization
+            const maxCallOI = Math.max(...data.chain.map(r => r.call_oi));
+            const maxPutOI = Math.max(...data.chain.map(r => r.put_oi));
+            
+            data.chain.forEach(row => {
+                const rowClass = row.moneyness === 'ATM' ? 'atm-row' : 
+                                row.moneyness === 'ITM' && row.strike < data.spot_price ? 'itm-call' :
+                                row.moneyness === 'ITM' && row.strike > data.spot_price ? 'itm-put' : '';
+                
+                html += `
+                    <tr class="${rowClass}">
+                        <!-- Call Side -->
+                        <td>${formatNumber(row.call_oi)}</td>
+                        <td>${formatNumber(row.call_volume)}</td>
+                        <td>${(row.call_iv * 100).toFixed(2)}%</td>
+                        ${currentView !== 'basic' ? `
+                            <td class="greeks-column delta-positive">${row.call_delta || '--'}</td>
+                            <td class="greeks-column">${row.call_gamma || '--'}</td>
+                            <td class="greeks-column theta-value">${row.call_theta || '--'}</td>
+                            <td class="greeks-column">${row.call_vega || '--'}</td>
+                        ` : ''}
+                        <td>${row.call_bid.toFixed(2)}</td>
+                        <td class="call-side"><strong>${row.call_ltp.toFixed(2)}</strong></td>
+                        <td>${row.call_ask.toFixed(2)}</td>
+                        
+                        <!-- Strike -->
+                        <td class="strike-cell">${row.strike}</td>
+                        
+                        <!-- Put Side -->
+                        <td>${row.put_bid.toFixed(2)}</td>
+                        <td class="put-side"><strong>${row.put_ltp.toFixed(2)}</strong></td>
+                        <td>${row.put_ask.toFixed(2)}</td>
+                        ${currentView !== 'basic' ? `
+                            <td class="greeks-column delta-negative">${row.put_delta || '--'}</td>
+                            <td class="greeks-column">${row.put_gamma || '--'}</td>
+                            <td class="greeks-column theta-value">${row.put_theta || '--'}</td>
+                            <td class="greeks-column">${row.put_vega || '--'}</td>
+                        ` : ''}
+                        <td>${(row.put_iv * 100).toFixed(2)}%</td>
+                        <td>${formatNumber(row.put_volume)}</td>
+                        <td>${formatNumber(row.put_oi)}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        // Update IV Chart
+        function updateIVChart(data) {
+            const ctx = document.getElementById('ivChart').getContext('2d');
+            
+            const strikes = data.chain.map(r => r.strike);
+            const callIVs = data.chain.map(r => r.call_iv * 100);
+            const putIVs = data.chain.map(r => r.put_iv * 100);
+            
+            if (ivChart) {
+                ivChart.destroy();
+            }
+            
+            ivChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: strikes,
+                    datasets: [
+                        {
+                            label: 'Call IV',
+                            data: callIVs,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Put IV',
+                            data: putIVs,
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: 3,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                boxWidth: 12,
+                                padding: 10,
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        },
+                        title: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Implied Volatility (%)',
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            ticks: {
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Strike Price',
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            ticks: {
+                                font: {
+                                    size: 10
+                                },
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Toggle view
+        function toggleView(view) {
+            currentView = view;
+            
+            // Update buttons
+            document.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Re-render table
+            if (optionChainData) {
+                renderOptionChain(optionChainData);
+            }
+        }
+
+        // Refresh option chain
+        function refreshOptionChain() {
+            loadOptionChain();
+        }
+
+        // Format number
+        function formatNumber(num) {
+            if (num === 0) return '0';
+            if (num < 1000) return num.toString();
+            if (num < 1000000) return (num / 1000).toFixed(1) + 'K';
+            return (num / 1000000).toFixed(1) + 'M';
+        }
+
+        // Format date
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        // Symbol change handler
+        document.getElementById('symbolSelect').addEventListener('change', loadOptionChain);
+        document.getElementById('expirySelect').addEventListener('change', loadOptionChain);
+    </script>
+</body>
+</html>

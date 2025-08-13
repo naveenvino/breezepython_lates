@@ -663,86 +663,176 @@
             addLog(`Capital: ₹${parseInt(capital).toLocaleString()}`, 'info');
             addLog(`Active signals: ${signals.join(', ')}`, 'info');
             
-            // Update UI
-            tradingActive = true;
-            document.getElementById('tradingStatus').className = 'status-badge status-active';
-            document.getElementById('tradingStatus').textContent = 'ACTIVE';
-            document.getElementById('startBtn').disabled = true;
-            document.getElementById('pauseBtn').disabled = false;
-            document.getElementById('stopBtn').disabled = false;
-            
-            // Start market data updates
-            startMarketUpdates();
-            
-            // Start real signal detection
-            setTimeout(() => {
-                if (tradingActive && !tradingPaused) {
-                    detectSignals();
+            // Call the API to start trading
+            try {
+                const response = await fetch('http://localhost:8000/live-trading/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        mode: 'paper',  // Default to paper mode
+                        capital: parseFloat(capital),
+                        max_positions: parseInt(maxPos),
+                        lots_per_trade: parseInt(lots),
+                        stop_loss_percent: parseFloat(stopLoss),
+                        signals: signals
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addLog(`Trading started in ${data.mode} mode`, 'success');
+                    
+                    // Update UI
+                    tradingActive = true;
+                    document.getElementById('tradingStatus').className = 'status-badge status-active';
+                    document.getElementById('tradingStatus').textContent = 'ACTIVE';
+                    document.getElementById('startBtn').disabled = true;
+                    document.getElementById('pauseBtn').disabled = false;
+                    document.getElementById('stopBtn').disabled = false;
+                    
+                    // Start market data updates
+                    startMarketUpdates();
+                    
+                    // Start real signal detection
+                    setTimeout(() => {
+                        if (tradingActive && !tradingPaused) {
+                            detectSignals();
+                        }
+                    }, 5000);
+                    
+                    // Start position updates
+                    setInterval(updatePositions, 10000);  // Update positions every 10 seconds
+                } else {
+                    const error = await response.text();
+                    addLog(`Failed to start trading: ${error}`, 'error');
                 }
-            }, 5000);
-            
-            addLog('Live trading started successfully', 'success');
+            } catch (error) {
+                addLog(`Error starting trading: ${error.message}`, 'error');
+            }
         }
 
         // Pause Trading
-        function pauseTrading() {
-            tradingPaused = !tradingPaused;
-            
-            if (tradingPaused) {
-                document.getElementById('tradingStatus').className = 'status-badge status-paused';
-                document.getElementById('tradingStatus').textContent = 'PAUSED';
-                document.getElementById('pauseBtn').innerHTML = '<i class="fas fa-play"></i> RESUME';
-                addLog('Trading paused', 'warning');
-            } else {
-                document.getElementById('tradingStatus').className = 'status-badge status-active';
-                document.getElementById('tradingStatus').textContent = 'ACTIVE';
-                document.getElementById('pauseBtn').innerHTML = '<i class="fas fa-pause"></i> PAUSE';
-                addLog('Trading resumed', 'success');
+        async function pauseTrading() {
+            try {
+                const response = await fetch('http://localhost:8000/live-trading/pause', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    tradingPaused = data.paused;
+                    
+                    if (tradingPaused) {
+                        document.getElementById('tradingStatus').className = 'status-badge status-paused';
+                        document.getElementById('tradingStatus').textContent = 'PAUSED';
+                        document.getElementById('pauseBtn').innerHTML = '<i class="fas fa-play"></i> RESUME';
+                        addLog('Trading paused', 'warning');
+                    } else {
+                        document.getElementById('tradingStatus').className = 'status-badge status-active';
+                        document.getElementById('tradingStatus').textContent = 'ACTIVE';
+                        document.getElementById('pauseBtn').innerHTML = '<i class="fas fa-pause"></i> PAUSE';
+                        addLog('Trading resumed', 'success');
+                    }
+                } else {
+                    addLog('Failed to pause/resume trading', 'error');
+                }
+            } catch (error) {
+                addLog(`Error pausing trading: ${error.message}`, 'error');
             }
         }
 
         // Stop Trading
-        function stopTrading() {
+        async function stopTrading() {
             if (positions.length > 0) {
                 if (!confirm(`You have ${positions.length} open positions. Close all positions and stop trading?`)) {
                     return;
                 }
             }
             
-            tradingActive = false;
-            tradingPaused = false;
-            
-            document.getElementById('tradingStatus').className = 'status-badge status-inactive';
-            document.getElementById('tradingStatus').textContent = 'INACTIVE';
-            document.getElementById('startBtn').disabled = false;
-            document.getElementById('pauseBtn').disabled = true;
-            document.getElementById('stopBtn').disabled = true;
-            document.getElementById('pauseBtn').innerHTML = '<i class="fas fa-pause"></i> PAUSE';
-            
-            // Stop updates
-            if (updateInterval) {
-                clearInterval(updateInterval);
-                updateInterval = null;
-            }
-            
-            addLog('Trading stopped', 'warning');
-            
-            // Close all positions
-            if (positions.length > 0) {
-                positions.forEach(pos => {
-                    addLog(`Closing position: ${pos.strike}${pos.type}`, 'warning');
+            try {
+                const response = await fetch('http://localhost:8000/live-trading/stop', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        close_all: positions.length > 0
+                    })
                 });
-                positions = [];
-                updatePositionsTable();
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    tradingActive = false;
+                    tradingPaused = false;
+                    
+                    document.getElementById('tradingStatus').className = 'status-badge status-inactive';
+                    document.getElementById('tradingStatus').textContent = 'INACTIVE';
+                    document.getElementById('startBtn').disabled = false;
+                    document.getElementById('pauseBtn').disabled = true;
+                    document.getElementById('stopBtn').disabled = true;
+                    document.getElementById('pauseBtn').innerHTML = '<i class="fas fa-pause"></i> PAUSE';
+                    
+                    // Stop updates
+                    if (updateInterval) {
+                        clearInterval(updateInterval);
+                        updateInterval = null;
+                    }
+                    
+                    addLog('Trading stopped', 'warning');
+                    
+                    // Close all positions
+                    if (data.positions_closed) {
+                        positions = [];
+                        updatePositionsTable();
+                        addLog('All positions closed', 'info');
+                    }
+                } else {
+                    addLog('Failed to stop trading', 'error');
+                }
+            } catch (error) {
+                addLog(`Error stopping trading: ${error.message}`, 'error');
             }
         }
 
         // Emergency Stop
-        function emergencyStop() {
+        async function emergencyStop() {
             if (confirm('EMERGENCY STOP: This will immediately close all positions and stop trading. Continue?')) {
                 addLog('EMERGENCY STOP ACTIVATED!', 'error');
-                stopTrading();
-                alert('Emergency stop executed. All positions closed.');
+                
+                try {
+                    const response = await fetch('http://localhost:8000/live-trading/emergency-stop', {
+                        method: 'POST'
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        
+                        tradingActive = false;
+                        tradingPaused = false;
+                        positions = [];
+                        
+                        document.getElementById('tradingStatus').className = 'status-badge status-inactive';
+                        document.getElementById('tradingStatus').textContent = 'INACTIVE';
+                        document.getElementById('startBtn').disabled = false;
+                        document.getElementById('pauseBtn').disabled = true;
+                        document.getElementById('stopBtn').disabled = true;
+                        
+                        if (updateInterval) {
+                            clearInterval(updateInterval);
+                            updateInterval = null;
+                        }
+                        
+                        updatePositionsTable();
+                        alert(`Emergency stop executed. ${data.positions_closed} positions closed. Total P&L: ₹${data.total_pnl.toFixed(0)}`);
+                    } else {
+                        alert('Emergency stop failed! Please close positions manually.');
+                    }
+                } catch (error) {
+                    alert(`Emergency stop error: ${error.message}`);
+                }
             }
         }
 
@@ -782,7 +872,7 @@
         // Update market data
         async function updateMarketData() {
             try {
-                const response = await fetch('http://localhost:8000/market/live');
+                const response = await fetch('http://localhost:8000/live-trading/market/live');
                 if (response.ok) {
                     const data = await response.json();
                     
@@ -818,7 +908,7 @@
             if (!tradingActive || tradingPaused) return;
             
             try {
-                const response = await fetch('http://localhost:8000/signals/detect');
+                const response = await fetch('http://localhost:8000/live-trading/signals/detect');
                 if (response.ok) {
                     const data = await response.json();
                     
@@ -851,7 +941,7 @@
                                 
                                 // Fetch actual option price
                                 const optionPriceResponse = await fetch(
-                                    `http://localhost:8000/options/price?strike=${position.strike}&type=${position.type}`
+                                    `http://localhost:8000/live-trading/options/price?strike=${position.strike}&type=${position.type}`
                                 );
                                 
                                 if (optionPriceResponse.ok) {
@@ -889,6 +979,36 @@
         // Rename simulateSignal to detectSignals for backward compatibility
         const simulateSignal = detectSignals;
 
+        // Update positions from API
+        async function updatePositions() {
+            if (!tradingActive) return;
+            
+            try {
+                const response = await fetch('http://localhost:8000/live-trading/positions');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.positions) {
+                        positions = data.positions.map(pos => ({
+                            id: pos.id,
+                            time: new Date(pos.entry_time).toLocaleTimeString(),
+                            signal: pos.signal_type,
+                            strike: pos.strike_price,
+                            type: pos.option_type,
+                            entry: pos.entry_price,
+                            current: pos.current_price,
+                            pnl: pos.pnl,
+                            status: pos.status,
+                            stop_loss: pos.stop_loss
+                        }));
+                        updatePositionsTable();
+                        updateStatistics();
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating positions:', error);
+            }
+        }
+        
         // Update positions table
         function updatePositionsTable() {
             const tbody = document.getElementById('positionsTableBody');

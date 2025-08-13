@@ -80,7 +80,10 @@
       "Bash(start index.html)",
       "Bash(start status_test_dashboard.html)",
       "Bash(start positions.html)",
-      "Bash(schtasks:*)"
+      "Bash(schtasks:*)",
+      "Bash(start live_trading.html)",
+      "WebFetch(domain:docs.algotest.in)",
+      "Bash(start option_chain.html)"
     ],
     "deny": []
   }
