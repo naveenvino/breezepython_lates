@@ -24,6 +24,7 @@ from ...infrastructure.database.models import (
     BacktestStatus, NiftyIndexData, NiftyIndexDataHourly, TradeOutcome
 )
 from ...infrastructure.database.database_manager import get_db_manager
+from ...domain.services.progressive_sl_manager import ProgressiveSLManager, PositionData
 
 # ML Components
 from ...ml.trade_lifecycle_analyzer import TradeLifecycleAnalyzer
@@ -62,7 +63,19 @@ class MLBacktestParameters:
         ml_confidence_threshold: float = 0.7,  # Min confidence for ML decisions
         partial_exit_enabled: bool = True,
         wednesday_exit_enabled: bool = True,
-        breakeven_enabled: bool = True
+        breakeven_enabled: bool = True,
+        # Progressive P&L Stop-Loss Parameters
+        use_progressive_sl: bool = False,
+        initial_sl_per_lot: float = 6000,
+        profit_trigger_percent: float = 40,
+        day2_sl_factor: float = 0.5,
+        day3_breakeven: bool = True,
+        day4_profit_lock_percent: float = 5,
+        track_5min_pnl: bool = True,
+        # ML-Enhanced Progressive SL
+        ml_optimize_sl_rules: bool = False,
+        adaptive_sl_enabled: bool = False,
+        signal_specific_sl: bool = False
     ):
         self.from_date = from_date
         self.to_date = to_date
@@ -86,6 +99,18 @@ class MLBacktestParameters:
         self.partial_exit_enabled = partial_exit_enabled
         self.wednesday_exit_enabled = wednesday_exit_enabled
         self.breakeven_enabled = breakeven_enabled
+        # Progressive P&L Stop-Loss
+        self.use_progressive_sl = use_progressive_sl
+        self.initial_sl_per_lot = initial_sl_per_lot
+        self.profit_trigger_percent = profit_trigger_percent
+        self.day2_sl_factor = day2_sl_factor
+        self.day3_breakeven = day3_breakeven
+        self.day4_profit_lock_percent = day4_profit_lock_percent
+        self.track_5min_pnl = track_5min_pnl
+        # ML-Enhanced Progressive SL
+        self.ml_optimize_sl_rules = ml_optimize_sl_rules
+        self.adaptive_sl_enabled = adaptive_sl_enabled
+        self.signal_specific_sl = signal_specific_sl
 
 
 class RunMLBacktestUseCase:
@@ -119,6 +144,12 @@ class RunMLBacktestUseCase:
         self.trade_lifecycle_data = {}  # trade_id -> lifecycle metrics
         self.trade_max_pnl = {}  # trade_id -> max P&L reached
         self.trade_entry_times = {}  # trade_id -> entry time
+        
+        # Progressive P&L Stop-Loss tracking
+        self.progressive_sl_managers = {}  # trade_id -> ProgressiveSLManager
+        self.pnl_tracking_data = []  # 5-min P&L tracking
+        self.sl_update_logs = []  # SL update history
+        self.ml_sl_decisions = {}  # trade_id -> ML vs rule-based decision tracking
     
     async def execute(self, params: MLBacktestParameters) -> str:
         """
@@ -154,7 +185,7 @@ class RunMLBacktestUseCase:
             # Get 5-minute NIFTY data
             nifty_data = await self._get_5min_data(params.from_date, params.to_date)
             
-            if not nifty_data:
+            if nifty_data.empty:
                 raise ValueError("No NIFTY data available for the specified period")
             
             # Run ML-enhanced backtest
@@ -196,6 +227,8 @@ class RunMLBacktestUseCase:
     
     async def _get_5min_data(self, from_date: datetime, to_date: datetime) -> pd.DataFrame:
         """Get 5-minute NIFTY data"""
+        import pyodbc
+        
         query = """
         SELECT 
             Timestamp,
@@ -204,17 +237,16 @@ class RunMLBacktestUseCase:
             Low as low_price,
             [Close] as close_price,
             Volume
-        FROM NIFTYData_5Min
-        WHERE Timestamp >= :from_date
-            AND Timestamp <= :to_date
+        FROM NiftyIndexData5Minute
+        WHERE Timestamp >= ?
+            AND Timestamp <= ?
         ORDER BY Timestamp
         """
         
-        with self.db_manager.get_session() as session:
-            df = pd.read_sql(query, session.connection(), params={
-                'from_date': from_date,
-                'to_date': to_date
-            })
+        # Use direct pyodbc connection for compatibility
+        conn_str = "Driver={ODBC Driver 17 for SQL Server};Server=(localdb)\\mssqllocaldb;Database=KiteConnectApi;Trusted_Connection=yes;"
+        with pyodbc.connect(conn_str) as conn:
+            df = pd.read_sql(query, conn, params=[from_date, to_date])
         
         return df
     
@@ -234,6 +266,19 @@ class RunMLBacktestUseCase:
         # Track intraday P&L
         intraday_pnl = []  # List of (timestamp, pnl) tuples
         
+        # Convert DataFrame to list of BarData for context manager
+        bar_data_list = []
+        for _, df_row in nifty_data.iterrows():
+            bar = BarData(
+                timestamp=df_row['Timestamp'],
+                open=df_row['open_price'],
+                high=df_row['high_price'],
+                low=df_row['low_price'],
+                close=df_row['close_price'],
+                volume=df_row.get('Volume', 0)
+            )
+            bar_data_list.append(bar)
+        
         # Process each 5-minute bar
         for idx, row in nifty_data.iterrows():
             timestamp = row['Timestamp']
@@ -243,6 +288,75 @@ class RunMLBacktestUseCase:
                 continue
             if timestamp.hour >= 15 and timestamp.minute > 30:
                 continue
+            
+            # Check for signals (only if no open trades and during valid hours)
+            if not open_trades and timestamp.hour >= 10 and timestamp.hour < 14:
+                # Create BarData for signal evaluation
+                current_bar = BarData(
+                    timestamp=timestamp,
+                    open=row['open_price'],
+                    high=row['high_price'],
+                    low=row['low_price'],
+                    close=row['close_price'],
+                    volume=row.get('Volume', 0)
+                )
+                
+                # Get weekly context for signal evaluation
+                # Get previous week data for context
+                # Get the index in the bar_data_list
+                bar_idx = next((i for i, b in enumerate(bar_data_list) if b.timestamp == timestamp), None)
+                if bar_idx is None or bar_idx < 35:  # Need at least 35 bars for previous week
+                    continue
+                    
+                prev_week_data = self.context_manager.get_previous_week_data(
+                    timestamp, bar_data_list[:bar_idx]
+                )
+                
+                if not prev_week_data:
+                    logger.debug(f"No previous week data at {timestamp}, skipping signal check")
+                    continue
+                
+                # Update weekly context
+                context = self.context_manager.update_context(current_bar, prev_week_data)
+                
+                # Evaluate signals
+                signal_result = self.signal_evaluator.evaluate_all_signals(
+                    current_bar, context, timestamp
+                )
+                
+                # Log evaluation for debugging on Monday
+                if timestamp.date() == datetime(2025, 7, 14).date() and timestamp.hour == 11:
+                    logger.info(f"ML Signal check at {timestamp}: triggered={signal_result.is_triggered}, "
+                               f"type={signal_result.signal_type}, context_zones={context.zones is not None}")
+                
+                # Process detected signals
+                if signal_result.is_triggered and signal_result.signal_type in params.signals_to_test:
+                    logger.info(f"ML Backtest: Detected {signal_result.signal_type} at {timestamp}")
+                    
+                    # Create new trade
+                    trade = await self._create_trade_entry(
+                        signal_result,
+                        timestamp,
+                        row['close_price'],
+                        params,
+                        backtest_run.id
+                    )
+                    
+                    if trade:
+                        open_trades.append(trade)
+                        all_trades.append(trade)
+                        
+                        # Initialize progressive SL if enabled
+                        if params.use_progressive_sl:
+                            sl_manager = ProgressiveSLManager(
+                                initial_sl_per_lot=params.initial_sl_per_lot,
+                                lots=params.lots_to_trade,
+                                profit_trigger_percent=params.profit_trigger_percent,
+                                day2_sl_factor=params.day2_sl_factor,
+                                day3_breakeven=params.day3_breakeven,
+                                day4_profit_lock_percent=params.day4_profit_lock_percent
+                            )
+                            self.progressive_sl_managers[trade.id] = sl_manager
             
             # Check market regime if enabled
             if params.use_regime_filter and open_trades:
@@ -615,16 +729,7 @@ class RunMLBacktestUseCase:
             hedge_offset=params.hedge_offset,
             commission_per_lot=Decimal(str(params.commission_per_lot)),
             slippage_percent=Decimal(str(params.slippage_percent)),
-            status=BacktestStatus.PENDING,
-            # Store ML settings in metadata
-            metadata={
-                'ml_exits': params.use_ml_exits,
-                'trailing_stops': params.use_trailing_stops,
-                'profit_targets': params.use_profit_targets,
-                'position_adjustments': params.use_position_adjustments,
-                'regime_filter': params.use_regime_filter,
-                'granularity_minutes': params.granularity_minutes
-            }
+            status=BacktestStatus.PENDING
         )
         
         with self.db_manager.get_session() as session:
@@ -659,16 +764,116 @@ class RunMLBacktestUseCase:
                 backtest_run.winning_trades = results['winning_trades']
                 backtest_run.losing_trades = results['losing_trades']
                 
-                # Store ML metrics in metadata
-                backtest_run.metadata.update({
-                    'ml_exit_trades': results.get('ml_exit_trades', 0),
-                    'trailing_stop_trades': results.get('trailing_stop_trades', 0),
-                    'target_hit_trades': results.get('target_hit_trades', 0),
-                    'avg_profit_capture': results.get('avg_profit_capture', 0),
-                    'partial_exits_count': results.get('partial_exits_count', 0)
-                })
+                # ML-specific metrics could be stored in a separate table if needed
+                # For now, just log them
+                logger.info(f"ML Metrics - Exits: {results.get('ml_exit_trades', 0)}, "
+                           f"Trailing: {results.get('trailing_stop_trades', 0)}, "
+                           f"Targets: {results.get('target_hit_trades', 0)}")
                 
                 session.commit()
+    
+    async def _create_trade_entry(
+        self,
+        signal_result,
+        entry_time: datetime,
+        index_price: float,
+        params: MLBacktestParameters,
+        backtest_run_id: str
+    ) -> Optional[BacktestTrade]:
+        """Create a new trade entry based on signal"""
+        try:
+            # Determine trade direction
+            direction = "BULLISH" if signal_result.signal_type in ["S1", "S2", "S4", "S7"] else "BEARISH"
+            
+            # Calculate option strikes
+            atm_strike = round(index_price / 100) * 100
+            
+            if direction == "BULLISH":
+                # Sell PUT
+                main_strike = atm_strike
+                main_option_type = "PE"
+            else:
+                # Sell CALL
+                main_strike = atm_strike
+                main_option_type = "CE"
+            
+            # Calculate hedge strike if enabled
+            hedge_strike = None
+            hedge_option_type = None
+            if params.use_hedging:
+                hedge_strike = main_strike - params.hedge_offset if direction == "BULLISH" else main_strike + params.hedge_offset
+                hedge_option_type = main_option_type
+            
+            # Get option prices
+            main_price = await self.option_pricing.get_option_price(
+                main_strike, main_option_type, entry_time
+            )
+            
+            hedge_price = 0
+            if hedge_strike:
+                hedge_price = await self.option_pricing.get_option_price(
+                    hedge_strike, hedge_option_type, entry_time
+                )
+            
+            # Create trade record
+            trade = BacktestTrade(
+                backtest_run_id=backtest_run_id,
+                signal_type=signal_result.signal_type,
+                entry_time=entry_time,
+                index_price_at_entry=Decimal(str(index_price)),
+                direction=direction,
+                stop_loss_price=Decimal(str(main_strike)),  # Use strike as stop loss
+                outcome=TradeOutcome.OPEN
+            )
+            
+            # Save trade to database
+            with self.db_manager.get_session() as session:
+                session.add(trade)
+                session.commit()
+                session.refresh(trade)
+            
+            # Create position records
+            quantity = params.lots_to_trade * params.lot_size
+            
+            # Main position (SELL)
+            main_position = BacktestPosition(
+                trade_id=trade.id,
+                position_type="MAIN",
+                strike_price=main_strike,
+                option_type=main_option_type,
+                quantity=-quantity,  # Negative for sell
+                entry_price=Decimal(str(main_price))
+            )
+            
+            # Hedge position (BUY) if enabled
+            if hedge_strike:
+                hedge_position = BacktestPosition(
+                    trade_id=trade.id,
+                    position_type="HEDGE",
+                    strike_price=hedge_strike,
+                    option_type=hedge_option_type,
+                    quantity=quantity,  # Positive for buy
+                    entry_price=Decimal(str(hedge_price))
+                )
+                
+                with self.db_manager.get_session() as session:
+                    session.add(main_position)
+                    session.add(hedge_position)
+                    session.commit()
+            else:
+                with self.db_manager.get_session() as session:
+                    session.add(main_position)
+                    session.commit()
+            
+            logger.info(f"Created trade {trade.id}: {signal_result.signal_type} at {entry_time}, "
+                       f"Main: {main_strike}{main_option_type}@{main_price:.2f}, "
+                       f"Hedge: {hedge_strike}{hedge_option_type}@{hedge_price:.2f}" if hedge_strike else "")
+            
+            return trade
+            
+        except Exception as e:
+            logger.error(f"Error creating trade entry: {e}")
+            return None
     
     async def _close_trade(
         self,

@@ -1,0 +1,42 @@
+KITE AUTO-LOGIN SETUP - FINAL STEPS
+====================================
+
+Your TOTP secret is already saved: JGBTL6LWZHPCZK4NSWEDZNECWGC2SAVQ
+
+STEP 1: Add your Kite credentials to .env file
+-----------------------------------------------
+Open the .env file and add these two lines:
+
+KITE_USER_ID=your_kite_user_id_here
+KITE_PASSWORD=your_kite_password_here
+
+Replace with your actual Kite login credentials.
+
+STEP 2: Test the automated login
+---------------------------------
+Run this command:
+python kite_auto_login_full.py
+
+This will:
+- Login to Kite automatically
+- Use your TOTP secret to generate the 2FA code
+- Get the access token
+- Save it to .env file
+
+STEP 3: If successful
+---------------------
+The access token will be saved and you can use it for API calls.
+The login is 100% automated - no manual intervention needed!
+
+TROUBLESHOOTING
+---------------
+If login fails:
+1. Verify your User ID and Password are correct
+2. Check if the TOTP codes match Google Authenticator
+3. Make sure you have External TOTP enabled (not App Code)
+
+Your current TOTP test showed these codes:
+- 688711
+- 795597
+
+These should match what you see in Google Authenticator.

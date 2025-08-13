@@ -739,34 +739,38 @@
             checkKiteStatus();
         }
         
-        // Check Breeze (ICICI) status
+        // Check Breeze (ICICI) status - Use consistent endpoint
         async function checkBreezeStatus() {
             try {
-                const response = await fetch('http://localhost:8000/session/validate?api_type=breeze');
+                // Use the same endpoint as index.html for consistency
+                const response = await fetch('http://localhost:8000/auth/auto-login/status');
                 const statusEl = document.getElementById('breezeStatus');
                 const iconEl = document.getElementById('breezeStatusIcon');
                 
                 if (response.ok) {
                     const data = await response.json();
                     
-                    if (data.is_valid) {
+                    if (data.breeze && data.breeze.session_active) {
                         statusEl.textContent = 'ACTIVE';
                         statusEl.className = 'status-value status-active';
                         iconEl.style.color = '#10b981';
                         
-                        // Update balance if available
-                        if (data.balance !== undefined) {
-                            document.getElementById('breezeBalance').textContent = 
-                                `₹${parseFloat(data.balance).toLocaleString()}`;
-                        }
+                        // Update info
+                        document.getElementById('breezeInfo').innerHTML = 'Session valid';
                         
                         // Update last validated
                         document.getElementById('lastValidated').value = 
                             new Date().toLocaleString();
+                    } else if (data.breeze && data.breeze.credentials_saved) {
+                        statusEl.textContent = 'CONFIGURED';
+                        statusEl.className = 'status-value status-expired';
+                        iconEl.style.color = '#f59e0b';
+                        document.getElementById('breezeInfo').innerHTML = 'Login required';
                     } else {
-                        statusEl.textContent = 'INVALID';
+                        statusEl.textContent = 'NOT CONFIGURED';
                         statusEl.className = 'status-value status-inactive';
                         iconEl.style.color = '#ef4444';
+                        document.getElementById('breezeInfo').innerHTML = 'Setup required';
                     }
                 } else {
                     statusEl.textContent = 'ERROR';
@@ -776,6 +780,7 @@
             } catch (error) {
                 console.error('Error checking Breeze session:', error);
                 document.getElementById('breezeStatus').textContent = 'OFFLINE';
+                document.getElementById('breezeStatusIcon').style.color = '#999';
             }
         }
         
@@ -800,9 +805,43 @@
                                 `₹${parseFloat(data.balance).toLocaleString()}`;
                         }
                     } else {
-                        statusEl.textContent = 'NOT LOGGED IN';
+                        statusEl.textContent = 'CONNECTING...';
                         statusEl.className = 'status-value status-inactive';
                         iconEl.style.color = '#f59e0b';
+                        
+                        // Automatically connect to Kite
+                        console.log('Kite not connected, attempting auto-login...');
+                        const connectResponse = await fetch('http://localhost:8000/auth/kite/auto-connect', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (connectResponse.ok) {
+                            const connectResult = await connectResponse.json();
+                            if (connectResult.status === 'success') {
+                                console.log('Auto-login successful:', connectResult.message);
+                                showNotification('Kite connected successfully!', 'success');
+                                // Recheck status after successful login
+                                setTimeout(() => checkKiteStatus(), 1000);
+                            } else if (connectResult.status === 'already_connected') {
+                                console.log('Kite already connected');
+                                statusEl.textContent = 'ACTIVE';
+                                statusEl.className = 'status-value status-active';
+                                iconEl.style.color = '#10b981';
+                            } else {
+                                console.error('Auto-login failed:', connectResult.message);
+                                statusEl.textContent = 'NOT LOGGED IN';
+                                statusEl.className = 'status-value status-inactive';
+                                iconEl.style.color = '#f59e0b';
+                            }
+                        } else {
+                            console.error('Auto-connect request failed');
+                            statusEl.textContent = 'NOT LOGGED IN';
+                            statusEl.className = 'status-value status-inactive';
+                            iconEl.style.color = '#f59e0b';
+                        }
                     }
                 } else {
                     statusEl.textContent = 'DISCONNECTED';
@@ -821,7 +860,7 @@
             // This function is kept for backward compatibility but doesn't update any element
             // since currentToken element doesn't exist in the current UI
             try {
-                const response = await fetch('http://localhost:8000/session/validate');
+                const response = await fetch('http://localhost:8000/auth/auto-login/status');
                 if (response.ok) {
                     const data = await response.json();
                     console.log('Session validated');

@@ -642,7 +642,7 @@
                 <div class="risk-grid">
                     <div class="risk-card">
                         <div class="risk-title">Portfolio Risk</div>
-                        <div class="risk-value" id="portfolioRisk">0%</div>
+                        <div class="risk-value" id="portfolioRisk">Loading...</div>
                         <div class="risk-bar">
                             <div class="risk-fill risk-low" id="portfolioRiskBar" style="width: 0%"></div>
                         </div>
@@ -650,7 +650,7 @@
                     
                     <div class="risk-card">
                         <div class="risk-title">Max Drawdown</div>
-                        <div class="risk-value" id="maxDrawdown">₹0</div>
+                        <div class="risk-value" id="maxDrawdown">Loading...</div>
                         <div class="risk-bar">
                             <div class="risk-fill risk-medium" id="drawdownBar" style="width: 0%"></div>
                         </div>
@@ -658,7 +658,7 @@
                     
                     <div class="risk-card">
                         <div class="risk-title">Margin Utilization</div>
-                        <div class="risk-value" id="marginUtil">0%</div>
+                        <div class="risk-value" id="marginUtil">Loading...</div>
                         <div class="risk-bar">
                             <div class="risk-fill risk-low" id="marginBar" style="width: 0%"></div>
                         </div>
@@ -667,7 +667,7 @@
                     <div class="risk-card">
                         <div class="risk-title">Greeks Exposure</div>
                         <div class="risk-value" id="greeksExposure">
-                            Delta: 0 | Theta: 0
+                            Loading...
                         </div>
                     </div>
                 </div>
@@ -685,16 +685,9 @@
                         </thead>
                         <tbody id="distributionTable">
                             <tr>
-                                <td>CALL Options</td>
-                                <td>0</td>
-                                <td>₹0</td>
-                                <td>Low</td>
-                            </tr>
-                            <tr>
-                                <td>PUT Options</td>
-                                <td>0</td>
-                                <td>₹0</td>
-                                <td>Low</td>
+                                <td colspan="4" style="text-align: center; color: #999;">
+                                    Loading position data...
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -943,25 +936,45 @@
                 if (response.ok) {
                     const data = await response.json();
                     
+                    // Check if there's actual data or just a message
+                    if (data.message && data.total_positions === 0) {
+                        showNoRiskData();
+                        return;
+                    }
+                    
                     // Update portfolio risk
                     const portfolioRisk = data.portfolio_risk || 0;
-                    document.getElementById('portfolioRisk').textContent = `${portfolioRisk.toFixed(1)}%`;
+                    if (portfolioRisk === 0 && data.total_positions === 0) {
+                        document.getElementById('portfolioRisk').textContent = 'No Data';
+                    } else {
+                        document.getElementById('portfolioRisk').textContent = `${portfolioRisk.toFixed(1)}%`;
+                    }
                     document.getElementById('portfolioRiskBar').style.width = `${Math.min(100, portfolioRisk)}%`;
                     
                     // Update max drawdown
                     const maxDrawdown = data.max_drawdown || 0;
-                    document.getElementById('maxDrawdown').textContent = `₹${maxDrawdown.toLocaleString()}`;
+                    if (maxDrawdown === 0 && data.total_positions === 0) {
+                        document.getElementById('maxDrawdown').textContent = 'No Data';
+                    } else {
+                        document.getElementById('maxDrawdown').textContent = `₹${Math.abs(maxDrawdown).toLocaleString()}`;
+                    }
                     document.getElementById('drawdownBar').style.width = `${Math.min(100, Math.abs(maxDrawdown)/100000 * 100)}%`;
                     
                     // Update margin utilization
                     const marginUtil = data.margin_utilization || 0;
-                    document.getElementById('marginUtil').textContent = `${marginUtil.toFixed(1)}%`;
+                    if (marginUtil === 0 && data.total_positions === 0) {
+                        document.getElementById('marginUtil').textContent = 'No Data';
+                    } else {
+                        document.getElementById('marginUtil').textContent = `${marginUtil.toFixed(1)}%`;
+                    }
                     document.getElementById('marginBar').style.width = `${Math.min(100, marginUtil)}%`;
                     
                     // Update Greeks exposure
-                    if (data.greeks) {
+                    if (data.greeks && data.greeks.delta !== null) {
                         document.getElementById('greeksExposure').textContent = 
                             `Delta: ${data.greeks.delta?.toFixed(2) || 0} | Theta: ${data.greeks.theta?.toFixed(2) || 0}`;
+                    } else {
+                        document.getElementById('greeksExposure').textContent = 'No active positions';
                     }
                     
                     // Update position distribution
@@ -981,31 +994,59 @@
                                 <td>${data.position_distribution.put_risk || 'Low'}</td>
                             </tr>
                         `;
+                    } else {
+                        // Show actual state when no positions exist
+                        const tbody = document.getElementById('distributionTable');
+                        tbody.innerHTML = `
+                            <tr>
+                                <td>CALL Options</td>
+                                <td>0</td>
+                                <td>₹0</td>
+                                <td>No Risk</td>
+                            </tr>
+                            <tr>
+                                <td>PUT Options</td>
+                                <td>0</td>
+                                <td>₹0</td>
+                                <td>No Risk</td>
+                            </tr>
+                        `;
                     }
                     
                     // Update bar colors based on values
                     updateRiskColors(portfolioRisk, maxDrawdown, marginUtil);
                 } else {
-                    // Fallback to default values if API fails
-                    console.log('Risk analysis API not available, using defaults');
-                    const portfolioRisk = 0;
-                    const maxDrawdown = 0;
-                    const marginUtil = 0;
-                    
-                    document.getElementById('portfolioRisk').textContent = `${portfolioRisk}%`;
-                    document.getElementById('portfolioRiskBar').style.width = `${portfolioRisk}%`;
-                    
-                    document.getElementById('maxDrawdown').textContent = `₹${maxDrawdown}`;
-                    document.getElementById('drawdownBar').style.width = `0%`;
-                    
-                    document.getElementById('marginUtil').textContent = `${marginUtil}%`;
-                    document.getElementById('marginBar').style.width = `${marginUtil}%`;
-                    
-                    updateRiskColors(portfolioRisk, maxDrawdown, marginUtil);
+                    // Show actual state when API returns no data
+                    console.log('No risk data available - no open positions');
+                    showNoRiskData();
                 }
             } catch (error) {
                 console.error('Error loading risk analysis:', error);
+                showNoRiskData();
             }
+        }
+        
+        // Show no risk data state
+        function showNoRiskData() {
+            document.getElementById('portfolioRisk').textContent = 'No Data';
+            document.getElementById('portfolioRiskBar').style.width = '0%';
+            
+            document.getElementById('maxDrawdown').textContent = 'No Data';
+            document.getElementById('drawdownBar').style.width = '0%';
+            
+            document.getElementById('marginUtil').textContent = 'No Data';
+            document.getElementById('marginBar').style.width = '0%';
+            
+            document.getElementById('greeksExposure').textContent = 'No active positions';
+            
+            const tbody = document.getElementById('distributionTable');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="4" style="text-align: center; color: #999;">
+                        No positions to analyze
+                    </td>
+                </tr>
+            `;
         }
 
         // Update risk colors

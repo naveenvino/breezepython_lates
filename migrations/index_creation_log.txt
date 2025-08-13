@@ -1,0 +1,6 @@
+Msg 207, Level 16, State 1, Server E1791-NAVEEN\LOCALDB#9949227A, Line 35
+Invalid column name 'exit_time'.
+Msg 207, Level 16, State 1, Server E1791-NAVEEN\LOCALDB#9949227A, Line 40
+Invalid column name 'pnl'.
+Msg 207, Level 16, State 1, Server E1791-NAVEEN\LOCALDB#9949227A, Line 54
+Invalid column name 'exit_time'.

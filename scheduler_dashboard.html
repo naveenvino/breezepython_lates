@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto-Login Scheduler Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1a1a2e;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .card-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            display: inline-block;
+        }
+        .success { background: #10b981; color: white; }
+        .warning { background: #f59e0b; color: white; }
+        .danger { background: #ef4444; color: white; }
+        .info { background: #3b82f6; color: white; }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 10px;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5a67d8;
+        }
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+        .schedule-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .schedule-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: #f9fafb;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .schedule-time {
+            font-weight: 600;
+            color: #667eea;
+        }
+        .platform-badge {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .breeze { background: #10b981; color: white; }
+        .kite { background: #f59e0b; color: white; }
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .config-section {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .config-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+        }
+        .config-label {
+            color: #6b7280;
+            font-size: 14px;
+        }
+        .config-value {
+            color: #1a1a2e;
+            font-weight: 600;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🕐 Auto-Login Scheduler Dashboard</h1>
+            <p style="color: #6b7280; margin-top: 10px;">
+                Automatically login to Breeze and Kite at scheduled times
+            </p>
+        </div>
+        
+        <div class="status-grid">
+            <!-- Scheduler Status -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Scheduler Status</h3>
+                    <span id="schedulerStatus" class="status-badge warning">Loading...</span>
+                </div>
+                <div id="schedulerInfo">
+                    <p>Checking scheduler status...</p>
+                </div>
+                <div style="margin-top: 20px;">
+                    <button class="btn btn-primary" onclick="startScheduler()">Start</button>
+                    <button class="btn btn-danger" onclick="stopScheduler()">Stop</button>
+                    <button class="btn btn-secondary" onclick="refreshStatus()">Refresh</button>
+                </div>
+            </div>
+            
+            <!-- Breeze Configuration -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Breeze Schedule</h3>
+                    <span class="platform-badge breeze">ENABLED</span>
+                </div>
+                <div class="config-section">
+                    <div class="config-row">
+                        <span class="config-label">Times:</span>
+                        <span class="config-value" id="breezeTimes">Loading...</span>
+                    </div>
+                    <div class="config-row">
+                        <span class="config-label">Weekdays Only:</span>
+                        <span class="config-value" id="breezeWeekdays">Loading...</span>
+                    </div>
+                    <div class="config-row">
+                        <span class="config-label">Headless Mode:</span>
+                        <span class="config-value" id="breezeHeadless">Loading...</span>
+                    </div>
+                    <div class="config-row">
+                        <span class="config-label">Max Retries:</span>
+                        <span class="config-value" id="breezeRetries">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Kite Configuration -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Kite Schedule</h3>
+                    <span class="platform-badge kite">ENABLED</span>
+                </div>
+                <div class="config-section">
+                    <div class="config-row">
+                        <span class="config-label">Times:</span>
+                        <span class="config-value" id="kiteTimes">Loading...</span>
+                    </div>
+                    <div class="config-row">
+                        <span class="config-label">Weekdays Only:</span>
+                        <span class="config-value" id="kiteWeekdays">Loading...</span>
+                    </div>
+                    <div class="config-row">
+                        <span class="config-label">Headless Mode:</span>
+                        <span class="config-value" id="kiteHeadless">Loading...</span>
+                    </div>
+                    <div class="config-row">
+                        <span class="config-label">Max Retries:</span>
+                        <span class="config-value" id="kiteRetries">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Next Scheduled Runs -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Next Scheduled Runs</h3>
+                <span id="nextRunCount" class="status-badge info">0 scheduled</span>
+            </div>
+            <div class="schedule-list" id="scheduleList">
+                <p style="color: #6b7280;">Loading scheduled runs...</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        
+        async function loadSchedulerStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/auto-login/schedule/status`);
+                const data = await response.json();
+                
+                updateSchedulerStatus(data);
+                updateConfiguration(data.config);
+                updateNextRuns(data.next_runs);
+                
+            } catch (error) {
+                console.error('Error loading scheduler status:', error);
+                document.getElementById('schedulerStatus').textContent = 'Error';
+                document.getElementById('schedulerStatus').className = 'status-badge danger';
+            }
+        }
+        
+        function updateSchedulerStatus(data) {
+            const statusEl = document.getElementById('schedulerStatus');
+            const infoEl = document.getElementById('schedulerInfo');
+            
+            if (data.status === 'not_initialized') {
+                statusEl.textContent = 'Not Initialized';
+                statusEl.className = 'status-badge warning';
+                infoEl.innerHTML = '<p>Scheduler is not initialized. Click Start to begin.</p>';
+            } else if (data.is_running) {
+                statusEl.textContent = 'Running';
+                statusEl.className = 'status-badge success pulse';
+                infoEl.innerHTML = `
+                    <p style="color: #10b981; font-weight: 600;">✓ Scheduler is active</p>
+                    <p style="color: #6b7280; font-size: 14px; margin-top: 5px;">
+                        Auto-login will run at scheduled times
+                    </p>
+                `;
+            } else {
+                statusEl.textContent = 'Stopped';
+                statusEl.className = 'status-badge danger';
+                infoEl.innerHTML = '<p>Scheduler is stopped. Click Start to resume.</p>';
+            }
+        }
+        
+        function updateConfiguration(config) {
+            if (!config) return;
+            
+            // Breeze configuration
+            if (config.breeze) {
+                document.getElementById('breezeTimes').textContent = 
+                    config.breeze.times ? config.breeze.times.join(', ') : 'Not set';
+                document.getElementById('breezeWeekdays').textContent = 
+                    config.breeze.weekdays_only ? 'Yes' : 'No';
+                document.getElementById('breezeHeadless').textContent = 
+                    config.breeze.headless ? 'Yes' : 'No';
+                document.getElementById('breezeRetries').textContent = 
+                    config.breeze.max_retries || '3';
+            }
+            
+            // Kite configuration
+            if (config.kite) {
+                document.getElementById('kiteTimes').textContent = 
+                    config.kite.times ? config.kite.times.join(', ') : 'Not set';
+                document.getElementById('kiteWeekdays').textContent = 
+                    config.kite.weekdays_only ? 'Yes' : 'No';
+                document.getElementById('kiteHeadless').textContent = 
+                    config.kite.headless ? 'Yes' : 'No';
+                document.getElementById('kiteRetries').textContent = 
+                    config.kite.max_retries || '3';
+            }
+        }
+        
+        function updateNextRuns(nextRuns) {
+            const listEl = document.getElementById('scheduleList');
+            const countEl = document.getElementById('nextRunCount');
+            
+            if (!nextRuns || nextRuns.length === 0) {
+                listEl.innerHTML = '<p style="color: #6b7280;">No scheduled runs</p>';
+                countEl.textContent = '0 scheduled';
+                return;
+            }
+            
+            countEl.textContent = `${nextRuns.length} scheduled`;
+            
+            // Sort by next run time
+            nextRuns.sort((a, b) => new Date(a.next_run) - new Date(b.next_run));
+            
+            // Display next runs
+            let html = '';
+            nextRuns.slice(0, 10).forEach(run => {
+                const platform = run.job.includes('breeze') ? 'breeze' : 'kite';
+                const nextRun = new Date(run.next_run);
+                const isToday = nextRun.toDateString() === new Date().toDateString();
+                const timeStr = nextRun.toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                const dateStr = isToday ? 'Today' : nextRun.toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric' 
+                });
+                
+                html += `
+                    <div class="schedule-item">
+                        <div>
+                            <span class="platform-badge ${platform}">${platform.toUpperCase()}</span>
+                            <span style="margin-left: 10px; color: #6b7280;">${dateStr}</span>
+                        </div>
+                        <span class="schedule-time">${timeStr}</span>
+                    </div>
+                `;
+            });
+            
+            listEl.innerHTML = html;
+        }
+        
+        async function startScheduler() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/auto-login/schedule/start`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.status === 'started' || data.status === 'already_running') {
+                    alert('Scheduler started successfully!');
+                    loadSchedulerStatus();
+                } else {
+                    alert('Failed to start scheduler: ' + (data.message || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Error starting scheduler: ' + error.message);
+            }
+        }
+        
+        async function stopScheduler() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/auto-login/schedule/stop`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.status === 'stopped' || data.status === 'not_running') {
+                    alert('Scheduler stopped successfully!');
+                    loadSchedulerStatus();
+                } else {
+                    alert('Failed to stop scheduler: ' + (data.message || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Error stopping scheduler: ' + error.message);
+            }
+        }
+        
+        function refreshStatus() {
+            loadSchedulerStatus();
+        }
+        
+        // Load status on page load
+        window.onload = () => {
+            loadSchedulerStatus();
+            // Auto-refresh every 30 seconds
+            setInterval(loadSchedulerStatus, 30000);
+        };
+    </script>
+</body>
+</html>

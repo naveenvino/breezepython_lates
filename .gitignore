@@ -30,6 +30,13 @@ output/
 .DS_Store
 Thumbs.db
 
+# Auto-login artifacts
+*.png
+logs/screenshots/*.png
+kite_auth_token.json
+time_offset.txt
+breeze_login_status.json
+
 # Jupyter Notebook
 .ipynb_checkpoints
 

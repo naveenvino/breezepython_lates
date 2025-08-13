@@ -67,7 +67,20 @@
       "Bash(npm uninstall:*)",
       "Bash(start_api_and_test.bat)",
       "Bash(start ml_validation_form.html)",
-      "Bash(start test_dashboard_fix.html)"
+      "Bash(start test_dashboard_fix.html)",
+      "Bash(start auto_login_dashboard.html)",
+      "Bash(start simple_login_test.html)",
+      "Bash(download_chromedriver.bat)",
+      "WebFetch(domain:support.zerodha.com)",
+      "WebFetch(domain:tradewithpython.com)",
+      "Bash(echo:*)",
+      "Bash(start test_kite_dashboard.html)",
+      "Bash(start scheduler_dashboard.html)",
+      "Bash(pip show:*)",
+      "Bash(start index.html)",
+      "Bash(start status_test_dashboard.html)",
+      "Bash(start positions.html)",
+      "Bash(schtasks:*)"
     ],
     "deny": []
   }

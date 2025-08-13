@@ -1010,8 +1010,8 @@
                             <div class="signal-name">S1 - Bear Trap</div>
                             <div class="signal-description">Bullish reversal pattern</div>
                             <div class="signal-stats">
-                                <span class="signal-stat">Win: 68%</span>
-                                <span class="signal-stat">Avg: +2.3%</span>
+                                <span class="signal-stat" data-signal="S1-win">Win: --</span>
+                                <span class="signal-stat" data-signal="S1-avg">Avg: --</span>
                             </div>
                         </div>
                     </div>
@@ -1020,8 +1020,8 @@
                             <div class="signal-name">S2 - Support Hold</div>
                             <div class="signal-description">Support level confirmation</div>
                             <div class="signal-stats">
-                                <span class="signal-stat">Win: 72%</span>
-                                <span class="signal-stat">Avg: +1.8%</span>
+                                <span class="signal-stat" data-signal="S2-win">Win: --</span>
+                                <span class="signal-stat" data-signal="S2-avg">Avg: --</span>
                             </div>
                         </div>
                     </div>
@@ -1030,8 +1030,8 @@
                             <div class="signal-name">S3 - Resistance Hold</div>
                             <div class="signal-description">Resistance rejection pattern</div>
                             <div class="signal-stats">
-                                <span class="signal-stat">Win: 65%</span>
-                                <span class="signal-stat">Avg: +2.1%</span>
+                                <span class="signal-stat" data-signal="S3-win">Win: --</span>
+                                <span class="signal-stat" data-signal="S3-avg">Avg: --</span>
                             </div>
                         </div>
                     </div>
@@ -1040,8 +1040,8 @@
                             <div class="signal-name">S4 - Bias Failure Bull</div>
                             <div class="signal-description">Failed bearish breakout</div>
                             <div class="signal-stats">
-                                <span class="signal-stat">Win: 70%</span>
-                                <span class="signal-stat">Avg: +2.5%</span>
+                                <span class="signal-stat" data-signal="S4-win">Win: --</span>
+                                <span class="signal-stat" data-signal="S4-avg">Avg: --</span>
                             </div>
                         </div>
                     </div>
@@ -1050,8 +1050,8 @@
                             <div class="signal-name">S5 - Bias Failure Bear</div>
                             <div class="signal-description">Failed bullish breakout</div>
                             <div class="signal-stats">
-                                <span class="signal-stat">Win: 66%</span>
-                                <span class="signal-stat">Avg: +2.2%</span>
+                                <span class="signal-stat" data-signal="S5-win">Win: --</span>
+                                <span class="signal-stat" data-signal="S5-avg">Avg: --</span>
                             </div>
                         </div>
                     </div>
@@ -1060,8 +1060,8 @@
                             <div class="signal-name">S6 - Weakness Confirmed</div>
                             <div class="signal-description">Bearish continuation</div>
                             <div class="signal-stats">
-                                <span class="signal-stat">Win: 63%</span>
-                                <span class="signal-stat">Avg: +1.9%</span>
+                                <span class="signal-stat" data-signal="S6-win">Win: --</span>
+                                <span class="signal-stat" data-signal="S6-avg">Avg: --</span>
                             </div>
                         </div>
                     </div>
@@ -1070,8 +1070,8 @@
                             <div class="signal-name">S7 - Breakout Confirmed</div>
                             <div class="signal-description">Bullish breakout pattern</div>
                             <div class="signal-stats">
-                                <span class="signal-stat">Win: 71%</span>
-                                <span class="signal-stat">Avg: +2.7%</span>
+                                <span class="signal-stat" data-signal="S7-win">Win: --</span>
+                                <span class="signal-stat" data-signal="S7-avg">Avg: --</span>
                             </div>
                         </div>
                     </div>
@@ -1080,8 +1080,8 @@
                             <div class="signal-name">S8 - Breakdown Confirmed</div>
                             <div class="signal-description">Bearish breakdown pattern</div>
                             <div class="signal-stats">
-                                <span class="signal-stat">Win: 64%</span>
-                                <span class="signal-stat">Avg: +2.0%</span>
+                                <span class="signal-stat" data-signal="S8-win">Win: --</span>
+                                <span class="signal-stat" data-signal="S8-avg">Avg: --</span>
                             </div>
                         </div>
                     </div>
@@ -1258,33 +1258,33 @@
                 <div class="metric-card">
                     <div class="metric-label">Total P&L</div>
                     <div class="metric-value" id="totalPnL">₹0</div>
-                    <div class="metric-change positive">
+                    <div class="metric-change" id="pnlChange" style="display: none;">
                         <i class="fas fa-arrow-up"></i>
-                        <span>+12.5%</span>
+                        <span>--</span>
                     </div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-label">Win Rate</div>
                     <div class="metric-value" id="winRate">0%</div>
-                    <div class="metric-change positive">
+                    <div class="metric-change" id="winRateChange" style="display: none;">
                         <i class="fas fa-arrow-up"></i>
-                        <span>+5.2%</span>
+                        <span>--</span>
                     </div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-label">Sharpe Ratio</div>
                     <div class="metric-value" id="sharpeRatio">0.00</div>
-                    <div class="metric-change positive">
+                    <div class="metric-change" id="sharpeChange" style="display: none;">
                         <i class="fas fa-arrow-up"></i>
-                        <span>+0.15</span>
+                        <span>--</span>
                     </div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-label">Max Drawdown</div>
                     <div class="metric-value" id="maxDrawdown">0%</div>
-                    <div class="metric-change negative">
+                    <div class="metric-change" id="drawdownChange" style="display: none;">
                         <i class="fas fa-arrow-down"></i>
-                        <span>-2.3%</span>
+                        <span>--</span>
                     </div>
                 </div>
             </div>

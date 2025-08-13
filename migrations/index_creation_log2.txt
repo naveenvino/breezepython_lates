@@ -1,0 +1,2 @@
+Msg 1911, Level 16, State 1, Server E1791-NAVEEN\LOCALDB#9949227A, Line 10
+Column name 'strike_price' does not exist in the target table or view.

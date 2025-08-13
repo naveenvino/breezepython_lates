@@ -302,6 +302,19 @@ class MarketRegimeClassifier:
         indicators['distance_from_high'] = (df['High'].max() - df['Close'][-1]) / df['Close'][-1] * 100
         indicators['distance_from_low'] = (df['Close'][-1] - df['Low'].min()) / df['Close'][-1] * 100
         
+        # Clean NaN values - replace with 0 or sensible defaults
+        for key, value in indicators.items():
+            if isinstance(value, (float, np.float64, np.float32)) and np.isnan(value):
+                # Use sensible defaults based on indicator type
+                if 'rsi' in key:
+                    indicators[key] = 50  # Neutral RSI
+                elif 'ratio' in key:
+                    indicators[key] = 1.0  # Neutral ratio
+                elif 'change' in key or 'return' in key:
+                    indicators[key] = 0.0  # No change
+                else:
+                    indicators[key] = 0.0  # Default to 0
+        
         return indicators
     
     def _classify_by_trend(self, indicators: Dict) -> MarketRegime:
@@ -641,6 +654,13 @@ class MarketRegimeClassifier:
             ])
         
         X = np.array(features)
+        
+        # Handle NaN values - replace with median
+        if np.isnan(X).any():
+            logger.warning("NaN values found in features, replacing with median")
+            from sklearn.impute import SimpleImputer
+            imputer = SimpleImputer(strategy='median')
+            X = imputer.fit_transform(X)
         
         # Scale features
         X_scaled = self.scaler.fit_transform(X)

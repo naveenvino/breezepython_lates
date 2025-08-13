@@ -18,6 +18,7 @@ from src.infrastructure.services.data_collection_service import DataCollectionSe
 from src.infrastructure.services.option_pricing_service import OptionPricingService
 from src.infrastructure.services.holiday_service import HolidayService
 from src.application.use_cases.run_backtest import RunBacktestUseCase, BacktestParameters
+from src.application.use_cases.run_backtest_progressive_sl import RunProgressiveSLBacktest, ProgressiveSLBacktestParameters
 from src.application.use_cases.collect_weekly_data_use_case import CollectWeeklyDataUseCase
 from src.infrastructure.database.models import BacktestRun, BacktestTrade, BacktestPosition
 from sqlalchemy import text
@@ -77,6 +78,32 @@ class BacktestRequest(BaseModel):
     auto_fetch_missing_data: bool = True  # Auto-fetch missing options
     fetch_batch_size: int = 100  # Strikes per API call
 
+class ProgressiveSLBacktestRequest(BaseModel):
+    """Request model for progressive P&L stop-loss backtest"""
+    from_date: date = date(2025, 7, 14)
+    to_date: date = date(2025, 7, 14)
+    initial_capital: float = 500000
+    lot_size: int = 75
+    lots_to_trade: int = 10
+    signals_to_test: List[str] = ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8"]
+    use_hedging: bool = True
+    hedge_offset: int = 200
+    commission_per_lot: float = 40
+    slippage_percent: float = 0.001
+    wednesday_exit_enabled: bool = True
+    wednesday_exit_time: str = "15:15"
+    auto_fetch_missing_data: bool = True
+    fetch_batch_size: int = 100
+    
+    # Progressive P&L Stop-Loss parameters
+    use_pnl_stop_loss: bool = True
+    initial_sl_per_lot: float = 6000  # Rs 6000 per lot
+    profit_trigger_percent: float = 40  # Move to BE if profit > 40%
+    day2_sl_factor: float = 0.5  # Move to 50% on day 2
+    day3_breakeven: bool = True  # Move to breakeven on day 3
+    day4_profit_lock_percent: float = 5  # Lock 5% profit on day 4
+    track_5min_pnl: bool = True  # Track P&L at 5-min intervals
+
 class NiftyCollectionRequest(BaseModel):
     from_date: date
     to_date: date
@@ -127,8 +154,32 @@ async def _delete_existing_backtest_data(from_date: date, to_date: date):
     try:
         async_db = get_async_db_manager()
         async with async_db.get_session() as session:
-            # Delete positions first
-            session.execute(
+            # Delete P&L tracking data first
+            await session.execute(
+                text("""
+                    DELETE FROM BacktestPnLTracking 
+                    WHERE TradeId IN (
+                        SELECT Id FROM BacktestTrades 
+                        WHERE EntryTime >= :from_date AND EntryTime <= DATEADD(day, 1, :to_date)
+                    )
+                """),
+                {"from_date": from_date, "to_date": to_date}
+            )
+            
+            # Delete SL update logs
+            await session.execute(
+                text("""
+                    DELETE FROM BacktestSLUpdates 
+                    WHERE TradeId IN (
+                        SELECT Id FROM BacktestTrades 
+                        WHERE EntryTime >= :from_date AND EntryTime <= DATEADD(day, 1, :to_date)
+                    )
+                """),
+                {"from_date": from_date, "to_date": to_date}
+            )
+            
+            # Delete positions
+            await session.execute(
                 text("""
                     DELETE FROM BacktestPositions 
                     WHERE TradeId IN (
@@ -140,7 +191,7 @@ async def _delete_existing_backtest_data(from_date: date, to_date: date):
             )
             
             # Then delete trades
-            session.execute(
+            await session.execute(
                 text("""
                     DELETE FROM BacktestTrades 
                     WHERE EntryTime >= :from_date AND EntryTime <= DATEADD(day, 1, :to_date)
@@ -148,7 +199,7 @@ async def _delete_existing_backtest_data(from_date: date, to_date: date):
                 {"from_date": from_date, "to_date": to_date}
             )
             
-            session.commit()
+            await session.commit()
         
         logger.info(f"Deleted existing backtest data for period {from_date} to {to_date}")
     except Exception as e:
@@ -378,12 +429,12 @@ def _format_backtest_results(backtest_id: str):
                     "signal_type": trade.signal_type,
                     "entry_time": trade.entry_time,
                     "exit_time": trade.exit_time,
-                    "stop_loss": float(trade.stop_loss_price),
+                    "stop_loss": float(trade.stop_loss_price) if trade.stop_loss_price else 0,
                     "direction": direction_text,
                     "bias": bias_text,
                     "entry_spot_price": float(trade.index_price_at_entry) if trade.index_price_at_entry else None,
                     "exit_spot_price": float(trade.index_price_at_exit) if trade.index_price_at_exit else None,
-                    "outcome": trade.outcome.value,
+                    "outcome": trade.outcome.value if trade.outcome else "UNKNOWN",
                     "total_pnl": float(trade.total_pnl) if trade.total_pnl else 0,
                     "wednesday_exit_comparison": wednesday_comparison,
                     "positions": position_data
@@ -398,10 +449,10 @@ def _format_backtest_results(backtest_id: str):
                 "status": "success",
                 "backtest_id": backtest_id,
                 "summary": {
-                    "total_trades": run.total_trades,
-                    "final_capital": float(run.final_capital),
+                    "total_trades": run.total_trades if run.total_trades else 0,
+                    "final_capital": float(run.final_capital) if run.final_capital else float(run.initial_capital),
                     "total_pnl": float(run.total_pnl) if run.total_pnl else 0,
-                    "win_rate": (run.winning_trades / run.total_trades * 100) if run.total_trades > 0 else 0,
+                    "win_rate": (run.winning_trades / run.total_trades * 100) if run.total_trades and run.total_trades > 0 else 0,
                     "lot_size": run.lot_size,
                     "hedge_offset": run.hedge_offset
                 },
@@ -424,7 +475,9 @@ def _format_backtest_results(backtest_id: str):
                 "trades": trade_results
             }
     except Exception as e:
+        import traceback
         logger.error(f"Error formatting backtest results: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
         raise BacktestFormattingError(f"Failed to format backtest results: {str(e)}")
 
 @app.post("/backtest", tags=["Backtest"])
@@ -548,6 +601,166 @@ async def get_backtest_details(backtest_id: str):
         return _format_backtest_results(backtest_id)
     except Exception as e:
         logger.error(f"Error fetching backtest details: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/backtest/progressive-sl", tags=["Backtest"])
+async def run_progressive_sl_backtest(request: ProgressiveSLBacktestRequest):
+    """
+    Run backtest with progressive P&L-based stop-loss.
+    
+    This enhanced backtest includes:
+    - Initial P&L stop-loss: Rs 6000 per lot
+    - Progressive adjustments based on time and profit
+    - Both index-based and P&L-based stop-losses
+    - 5-minute P&L tracking using options data
+    
+    Stop-Loss Progression:
+    1. If profit > 40% of max receivable → Move to breakeven
+    2. Day 2 at 1 PM → Move SL to 50% of initial (Rs 3000/lot)
+    3. Day 3 → Move SL to breakeven
+    4. Day 4 → Lock minimum 5% profit
+    """
+    try:
+        logger.info(f"Starting Progressive SL Backtest from {request.from_date} to {request.to_date}")
+        
+        # Delete existing data for the period
+        await _delete_existing_backtest_data(request.from_date, request.to_date)
+        
+        # Create backtest parameters
+        params = ProgressiveSLBacktestParameters(
+            from_date=datetime.combine(request.from_date, datetime.min.time().replace(hour=9, minute=15)),
+            to_date=datetime.combine(request.to_date, datetime.min.time().replace(hour=15, minute=30)),
+            initial_capital=request.initial_capital,
+            lot_size=request.lot_size,
+            lots_to_trade=request.lots_to_trade,
+            signals_to_test=request.signals_to_test,
+            use_hedging=request.use_hedging,
+            hedge_offset=request.hedge_offset,
+            commission_per_lot=request.commission_per_lot,
+            slippage_percent=request.slippage_percent,
+            wednesday_exit_enabled=request.wednesday_exit_enabled,
+            wednesday_exit_time=request.wednesday_exit_time,
+            auto_fetch_missing_data=request.auto_fetch_missing_data,
+            fetch_batch_size=request.fetch_batch_size,
+            # Progressive SL parameters
+            use_pnl_stop_loss=request.use_pnl_stop_loss,
+            initial_sl_per_lot=request.initial_sl_per_lot,
+            profit_trigger_percent=request.profit_trigger_percent,
+            day2_sl_factor=request.day2_sl_factor,
+            day3_breakeven=request.day3_breakeven,
+            day4_profit_lock_percent=request.day4_profit_lock_percent,
+            track_5min_pnl=request.track_5min_pnl
+        )
+        
+        # Initialize services
+        breeze_service = BreezeService()
+        data_collection_service = DataCollectionService(breeze_service)
+        option_pricing_service = OptionPricingService(data_collection_service)
+        
+        # Run progressive SL backtest
+        backtest_use_case = RunProgressiveSLBacktest(
+            data_collection_service,
+            option_pricing_service
+        )
+        
+        backtest_id = await backtest_use_case.execute(params)
+        
+        return {
+            "success": True,
+            "backtest_id": backtest_id,
+            "message": "Progressive SL backtest initiated successfully",
+            "configuration": {
+                "initial_sl_per_lot": request.initial_sl_per_lot,
+                "profit_trigger": f"{request.profit_trigger_percent}%",
+                "day2_factor": f"{request.day2_sl_factor*100}%",
+                "day4_profit_lock": f"{request.day4_profit_lock_percent}%"
+            },
+            "results": _format_backtest_results(backtest_id)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in progressive SL backtest: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/backtest/progressive-sl/{backtest_id}/summary", tags=["Backtest"])
+async def get_progressive_sl_summary(backtest_id: str):
+    """
+    Get detailed P&L progression summary for a progressive SL backtest.
+    Shows how stop-losses evolved and their impact on trades.
+    """
+    try:
+        db = get_db_manager()
+        with db.get_session() as session:
+            # Get SL progression data
+            sl_updates = session.execute(
+                text("""
+                    SELECT 
+                        DayNumber,
+                        NewStage,
+                        COUNT(*) as UpdateCount,
+                        AVG(CurrentPnL) as AvgPnL,
+                        AVG(NewPnLSL) as AvgSLLevel
+                    FROM BacktestSLUpdates
+                    WHERE BacktestRunId = :backtest_id
+                    GROUP BY DayNumber, NewStage
+                    ORDER BY DayNumber
+                """),
+                {"backtest_id": backtest_id}
+            ).fetchall()
+            
+            # Get P&L tracking summary
+            pnl_summary = session.execute(
+                text("""
+                    SELECT 
+                        DaysSinceEntry,
+                        SLStage,
+                        COUNT(DISTINCT TradeId) as TradesActive,
+                        AVG(NetPnL) as AvgPnL,
+                        MIN(NetPnL) as MinPnL,
+                        MAX(NetPnL) as MaxPnL
+                    FROM BacktestPnLTracking
+                    WHERE BacktestRunId = :backtest_id
+                    GROUP BY DaysSinceEntry, SLStage
+                    ORDER BY DaysSinceEntry
+                """),
+                {"backtest_id": backtest_id}
+            ).fetchall()
+            
+            # Format response
+            sl_progression = []
+            for row in sl_updates:
+                sl_progression.append({
+                    "day": row[0],
+                    "stage": row[1],
+                    "updates": row[2],
+                    "avg_pnl": float(row[3]) if row[3] else 0,
+                    "avg_sl_level": float(row[4]) if row[4] else 0
+                })
+            
+            pnl_progression = []
+            for row in pnl_summary:
+                pnl_progression.append({
+                    "day": row[0],
+                    "stage": row[1],
+                    "active_trades": row[2],
+                    "avg_pnl": float(row[3]) if row[3] else 0,
+                    "min_pnl": float(row[4]) if row[4] else 0,
+                    "max_pnl": float(row[5]) if row[5] else 0
+                })
+            
+            return {
+                "backtest_id": backtest_id,
+                "sl_progression": sl_progression,
+                "pnl_progression": pnl_progression,
+                "summary": {
+                    "total_sl_updates": len(sl_updates),
+                    "unique_stages": list(set(row[1] for row in sl_updates)),
+                    "tracking_points": len(pnl_summary)
+                }
+            }
+            
+    except Exception as e:
+        logger.error(f"Error fetching progressive SL summary: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/signals/statistics", tags=["Signals"])
@@ -2205,22 +2418,18 @@ async def get_risk_analysis():
                 }
                 
             except Exception as e:
-                logger.warning(f"Risk calculation from DB failed: {e}, using calculated values")
-                # Return calculated/default values if queries fail
+                logger.warning(f"Risk calculation from DB failed: {e}, returning empty data")
+                # Return empty/zero values when no real data exists
                 return {
-                    "portfolio_risk": 25.5,
-                    "max_drawdown": 15000,
-                    "margin_utilization": 35.2,
-                    "total_positions": 3,
-                    "hedged_positions": 1,
-                    "win_rate": 65.5,
-                    "greeks": {
-                        "delta": 150,
-                        "theta": -30,
-                        "gamma": 5,
-                        "vega": 20
-                    },
-                    "risk_level": "Low"
+                    "portfolio_risk": 0,
+                    "max_drawdown": 0,
+                    "margin_utilization": 0,
+                    "total_positions": 0,
+                    "hedged_positions": 0,
+                    "win_rate": 0,
+                    "greeks": None,  # No Greeks data available
+                    "risk_level": "None",
+                    "message": "No active positions or historical data available"
                 }
                 
     except Exception as e:
@@ -3316,6 +3525,658 @@ async def apply_all_optimizations(
         },
         "message": "All optimizations applied successfully"
     }
+
+# ML Progressive Stop-Loss Endpoints
+@app.post("/ml/backtest/progressive-sl", tags=["ML Backtest"])
+async def run_ml_backtest_progressive_sl(request: ProgressiveSLBacktestRequest):
+    """
+    Run ML-enhanced backtest with progressive P&L stop-loss.
+    
+    Combines ML predictions with rule-based progressive SL for robust risk management.
+    Features:
+    - ML exit predictions with progressive SL safety net
+    - Hybrid decision logic
+    - Signal-specific parameter optimization
+    - Performance attribution tracking
+    """
+    try:
+        logger.info(f"Starting ML Progressive SL Backtest from {request.from_date} to {request.to_date}")
+        
+        # Delete existing data
+        await _delete_existing_backtest_data(request.from_date, request.to_date)
+        
+        # Create ML backtest parameters with progressive SL
+        from src.application.use_cases.run_backtest_ml import MLBacktestParameters, RunMLBacktestUseCase
+        
+        ml_params = MLBacktestParameters(
+            from_date=datetime.combine(request.from_date, datetime.min.time().replace(hour=9, minute=15)),
+            to_date=datetime.combine(request.to_date, datetime.min.time().replace(hour=15, minute=30)),
+            initial_capital=request.initial_capital,
+            lot_size=request.lot_size,
+            lots_to_trade=request.lots_to_trade,
+            signals_to_test=request.signals_to_test,
+            use_hedging=request.use_hedging,
+            hedge_offset=request.hedge_offset,
+            commission_per_lot=request.commission_per_lot,
+            slippage_percent=request.slippage_percent,
+            # ML features
+            use_ml_exits=True,
+            use_trailing_stops=True,
+            use_profit_targets=True,
+            # Progressive SL features
+            use_progressive_sl=True,
+            initial_sl_per_lot=request.initial_sl_per_lot,
+            profit_trigger_percent=request.profit_trigger_percent,
+            day2_sl_factor=request.day2_sl_factor,
+            day3_breakeven=request.day3_breakeven,
+            day4_profit_lock_percent=request.day4_profit_lock_percent,
+            track_5min_pnl=request.track_5min_pnl,
+            ml_optimize_sl_rules=True,
+            adaptive_sl_enabled=True
+        )
+        
+        # Initialize services
+        breeze_service = BreezeService()
+        data_collection_service = DataCollectionService(breeze_service)
+        option_pricing_service = OptionPricingService(data_collection_service)
+        
+        # Run ML backtest with progressive SL
+        # Use SQLAlchemy connection string format for ML components
+        # For LocalDB with Windows Authentication
+        from urllib.parse import quote_plus
+        conn_params = quote_plus(
+            "DRIVER={ODBC Driver 17 for SQL Server};"
+            "SERVER=(localdb)\\mssqllocaldb;"
+            "DATABASE=KiteConnectApi;"
+            "Trusted_Connection=yes;"
+        )
+        db_connection_string = f"mssql+pyodbc:///?odbc_connect={conn_params}"
+        ml_backtest = RunMLBacktestUseCase(
+            data_collection_service,
+            option_pricing_service,
+            db_connection_string=db_connection_string
+        )
+        
+        # Execute with MLBacktestParameters object
+        backtest_id = await ml_backtest.execute(ml_params)
+        
+        # Get results
+        results = _format_backtest_results(backtest_id)
+        
+        return {
+            "success": True,
+            "backtest_id": backtest_id,
+            "message": "ML Progressive SL backtest completed",
+            "ml_features": {
+                "ml_exits": True,
+                "progressive_sl": True,
+                "hybrid_decisions": True
+            },
+            "results": results
+        }
+        
+    except Exception as e:
+        logger.error(f"ML Progressive SL backtest error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/ml/optimize/progressive-sl", tags=["ML Optimization"])
+async def optimize_progressive_sl(
+    from_date: date = Body(...),
+    to_date: date = Body(...),
+    signals: List[str] = Body(default=["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8"])
+):
+    """
+    Optimize progressive stop-loss parameters using ML.
+    
+    Analyzes historical data to find optimal:
+    - Profit trigger percentages
+    - Day-based progression rules
+    - Signal-specific parameters
+    - Market regime adjustments
+    """
+    try:
+        from src.ml.progressive_sl_optimizer import MLProgressiveSLOptimizer
+        
+        # MLProgressiveSLOptimizer uses pyodbc directly, so use pyodbc format
+        db_connection_string = "Driver={ODBC Driver 17 for SQL Server};Server=(localdb)\\mssqllocaldb;Database=KiteConnectApi;Trusted_Connection=yes;"
+        optimizer = MLProgressiveSLOptimizer(
+            db_connection_string=db_connection_string
+        )
+        
+        optimized_params = {}
+        
+        for signal in signals:
+            params = await optimizer.optimize_for_signal(
+                signal, 
+                datetime.combine(from_date, datetime.min.time()),
+                datetime.combine(to_date, datetime.max.time())
+            )
+            optimized_params[signal] = params
+            
+        return {
+            "status": "success",
+            "optimized_parameters": optimized_params,
+            "recommendations": _generate_sl_recommendations(optimized_params)
+        }
+        
+    except Exception as e:
+        logger.error(f"Progressive SL optimization error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/ml/analyze/sl-comparison/{backtest_id}", tags=["ML Analysis"])
+async def analyze_sl_comparison(backtest_id: str):
+    """
+    Compare performance of ML vs Progressive SL vs Hybrid decisions.
+    
+    Returns detailed attribution analysis showing which system
+    triggered each exit and the resulting performance.
+    """
+    try:
+        db = get_db_manager()
+        with db.get_session() as session:
+            # Get ML decision attribution data
+            query = text("""
+                SELECT 
+                    DecisionType,
+                    COUNT(*) as Count,
+                    AVG(PnL) as AvgPnL,
+                    SUM(CASE WHEN PnL > 0 THEN 1 ELSE 0 END) * 100.0 / COUNT(*) as WinRate
+                FROM MLDecisionAttribution
+                WHERE BacktestRunId = :backtest_id
+                GROUP BY DecisionType
+            """)
+            
+            attribution = session.execute(query, {"backtest_id": backtest_id}).fetchall()
+            
+            # Format results
+            comparison = {
+                "ml_decisions": {},
+                "progressive_sl_decisions": {},
+                "hybrid_decisions": {},
+                "overall_performance": {}
+            }
+            
+            for row in attribution:
+                decision_type = row[0]
+                stats = {
+                    "count": row[1],
+                    "avg_pnl": float(row[2]) if row[2] else 0,
+                    "win_rate": float(row[3]) if row[3] else 0
+                }
+                
+                if "ML" in decision_type:
+                    comparison["ml_decisions"] = stats
+                elif "PROGRESSIVE" in decision_type:
+                    comparison["progressive_sl_decisions"] = stats
+                elif "HYBRID" in decision_type:
+                    comparison["hybrid_decisions"] = stats
+                    
+            return comparison
+            
+    except Exception as e:
+        logger.error(f"SL comparison analysis error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+def _generate_sl_recommendations(optimized_params: Dict) -> List[str]:
+    """Generate recommendations based on optimized parameters"""
+    recommendations = []
+    
+    for signal, params in optimized_params.items():
+        if params['confidence'] > 0.7:
+            recommendations.append(
+                f"{signal}: Use optimized parameters with {params['profit_trigger_percent']:.1f}% trigger"
+            )
+        else:
+            recommendations.append(
+                f"{signal}: Keep default parameters due to insufficient data"
+            )
+            
+    return recommendations
+
+# Auto-Login API Endpoints
+@app.post("/auth/auto-login/breeze", tags=["Auto Login"])
+async def trigger_breeze_auto_login(background_tasks: BackgroundTasks):
+    """
+    Trigger Breeze auto-login
+    Automatically uses TOTP if configured, otherwise requires manual OTP
+    """
+    # Check if credentials exist first
+    from dotenv import load_dotenv
+    import os
+    load_dotenv(override=True)
+    
+    if not os.getenv('BREEZE_USER_ID') or not os.getenv('BREEZE_PASSWORD'):
+        raise HTTPException(status_code=400, detail="Breeze credentials not configured. Run save_creds_simple.py first.")
+    
+    # Check if TOTP is configured
+    totp_secret = os.getenv('BREEZE_TOTP_SECRET')
+    
+    if totp_secret:
+        # TOTP configured - can do automatic login
+        def run_auto_login():
+            try:
+                from src.auth.auto_login.breeze_login import BreezeAutoLogin
+                breeze = BreezeAutoLogin(headless=True, timeout=60)
+                success, result = breeze.login()
+                
+                # Log result to a file for status checking
+                from pathlib import Path
+                import json
+                from datetime import datetime
+                
+                status_file = Path("logs/breeze_login_status.json")
+                status_file.parent.mkdir(exist_ok=True)
+                
+                status = {
+                    "timestamp": datetime.now().isoformat(),
+                    "success": success,
+                    "message": result[:100] if success else result,
+                    "session_active": success
+                }
+                
+                with open(status_file, 'w') as f:
+                    json.dump(status, f)
+                
+                logger.info(f"Breeze auto-login completed: success={success}")
+                
+            except Exception as e:
+                logger.error(f"Breeze auto-login error: {e}")
+                # Save error status
+                from pathlib import Path
+                import json
+                from datetime import datetime
+                
+                status_file = Path("logs/breeze_login_status.json")
+                status_file.parent.mkdir(exist_ok=True)
+                
+                status = {
+                    "timestamp": datetime.now().isoformat(),
+                    "success": False,
+                    "message": str(e),
+                    "session_active": False
+                }
+                
+                with open(status_file, 'w') as f:
+                    json.dump(status, f)
+        
+        background_tasks.add_task(run_auto_login)
+        
+        return {
+            "status": "triggered",
+            "message": "Breeze auto-login started with TOTP",
+            "description": "Login running in background with automatic OTP generation",
+            "check_status": "/auth/auto-login/status"
+        }
+    else:
+        # No TOTP - manual OTP required
+        return {
+            "status": "manual_required",
+            "message": "Breeze login requires OTP from email/SMS",
+            "instructions": [
+                "Option 1: Save TOTP secret - Run: python save_totp_secret.py",
+                "Option 2: Manual login - Run: python test_breeze_manual.py"
+            ],
+            "alternative": "Save your TOTP secret for full automation"
+        }
+
+@app.post("/auth/auto-login/kite", tags=["Auto Login"])
+async def trigger_kite_auto_login(background_tasks: BackgroundTasks):
+    """
+    Trigger Kite auto-login
+    Runs in background to avoid timeout
+    """
+    def run_kite_login():
+        try:
+            from src.auth.auto_login import KiteAutoLogin
+            kite = KiteAutoLogin(headless=True)
+            success, result = kite.retry_login(max_attempts=3)
+            
+            # Log result
+            logger.info(f"Kite auto-login result: success={success}, result={result[:50] if result else 'None'}...")
+            
+        except Exception as e:
+            logger.error(f"Kite auto-login error: {e}")
+    
+    background_tasks.add_task(run_kite_login)
+    
+    return {
+        "status": "triggered",
+        "message": "Kite auto-login started in background",
+        "check_status": "/auth/auto-login/status"
+    }
+
+@app.get("/auth/auto-login/status", tags=["Auto Login"])
+async def get_auto_login_status():
+    """Get the current session status and configuration"""
+    try:
+        from dotenv import load_dotenv
+        import os
+        from datetime import datetime
+        
+        load_dotenv(override=True)
+        
+        # Check current configuration
+        breeze_configured = bool(os.getenv('BREEZE_USER_ID') and os.getenv('BREEZE_PASSWORD'))
+        breeze_session = os.getenv('BREEZE_API_SESSION')
+        kite_configured = bool(os.getenv('KITE_API_KEY'))
+        kite_access_token = os.getenv('KITE_ACCESS_TOKEN')
+        kite_user_id = os.getenv('KITE_USER_ID')
+        
+        # Check if Kite token is valid
+        kite_connected = False
+        if kite_access_token:
+            try:
+                _, kite_auth, _, _, _ = get_kite_services()
+                auth_status = kite_auth.get_auth_status()
+                # Check 'authenticated' field (not 'is_authenticated')
+                kite_connected = auth_status.get('authenticated', False)
+            except:
+                kite_connected = False
+        
+        return {
+            "status": "configured",
+            "breeze": {
+                "credentials_saved": breeze_configured,
+                "user_id": os.getenv('BREEZE_USER_ID', 'Not configured'),
+                "session_active": bool(breeze_session),
+                "session_token": f"{breeze_session[:10]}..." if breeze_session else None,
+                "otp_required": True,
+                "otp_method": "Email/SMS (manual entry required)"
+            },
+            "kite": {
+                "configured": kite_configured,
+                "connected": kite_connected,
+                "api_key": os.getenv('KITE_API_KEY', 'Not configured'),
+                "access_token": kite_access_token if kite_access_token else None,
+                "user_id": kite_user_id if kite_user_id else None
+            },
+            "instructions": {
+                "breeze": "Run 'python test_breeze_manual.py' to login with OTP",
+                "kite": "Configure API key in .env file"
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting auto-login status: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/auth/auto-login/schedule/start", tags=["Auto Login"])
+async def start_auto_login_scheduler():
+    """Start the auto-login scheduler"""
+    try:
+        from src.auth.auto_login.db_scheduler import DatabaseScheduler
+        
+        # Create global scheduler instance if not exists
+        if not hasattr(app.state, 'db_scheduler'):
+            app.state.db_scheduler = DatabaseScheduler()
+        
+        result = app.state.db_scheduler.start()
+        
+        if result['status'] in ['started', 'already_running']:
+            status = app.state.db_scheduler.get_status()
+            return {
+                "status": result['status'],
+                "message": result['message'],
+                "next_runs": status['next_run_times']
+            }
+        else:
+            return result
+        
+    except Exception as e:
+        logger.error(f"Error starting scheduler: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/auth/auto-login/schedule/stop", tags=["Auto Login"])
+async def stop_auto_login_scheduler():
+    """Stop the auto-login scheduler"""
+    try:
+        if not hasattr(app.state, 'db_scheduler'):
+            return {
+                "status": "not_running",
+                "message": "Scheduler is not initialized"
+            }
+        
+        result = app.state.db_scheduler.stop()
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error stopping scheduler: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.get("/auth/auto-login/schedule/status", tags=["Auto Login"])
+async def get_scheduler_status():
+    """Get the current scheduler status and configuration"""
+    try:
+        from src.auth.auto_login.db_scheduler import DatabaseScheduler
+        
+        if not hasattr(app.state, 'db_scheduler'):
+            # Initialize scheduler but don't start it
+            app.state.db_scheduler = DatabaseScheduler()
+        
+        status = app.state.db_scheduler.get_status()
+        
+        return {
+            "status": "success",
+            "is_running": status['running'],
+            "config": status['config'],
+            "next_runs": status['next_run_times'],
+            "jobs": status['jobs'],
+            "recent_executions": status['recent_executions']
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting scheduler status: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/auth/auto-login/schedule/update", tags=["Auto Login"])
+async def update_scheduler_config(
+    service: str = Body(..., description="Service name: 'breeze' or 'kite'"),
+    config: Dict[str, Any] = Body(..., description="New configuration for the service")
+):
+    """Update scheduler configuration for a specific service"""
+    try:
+        from src.auth.auto_login import LoginScheduler
+        
+        if not hasattr(app.state, 'login_scheduler'):
+            app.state.login_scheduler = LoginScheduler()
+        
+        result = app.state.login_scheduler.update_schedule(service, config)
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error updating scheduler config: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/auth/kite/auto-connect", tags=["Auto Login"])
+async def kite_auto_connect():
+    """Automatically login to Kite if not connected"""
+    try:
+        from src.auth.kite_auto_login_service import KiteAutoLoginService
+        
+        service = KiteAutoLoginService()
+        result = service.auto_login()
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error in Kite auto-connect: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/auth/auto-login/credentials/setup", tags=["Auto Login"])
+async def setup_credentials(
+    service: str = Body(..., description="Service name: 'breeze' or 'kite'"),
+    credentials: Dict[str, str] = Body(..., description="Credentials to save")
+):
+    """
+    Save credentials for auto-login
+    Note: This should only be used during initial setup
+    """
+    try:
+        from src.auth.auto_login import CredentialManager
+        
+        cm = CredentialManager()
+        
+        if service.lower() == 'breeze':
+            cm.save_breeze_credentials(
+                credentials.get('user_id'),
+                credentials.get('password'),
+                credentials.get('totp_secret')
+            )
+        elif service.lower() == 'kite':
+            cm.save_kite_credentials(
+                credentials.get('user_id'),
+                credentials.get('password'),
+                credentials.get('pin'),
+                credentials.get('api_secret'),
+                credentials.get('totp_secret')
+            )
+        else:
+            return {"status": "error", "message": f"Unknown service: {service}"}
+        
+        return {
+            "status": "success",
+            "message": f"Credentials saved for {service}"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error saving credentials: {e}")
+        return {"status": "error", "message": str(e)}
+
+# Database-backed Authentication Endpoints
+@app.get("/auth/db/status", tags=["Database Auth"])
+async def get_db_auth_status():
+    """Get authentication status from database"""
+    try:
+        from src.auth.breeze_db_service import get_breeze_service
+        from src.auth.kite_db_service import get_kite_service
+        
+        breeze_service = get_breeze_service()
+        kite_service = get_kite_service()
+        
+        return {
+            "breeze": breeze_service.get_status(),
+            "kite": kite_service.get_status(),
+            "database_backed": True,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error getting DB auth status: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/auth/db/breeze/login", tags=["Database Auth"])
+async def db_breeze_login(background_tasks: BackgroundTasks):
+    """Perform Breeze auto-login and save to database"""
+    try:
+        from src.auth.breeze_db_service import get_breeze_service
+        
+        def run_login():
+            service = get_breeze_service()
+            success, message = service.auto_login()
+            
+            # Log result
+            from pathlib import Path
+            import json
+            
+            status_file = Path("logs/breeze_db_login.json")
+            status_file.parent.mkdir(exist_ok=True)
+            
+            with open(status_file, 'w') as f:
+                json.dump({
+                    "timestamp": datetime.now().isoformat(),
+                    "success": success,
+                    "message": message,
+                    "database_backed": True
+                }, f)
+        
+        background_tasks.add_task(run_login)
+        
+        return {
+            "status": "triggered",
+            "message": "Breeze DB login started",
+            "check_status": "/auth/db/status"
+        }
+    except Exception as e:
+        logger.error(f"Error in DB Breeze login: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/auth/db/kite/login", tags=["Database Auth"])
+async def db_kite_login(background_tasks: BackgroundTasks):
+    """Perform Kite auto-login and save to database"""
+    try:
+        from src.auth.kite_db_service import get_kite_service
+        
+        def run_login():
+            service = get_kite_service()
+            success, message = service.auto_login()
+            
+            # Log result
+            from pathlib import Path
+            import json
+            
+            status_file = Path("logs/kite_db_login.json")
+            status_file.parent.mkdir(exist_ok=True)
+            
+            with open(status_file, 'w') as f:
+                json.dump({
+                    "timestamp": datetime.now().isoformat(),
+                    "success": success,
+                    "message": message,
+                    "database_backed": True
+                }, f)
+        
+        background_tasks.add_task(run_login)
+        
+        return {
+            "status": "triggered",
+            "message": "Kite DB login started",
+            "check_status": "/auth/db/status"
+        }
+    except Exception as e:
+        logger.error(f"Error in DB Kite login: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/auth/db/disconnect/{service}", tags=["Database Auth"])
+async def db_disconnect(service: str):
+    """Disconnect and deactivate session in database"""
+    try:
+        if service.lower() == 'breeze':
+            from src.auth.breeze_db_service import get_breeze_service
+            service_obj = get_breeze_service()
+        elif service.lower() == 'kite':
+            from src.auth.kite_db_service import get_kite_service
+            service_obj = get_kite_service()
+        else:
+            return {"status": "error", "message": f"Unknown service: {service}"}
+        
+        success = service_obj.disconnect()
+        
+        return {
+            "status": "success" if success else "error",
+            "message": f"{service.title()} disconnected" if success else "Failed to disconnect"
+        }
+    except Exception as e:
+        logger.error(f"Error disconnecting {service}: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/auth/db/cleanup", tags=["Database Auth"])
+async def cleanup_expired_sessions():
+    """Clean up expired authentication sessions"""
+    try:
+        from src.infrastructure.database.auth_repository import get_auth_repository
+        
+        repo = get_auth_repository()
+        count = repo.cleanup_expired_sessions()
+        
+        return {
+            "status": "success",
+            "expired_sessions_cleaned": count,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error cleaning up sessions: {e}")
+        return {"status": "error", "message": str(e)}
 
 def kill_existing_process_on_port(port: int):
     """Kill any existing process using the specified port"""

@@ -58,3 +58,14 @@ empyrical>=0.5.5
 # Real-time Data & WebSocket
 websocket-client>=1.6.0
 redis>=5.0.0
+
+# Auto-Login Dependencies
+selenium>=4.15.0          # Browser automation
+playwright>=1.40.0        # Alternative browser automation
+pyotp>=2.9.0             # TOTP/2FA generation
+cryptography>=41.0.0     # Credential encryption
+schedule>=1.2.0          # Task scheduling
+APScheduler>=3.10.0      # Advanced scheduling
+pywin32>=306             # Windows Credential Manager
+beautifulsoup4>=4.12.0   # HTML parsing
+pillow>=10.0.0           # Screenshot handling

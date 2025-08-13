@@ -1,0 +1,29 @@
+{
+  "breeze": {
+    "enabled": true,
+    "times": [
+      "05:30",
+      "08:30"
+    ],
+    "weekdays_only": true,
+    "headless": true,
+    "max_retries": 3
+  },
+  "kite": {
+    "enabled": true,
+    "times": [
+      "05:45",
+      "08:45"
+    ],
+    "weekdays_only": true,
+    "headless": true,
+    "max_retries": 3
+  },
+  "notifications": {
+    "enabled": true,
+    "on_success": true,
+    "on_failure": true,
+    "email": null,
+    "webhook": null
+  }
+}

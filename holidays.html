@@ -583,28 +583,30 @@
             }).join('');
         }
 
-        // Display default NSE holidays for 2025
+        // Display placeholder for holidays
         function displayDefaultHolidays() {
-            const defaultHolidays = [
-                { date: '2025-01-26', name: 'Republic Day', type: 'trading' },
-                { date: '2025-03-14', name: 'Holi', type: 'trading' },
-                { date: '2025-03-31', name: 'Ram Navami', type: 'trading' },
-                { date: '2025-04-10', name: 'Mahavir Jayanti', type: 'trading' },
-                { date: '2025-04-14', name: 'Dr. Ambedkar Jayanti', type: 'trading' },
-                { date: '2025-04-18', name: 'Good Friday', type: 'trading' },
-                { date: '2025-05-01', name: 'Maharashtra Day', type: 'trading' },
-                { date: '2025-08-15', name: 'Independence Day', type: 'trading' },
-                { date: '2025-08-27', name: 'Ganesh Chaturthi', type: 'trading' },
-                { date: '2025-10-02', name: 'Gandhi Jayanti', type: 'trading' },
-                { date: '2025-10-21', name: 'Dussehra', type: 'trading' },
-                { date: '2025-11-01', name: 'Diwali - Laxmi Pujan', type: 'trading' },
-                { date: '2025-11-02', name: 'Diwali - Balipratipada', type: 'trading' },
-                { date: '2025-11-15', name: 'Guru Nanak Jayanti', type: 'trading' },
-                { date: '2025-12-25', name: 'Christmas', type: 'trading' }
-            ];
+            // NOTE: These are placeholder dates - actual holidays should be fetched from NSE API
+            const placeholderMessage = {
+                message: "Holiday data should be fetched from official NSE sources",
+                note: "Please sync with NSE to get current year holidays"
+            };
             
-            holidays = defaultHolidays;
-            displayHolidays(defaultHolidays);
+            // Show message instead of hardcoded holidays
+            const tbody = document.getElementById('holidaysList');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 20px; color: #666;">
+                        <i class="fas fa-info-circle" style="font-size: 24px; margin-bottom: 10px;"></i>
+                        <div>${placeholderMessage.message}</div>
+                        <div style="font-size: 12px; margin-top: 5px;">${placeholderMessage.note}</div>
+                        <button class="btn btn-primary" style="margin-top: 10px;" onclick="fetchHolidays()">
+                            <i class="fas fa-sync"></i> Fetch from NSE
+                        </button>
+                    </td>
+                </tr>
+            `;
+            
+            holidays = [];  // Empty array until real data is fetched
         }
 
         // Check market status
