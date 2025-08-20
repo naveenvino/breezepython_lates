@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strategy Builder - Options Trading</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px 30px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            background: linear-gradient(45deg, #00ff88, #00aaff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-links a {
+            color: #888;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: #00ff88;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .strategy-panel {
+            background: rgba(20, 20, 20, 0.9);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #333;
+        }
+
+        .section-title {
+            font-size: 16px;
+            color: #00ff88;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .strategy-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .strategy-btn {
+            background: rgba(30, 30, 30, 0.8);
+            border: 1px solid #444;
+            color: #e0e0e0;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 13px;
+        }
+
+        .strategy-btn:hover {
+            background: rgba(0, 255, 136, 0.1);
+            border-color: #00ff88;
+            transform: translateY(-2px);
+        }
+
+        .strategy-btn.active {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: #00ff88;
+            color: #00ff88;
+        }
+
+        .legs-container {
+            background: rgba(15, 15, 15, 0.6);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .leg-item {
+            background: rgba(30, 30, 30, 0.8);
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .leg-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .leg-type {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .position-badge {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .position-badge.buy {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+        }
+
+        .position-badge.sell {
+            background: rgba(255, 77, 77, 0.2);
+            color: #ff4d4d;
+        }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .input-wrapper {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-wrapper label {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 3px;
+        }
+
+        .input-wrapper input, .input-wrapper select {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #444;
+            color: #e0e0e0;
+            padding: 6px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .remove-leg {
+            background: rgba(255, 77, 77, 0.2);
+            border: 1px solid #ff4d4d;
+            color: #ff4d4d;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 6px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #00ff88, #00aaff);
+            color: #000;
+        }
+
+        .btn-secondary {
+            background: rgba(100, 100, 100, 0.3);
+            border: 1px solid #666;
+            color: #e0e0e0;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
+        }
+
+        .chart-container {
+            background: rgba(20, 20, 20, 0.9);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #333;
+        }
+
+        .payoff-chart {
+            position: relative;
+            height: 400px;
+            margin-bottom: 20px;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .metric-card {
+            background: rgba(30, 30, 30, 0.8);
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .metric-value.profit {
+            color: #00ff88;
+        }
+
+        .metric-value.loss {
+            color: #ff4d4d;
+        }
+
+        .greeks-container {
+            background: rgba(20, 20, 20, 0.9);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #333;
+            margin-top: 20px;
+        }
+
+        .greeks-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+
+        .greek-item {
+            background: rgba(30, 30, 30, 0.8);
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .greek-name {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .greek-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #00ff88;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #888;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .error-message {
+            background: rgba(255, 77, 77, 0.1);
+            border: 1px solid #ff4d4d;
+            color: #ff4d4d;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .success-message {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎯 Strategy Builder</h1>
+        <div class="nav-links">
+            <a href="index.html">Dashboard</a>
+            <a href="option_chain.html">Option Chain</a>
+            <a href="positions.html">Positions</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="strategy-panel">
+            <div class="section-title">Select Strategy</div>
+            <div class="strategy-grid">
+                <button class="strategy-btn" data-strategy="long_call">Long Call</button>
+                <button class="strategy-btn" data-strategy="long_put">Long Put</button>
+                <button class="strategy-btn" data-strategy="short_call">Short Call</button>
+                <button class="strategy-btn" data-strategy="short_put">Short Put</button>
+                <button class="strategy-btn" data-strategy="bull_call_spread">Bull Call Spread</button>
+                <button class="strategy-btn" data-strategy="bear_put_spread">Bear Put Spread</button>
+                <button class="strategy-btn" data-strategy="long_straddle">Long Straddle</button>
+                <button class="strategy-btn" data-strategy="short_straddle">Short Straddle</button>
+                <button class="strategy-btn" data-strategy="long_strangle">Long Strangle</button>
+                <button class="strategy-btn" data-strategy="short_strangle">Short Strangle</button>
+                <button class="strategy-btn" data-strategy="iron_condor">Iron Condor</button>
+                <button class="strategy-btn" data-strategy="iron_butterfly">Iron Butterfly</button>
+            </div>
+
+            <div class="section-title">Strategy Legs</div>
+            <div class="legs-container" id="legsContainer">
+                <!-- Legs will be added here dynamically -->
+            </div>
+
+            <button class="btn btn-secondary" id="addLegBtn">+ Add Custom Leg</button>
+
+            <div class="action-buttons">
+                <button class="btn btn-primary" id="calculateBtn">Calculate Payoff</button>
+                <button class="btn btn-secondary" id="clearBtn">Clear All</button>
+            </div>
+
+            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage"></div>
+        </div>
+
+        <div>
+            <div class="chart-container">
+                <div class="section-title">Payoff Diagram</div>
+                <div class="payoff-chart">
+                    <canvas id="payoffChart"></canvas>
+                </div>
+                <div class="loading" id="chartLoading">Loading chart...</div>
+
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">Max Profit</div>
+                        <div class="metric-value profit" id="maxProfit">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Max Loss</div>
+                        <div class="metric-value loss" id="maxLoss">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Breakeven</div>
+                        <div class="metric-value" id="breakeven">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Strategy Cost</div>
+                        <div class="metric-value" id="strategyCost">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Current P&L</div>
+                        <div class="metric-value" id="currentPL">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Spot Price</div>
+                        <div class="metric-value" id="spotPrice">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="greeks-container">
+                <div class="section-title">Position Greeks</div>
+                <div class="greeks-grid">
+                    <div class="greek-item">
+                        <div class="greek-name">Delta</div>
+                        <div class="greek-value" id="totalDelta">-</div>
+                    </div>
+                    <div class="greek-item">
+                        <div class="greek-name">Gamma</div>
+                        <div class="greek-value" id="totalGamma">-</div>
+                    </div>
+                    <div class="greek-item">
+                        <div class="greek-name">Theta</div>
+                        <div class="greek-value" id="totalTheta">-</div>
+                    </div>
+                    <div class="greek-item">
+                        <div class="greek-name">Vega</div>
+                        <div class="greek-value" id="totalVega">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let payoffChart = null;
+        let currentLegs = [];
+        let spotPrice = 24600;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeChart();
+            loadSpotPrice();
+            
+            // Strategy button handlers
+            document.querySelectorAll('.strategy-btn').forEach(btn => {
+                btn.addEventListener('click', () => loadPrebuiltStrategy(btn.dataset.strategy));
+            });
+
+            // Action button handlers
+            document.getElementById('addLegBtn').addEventListener('click', addCustomLeg);
+            document.getElementById('calculateBtn').addEventListener('click', calculatePayoff);
+            document.getElementById('clearBtn').addEventListener('click', clearAllLegs);
+        });
+
+        function initializeChart() {
+            const ctx = document.getElementById('payoffChart').getContext('2d');
+            payoffChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Payoff',
+                        data: [],
+                        borderColor: '#00ff88',
+                        backgroundColor: 'rgba(0, 255, 136, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `P&L: ₹${context.parsed.y.toFixed(2)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#888'
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#888',
+                                callback: function(value) {
+                                    return '₹' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function loadSpotPrice() {
+            try {
+                const response = await fetch('http://localhost:8000/option-chain/greeks?symbol=NIFTY&strikes=1');
+                const result = await response.json();
+                if (result.status === 'success') {
+                    spotPrice = result.data.spot_price;
+                    document.getElementById('spotPrice').textContent = spotPrice.toFixed(2);
+                }
+            } catch (error) {
+                console.error('Error loading spot price:', error);
+            }
+        }
+
+        async function loadPrebuiltStrategy(strategyType) {
+            try {
+                // Clear existing selection
+                document.querySelectorAll('.strategy-btn').forEach(btn => btn.classList.remove('active'));
+                event.target.classList.add('active');
+
+                showLoading(true);
+                
+                const response = await fetch('http://localhost:8000/strategy/build-strategy', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        strategy_type: strategyType,
+                        symbol: 'NIFTY',
+                        quantity: 75
+                    })
+                });
+
+                const result = await response.json();
+                if (result.status === 'success') {
+                    currentLegs = result.data.legs;
+                    renderLegs();
+                    updatePayoffChart(result.data.payoff);
+                    showSuccess('Strategy loaded successfully');
+                } else {
+                    showError('Failed to load strategy');
+                }
+            } catch (error) {
+                console.error('Error loading strategy:', error);
+                showError('Error loading strategy: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function renderLegs() {
+            const container = document.getElementById('legsContainer');
+            container.innerHTML = '';
+
+            currentLegs.forEach((leg, index) => {
+                const legElement = document.createElement('div');
+                legElement.className = 'leg-item';
+                legElement.innerHTML = `
+                    <div class="leg-header">
+                        <span class="leg-type">${leg.option_type} ${leg.strike}</span>
+                        <span class="position-badge ${leg.position.toLowerCase()}">${leg.position}</span>
+                    </div>
+                    <div class="input-group">
+                        <div class="input-wrapper">
+                            <label>Strike</label>
+                            <input type="number" value="${leg.strike}" data-index="${index}" data-field="strike">
+                        </div>
+                        <div class="input-wrapper">
+                            <label>Premium</label>
+                            <input type="number" value="${leg.premium}" data-index="${index}" data-field="premium">
+                        </div>
+                        <div class="input-wrapper">
+                            <label>Quantity</label>
+                            <input type="number" value="${leg.quantity}" data-index="${index}" data-field="quantity">
+                        </div>
+                        <div class="input-wrapper">
+                            <label>IV</label>
+                            <input type="number" value="${leg.iv || 0.25}" step="0.01" data-index="${index}" data-field="iv">
+                        </div>
+                    </div>
+                    <button class="remove-leg" onclick="removeLeg(${index})">Remove</button>
+                `;
+                container.appendChild(legElement);
+            });
+
+            // Add change listeners
+            container.querySelectorAll('input').forEach(input => {
+                input.addEventListener('change', (e) => {
+                    const index = parseInt(e.target.dataset.index);
+                    const field = e.target.dataset.field;
+                    currentLegs[index][field] = parseFloat(e.target.value);
+                });
+            });
+        }
+
+        function addCustomLeg() {
+            currentLegs.push({
+                strike: spotPrice,
+                option_type: 'CALL',
+                position: 'BUY',
+                quantity: 75,
+                premium: 100,
+                iv: 0.25
+            });
+            renderLegs();
+        }
+
+        function removeLeg(index) {
+            currentLegs.splice(index, 1);
+            renderLegs();
+        }
+
+        function clearAllLegs() {
+            currentLegs = [];
+            renderLegs();
+            if (payoffChart) {
+                payoffChart.data.labels = [];
+                payoffChart.data.datasets[0].data = [];
+                payoffChart.update();
+            }
+            document.querySelectorAll('.metric-value').forEach(el => {
+                if (!el.id.includes('spot')) el.textContent = '-';
+            });
+        }
+
+        async function calculatePayoff() {
+            if (currentLegs.length === 0) {
+                showError('Please add at least one leg');
+                return;
+            }
+
+            try {
+                showLoading(true);
+                
+                // Calculate payoff
+                const payoffResponse = await fetch('http://localhost:8000/strategy/calculate-payoff', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        legs: currentLegs,
+                        spot_price: spotPrice
+                    })
+                });
+
+                const payoffResult = await payoffResponse.json();
+                if (payoffResult.status === 'success') {
+                    updatePayoffChart(payoffResult.data);
+                }
+
+                // Calculate Greeks
+                const greeksResponse = await fetch('http://localhost:8000/strategy/position-greeks', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        legs: currentLegs,
+                        spot_price: spotPrice
+                    })
+                });
+
+                const greeksResult = await greeksResponse.json();
+                if (greeksResult.status === 'success') {
+                    updateGreeks(greeksResult.data);
+                }
+
+                showSuccess('Payoff calculated successfully');
+            } catch (error) {
+                console.error('Error calculating payoff:', error);
+                showError('Error calculating payoff: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function updatePayoffChart(data) {
+            if (!payoffChart) return;
+
+            // Update chart data
+            payoffChart.data.labels = data.prices.map(p => p.toFixed(0));
+            payoffChart.data.datasets[0].data = data.payoffs;
+            
+            // Add breakeven lines
+            if (data.breakeven_points && data.breakeven_points.length > 0) {
+                // Add vertical lines at breakeven points
+                payoffChart.options.plugins.annotation = {
+                    annotations: data.breakeven_points.map((point, i) => ({
+                        type: 'line',
+                        xMin: point,
+                        xMax: point,
+                        borderColor: 'rgba(255, 255, 255, 0.5)',
+                        borderWidth: 1,
+                        borderDash: [5, 5]
+                    }))
+                };
+            }
+
+            payoffChart.update();
+
+            // Update metrics
+            document.getElementById('maxProfit').textContent = 
+                data.max_profit ? `₹${data.max_profit.toFixed(2)}` : 'Unlimited';
+            document.getElementById('maxLoss').textContent = 
+                data.max_loss ? `₹${data.max_loss.toFixed(2)}` : 'Unlimited';
+            document.getElementById('breakeven').textContent = 
+                data.breakeven_points.length > 0 ? data.breakeven_points.map(p => p.toFixed(0)).join(', ') : '-';
+            document.getElementById('strategyCost').textContent = 
+                `₹${Math.abs(data.strategy_cost).toFixed(2)}`;
+            document.getElementById('currentPL').textContent = 
+                `₹${data.current_payoff.toFixed(2)}`;
+            
+            // Color code current P&L
+            const plElement = document.getElementById('currentPL');
+            plElement.className = data.current_payoff >= 0 ? 'metric-value profit' : 'metric-value loss';
+        }
+
+        function updateGreeks(data) {
+            document.getElementById('totalDelta').textContent = data.total_delta || '-';
+            document.getElementById('totalGamma').textContent = data.total_gamma || '-';
+            document.getElementById('totalTheta').textContent = data.total_theta || '-';
+            document.getElementById('totalVega').textContent = data.total_vega || '-';
+        }
+
+        function showLoading(show) {
+            document.getElementById('chartLoading').className = show ? 'loading active' : 'loading';
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+            setTimeout(() => errorEl.style.display = 'none', 5000);
+        }
+
+        function showSuccess(message) {
+            const successEl = document.getElementById('successMessage');
+            successEl.textContent = message;
+            successEl.style.display = 'block';
+            setTimeout(() => successEl.style.display = 'none', 3000);
+        }
+
+        // Auto-refresh spot price every 30 seconds
+        setInterval(loadSpotPrice, 30000);
+    </script>
+</body>
+</html>

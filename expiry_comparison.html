@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NIFTY Expiry Analysis - Current vs Next Week</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f0f1e;
+            color: #e0e0e0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        /* Header */
+        .module-header {
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header-left {
+            flex: 1;
+        }
+        
+        .module-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .module-description {
+            color: #999;
+            font-size: 14px;
+        }
+        
+        .expiry-transition-badge {
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Important Notice */
+        .important-notice {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .important-notice i {
+            color: #f59e0b;
+            font-size: 24px;
+        }
+        
+        .important-notice-content {
+            flex: 1;
+        }
+        
+        .important-notice-title {
+            color: #f59e0b;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .important-notice-text {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .tab {
+            padding: 12px 20px;
+            color: #999;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .tab:hover {
+            color: #fff;
+        }
+        
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Cards */
+        .card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        
+        .card:hover {
+            background: rgba(255, 255, 255, 0.04);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-badge {
+            background: rgba(102, 126, 234, 0.2);
+            color: #667eea;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        /* Form Styles */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            margin-bottom: 8px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 13px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .form-group input,
+        .form-group select {
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.08);
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        /* Signal Selection */
+        .signal-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .signal-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .signal-checkbox:hover {
+            background: rgba(102, 126, 234, 0.1);
+            border-color: rgba(102, 126, 234, 0.3);
+        }
+        
+        .signal-checkbox.selected {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: #667eea;
+        }
+        
+        .signal-checkbox input {
+            width: 18px;
+            height: 18px;
+            accent-color: #667eea;
+        }
+        
+        .signal-label {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .signal-name {
+            font-weight: 600;
+            color: #fff;
+        }
+        
+        .signal-type {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        
+        .signal-type.bullish {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+        
+        .signal-type.bearish {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+        
+        /* Advanced Options */
+        .advanced-options {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .toggle-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .toggle-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 48px;
+            height: 24px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.1);
+            transition: 0.4s;
+            border-radius: 24px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background: #667eea;
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+        
+        /* Buttons */
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Results Section */
+        .results-section {
+            display: none;
+            margin-top: 30px;
+        }
+        
+        .results-section.active {
+            display: block;
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .expiry-result-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .expiry-result-card.current-week {
+            border-top: 3px solid #3b82f6;
+        }
+        
+        .expiry-result-card.next-week {
+            border-top: 3px solid #10b981;
+        }
+        
+        .expiry-result-card.winner {
+            background: rgba(102, 126, 234, 0.05);
+            border-color: rgba(102, 126, 234, 0.2);
+        }
+        
+        .winner-badge {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #0f0f1e;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        
+        .expiry-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .expiry-title {
+            font-size: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .expiry-day-badge {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        
+        .badge-thursday {
+            background: rgba(139, 92, 246, 0.2);
+            color: #a78bfa;
+        }
+        
+        .badge-tuesday {
+            background: rgba(236, 72, 153, 0.2);
+            color: #f9a8d4;
+        }
+        
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .metric-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 12px;
+        }
+        
+        .metric-label {
+            font-size: 11px;
+            color: #999;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+        }
+        
+        .metric-value {
+            font-size: 20px;
+            font-weight: 700;
+        }
+        
+        .metric-value.positive {
+            color: #10b981;
+        }
+        
+        .metric-value.negative {
+            color: #ef4444;
+        }
+        
+        .metric-value.neutral {
+            color: #f59e0b;
+        }
+        
+        /* Trade List */
+        .trade-list {
+            margin-top: 20px;
+        }
+        
+        .trade-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .trade-list-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .trade-count {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .trades-table {
+            width: 100%;
+            font-size: 13px;
+        }
+        
+        .trades-table th {
+            text-align: left;
+            padding: 8px;
+            color: #999;
+            font-weight: 500;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .trades-table td {
+            padding: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+        }
+        
+        .trades-table tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        
+        /* Charts */
+        .chart-container {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .chart-controls {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .chart-control-btn {
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .chart-control-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+        }
+        
+        .chart-control-btn.active {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: #667eea;
+            color: #667eea;
+        }
+        
+        /* Recommendation Card */
+        .recommendation-card {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 30px;
+        }
+        
+        .recommendation-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .recommendation-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .recommendation-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .recommendation-content {
+            display: grid;
+            gap: 16px;
+        }
+        
+        .recommendation-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            align-items: start;
+            gap: 12px;
+        }
+        
+        .recommendation-item i {
+            color: #667eea;
+            margin-top: 2px;
+        }
+        
+        .recommendation-text {
+            flex: 1;
+        }
+        
+        .recommendation-text strong {
+            color: #fff;
+            display: block;
+            margin-bottom: 4px;
+        }
+        
+        .recommendation-text p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        /* Loading State */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 15, 30, 0.95);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .loading-overlay.active {
+            display: flex;
+        }
+        
+        .loading-content {
+            text-align: center;
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(102, 126, 234, 0.2);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 8px;
+        }
+        
+        .loading-subtext {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        /* Error State */
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            color: #ef4444;
+            display: none;
+            margin-bottom: 20px;
+        }
+        
+        .error-message.active {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .error-message i {
+            font-size: 20px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .signal-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .module-header {
+                flex-direction: column;
+                align-items: start;
+                gap: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="module-header">
+        <div class="header-left">
+            <h1 class="module-title">Expiry Performance Analyzer</h1>
+            <p class="module-description">Compare current week vs next week expiry performance for optimal trading decisions</p>
+        </div>
+        <div class="expiry-transition-badge">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>Expiry Changes to Tuesday from Sep 2025</span>
+        </div>
+    </div>
+    
+    <!-- Important Notice -->
+    <div class="important-notice">
+        <i class="fas fa-info-circle"></i>
+        <div class="important-notice-content">
+            <div class="important-notice-title">Important Update</div>
+            <div class="important-notice-text">
+                Starting September 1, 2025, NIFTY weekly expiry will shift from Thursday to Tuesday. 
+                This tool helps you analyze historical performance and prepare for the transition by comparing current week vs next week expiry strategies.
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tabs -->
+    <div class="tabs">
+        <div class="tab active" data-tab="analysis">
+            <i class="fas fa-chart-line"></i>
+            <span>Expiry Analysis</span>
+        </div>
+        <div class="tab" data-tab="settings">
+            <i class="fas fa-cog"></i>
+            <span>Advanced Settings</span>
+        </div>
+        <div class="tab" data-tab="history">
+            <i class="fas fa-history"></i>
+            <span>Historical Results</span>
+        </div>
+    </div>
+    
+    <!-- Tab Content: Analysis -->
+    <div class="tab-content active" id="analysis-tab">
+        <!-- Configuration Card -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-sliders-h"></i>
+                    Configuration
+                </div>
+                <span class="card-badge">Quick Setup</span>
+            </div>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>From Date</label>
+                    <input type="text" id="fromDate" placeholder="Select start date">
+                </div>
+                <div class="form-group">
+                    <label>To Date</label>
+                    <input type="text" id="toDate" placeholder="Select end date">
+                </div>
+                <div class="form-group">
+                    <label>Initial Capital</label>
+                    <input type="number" id="initialCapital" value="500000">
+                </div>
+                <div class="form-group">
+                    <label>Lot Size</label>
+                    <input type="number" id="lotSize" value="75">
+                </div>
+                <div class="form-group">
+                    <label>Lots to Trade</label>
+                    <input type="number" id="lotsToTrade" value="10">
+                </div>
+                <div class="form-group">
+                    <label>Hedge Offset</label>
+                    <input type="number" id="hedgeOffset" value="200">
+                </div>
+            </div>
+            
+            <!-- Signal Selection -->
+            <div style="margin-top: 24px;">
+                <label style="display: block; margin-bottom: 12px; font-weight: 600;">Select Signals to Test</label>
+                <div class="signal-grid">
+                    <div class="signal-checkbox selected" data-signal="S1">
+                        <input type="checkbox" id="signal-S1" checked>
+                        <div class="signal-label">
+                            <span class="signal-name">S1 - Bear Trap</span>
+                            <span class="signal-type bullish">BULLISH</span>
+                        </div>
+                    </div>
+                    <div class="signal-checkbox selected" data-signal="S2">
+                        <input type="checkbox" id="signal-S2" checked>
+                        <div class="signal-label">
+                            <span class="signal-name">S2 - Support Hold</span>
+                            <span class="signal-type bullish">BULLISH</span>
+                        </div>
+                    </div>
+                    <div class="signal-checkbox selected" data-signal="S3">
+                        <input type="checkbox" id="signal-S3" checked>
+                        <div class="signal-label">
+                            <span class="signal-name">S3 - Resistance Hold</span>
+                            <span class="signal-type bearish">BEARISH</span>
+                        </div>
+                    </div>
+                    <div class="signal-checkbox" data-signal="S4">
+                        <input type="checkbox" id="signal-S4" checked>
+                        <div class="signal-label">
+                            <span class="signal-name">S4 - Bias Failure Bull</span>
+                            <span class="signal-type bullish">BULLISH</span>
+                        </div>
+                    </div>
+                    <div class="signal-checkbox" data-signal="S5">
+                        <input type="checkbox" id="signal-S5" checked>
+                        <div class="signal-label">
+                            <span class="signal-name">S5 - Bias Failure Bear</span>
+                            <span class="signal-type bearish">BEARISH</span>
+                        </div>
+                    </div>
+                    <div class="signal-checkbox" data-signal="S6">
+                        <input type="checkbox" id="signal-S6" checked>
+                        <div class="signal-label">
+                            <span class="signal-name">S6 - Weakness</span>
+                            <span class="signal-type bearish">BEARISH</span>
+                        </div>
+                    </div>
+                    <div class="signal-checkbox" data-signal="S7">
+                        <input type="checkbox" id="signal-S7" checked>
+                        <div class="signal-label">
+                            <span class="signal-name">S7 - Breakout</span>
+                            <span class="signal-type bullish">BULLISH</span>
+                        </div>
+                    </div>
+                    <div class="signal-checkbox" data-signal="S8">
+                        <input type="checkbox" id="signal-S8" checked>
+                        <div class="signal-label">
+                            <span class="signal-name">S8 - Breakdown</span>
+                            <span class="signal-type bearish">BEARISH</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Advanced Options -->
+            <div class="advanced-options">
+                <label style="display: block; margin-bottom: 12px; font-weight: 600;">Comparison Options</label>
+                <div class="toggle-group">
+                    <div class="toggle-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="useCurrentWeek" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span>Test Current Week Expiry</span>
+                    </div>
+                    <div class="toggle-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="useNextWeek" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span>Test Next Week Expiry</span>
+                    </div>
+                    <div class="toggle-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="compareExpiries" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span>Compare Both Expiries</span>
+                    </div>
+                    <div class="toggle-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="track5MinPnL" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span>Track 5-Min P&L Journey</span>
+                    </div>
+                    <div class="toggle-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="useHedging" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span>Use Hedging</span>
+                    </div>
+                    <div class="toggle-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="wednesdayExit" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span>Wednesday Exit Analysis</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="runComparison()">
+                    <i class="fas fa-play"></i>
+                    Run Expiry Comparison
+                </button>
+                <button class="btn btn-secondary" onclick="resetForm()">
+                    <i class="fas fa-redo"></i>
+                    Reset
+                </button>
+            </div>
+        </div>
+        
+        <!-- Error Message -->
+        <div class="error-message" id="errorMessage">
+            <i class="fas fa-exclamation-circle"></i>
+            <span id="errorText"></span>
+        </div>
+        
+        <!-- Results Section -->
+        <div class="results-section" id="resultsSection">
+            <!-- Comparison Grid -->
+            <div class="comparison-grid">
+                <!-- Current Week Results -->
+                <div class="expiry-result-card current-week" id="currentWeekCard">
+                    <div class="expiry-header">
+                        <div class="expiry-title">
+                            <i class="fas fa-calendar-week"></i>
+                            Current Week Expiry
+                        </div>
+                        <span class="expiry-day-badge badge-thursday" id="currentExpiryBadge">Thursday</span>
+                    </div>
+                    
+                    <div class="metrics-grid" id="currentMetrics">
+                        <!-- Metrics will be populated here -->
+                    </div>
+                    
+                    <div class="trade-list">
+                        <div class="trade-list-header">
+                            <span class="trade-list-title">Recent Trades</span>
+                            <span class="trade-count" id="currentTradeCount">0 trades</span>
+                        </div>
+                        <table class="trades-table">
+                            <thead>
+                                <tr>
+                                    <th>Signal</th>
+                                    <th>Entry</th>
+                                    <th>Exit</th>
+                                    <th>P&L</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="currentTrades">
+                                <!-- Trades will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Next Week Results -->
+                <div class="expiry-result-card next-week" id="nextWeekCard">
+                    <div class="expiry-header">
+                        <div class="expiry-title">
+                            <i class="fas fa-calendar-plus"></i>
+                            Next Week Expiry
+                        </div>
+                        <span class="expiry-day-badge badge-thursday" id="nextExpiryBadge">Thursday</span>
+                    </div>
+                    
+                    <div class="metrics-grid" id="nextMetrics">
+                        <!-- Metrics will be populated here -->
+                    </div>
+                    
+                    <div class="trade-list">
+                        <div class="trade-list-header">
+                            <span class="trade-list-title">Recent Trades</span>
+                            <span class="trade-count" id="nextTradeCount">0 trades</span>
+                        </div>
+                        <table class="trades-table">
+                            <thead>
+                                <tr>
+                                    <th>Signal</th>
+                                    <th>Entry</th>
+                                    <th>Exit</th>
+                                    <th>P&L</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="nextTrades">
+                                <!-- Trades will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Charts -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div class="chart-title">Performance Comparison</div>
+                    <div class="chart-controls">
+                        <button class="chart-control-btn active" onclick="switchChart('pnl')">P&L</button>
+                        <button class="chart-control-btn" onclick="switchChart('winrate')">Win Rate</button>
+                        <button class="chart-control-btn" onclick="switchChart('journey')">Journey</button>
+                    </div>
+                </div>
+                <canvas id="comparisonChart" height="80"></canvas>
+            </div>
+            
+            <!-- Recommendation -->
+            <div class="recommendation-card">
+                <div class="recommendation-header">
+                    <div class="recommendation-icon">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <div>
+                        <div class="recommendation-title">AI Recommendation</div>
+                        <div style="color: #999; font-size: 14px;">Based on your backtest results</div>
+                    </div>
+                </div>
+                <div class="recommendation-content" id="recommendationContent">
+                    <!-- Recommendations will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tab Content: Settings -->
+    <div class="tab-content" id="settings-tab">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-cog"></i>
+                    Advanced Settings
+                </div>
+            </div>
+            <p style="color: #999;">Advanced settings coming soon...</p>
+        </div>
+    </div>
+    
+    <!-- Tab Content: History -->
+    <div class="tab-content" id="history-tab">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-history"></i>
+                    Historical Analysis
+                </div>
+            </div>
+            <p style="color: #999;">Historical analysis coming soon...</p>
+        </div>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Running Dual Expiry Analysis</div>
+            <div class="loading-subtext">This may take a few moments...</div>
+        </div>
+    </div>
+    
+    <script>
+        // Initialize date pickers
+        flatpickr("#fromDate", {
+            dateFormat: "Y-m-d",
+            defaultDate: "2025-07-01"
+        });
+        
+        flatpickr("#toDate", {
+            dateFormat: "Y-m-d",
+            defaultDate: new Date().toISOString().split('T')[0]
+        });
+        
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+                
+                this.classList.add('active');
+                document.getElementById(this.dataset.tab + '-tab').classList.add('active');
+            });
+        });
+        
+        // Signal checkbox handling
+        document.querySelectorAll('.signal-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('click', function(e) {
+                if (e.target.type !== 'checkbox') {
+                    const input = this.querySelector('input');
+                    input.checked = !input.checked;
+                }
+                this.classList.toggle('selected');
+            });
+        });
+        
+        let comparisonChart = null;
+        let currentChartType = 'pnl';
+        
+        async function runComparison() {
+            // Get form values
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            const initialCapital = parseFloat(document.getElementById('initialCapital').value);
+            const lotSize = parseInt(document.getElementById('lotSize').value);
+            const lotsToTrade = parseInt(document.getElementById('lotsToTrade').value);
+            const hedgeOffset = parseInt(document.getElementById('hedgeOffset').value);
+            
+            // Get selected signals
+            const selectedSignals = [];
+            document.querySelectorAll('.signal-checkbox input:checked').forEach(input => {
+                selectedSignals.push(input.id.replace('signal-', ''));
+            });
+            
+            // Get toggle options
+            const useCurrentWeek = document.getElementById('useCurrentWeek').checked;
+            const useNextWeek = document.getElementById('useNextWeek').checked;
+            const compareExpiries = document.getElementById('compareExpiries').checked;
+            const track5MinPnL = document.getElementById('track5MinPnL').checked;
+            const useHedging = document.getElementById('useHedging').checked;
+            const wednesdayExit = document.getElementById('wednesdayExit').checked;
+            
+            // Validation
+            if (!fromDate || !toDate) {
+                showError('Please select date range');
+                return;
+            }
+            
+            if (selectedSignals.length === 0) {
+                showError('Please select at least one signal');
+                return;
+            }
+            
+            if (!useCurrentWeek && !useNextWeek) {
+                showError('Please select at least one expiry type to test');
+                return;
+            }
+            
+            // Show loading
+            document.getElementById('loadingOverlay').classList.add('active');
+            document.getElementById('errorMessage').classList.remove('active');
+            document.getElementById('resultsSection').classList.remove('active');
+            
+            try {
+                console.log('Sending request to API...');
+                // Call API
+                const response = await axios.post('http://localhost:8000/backtest/dual-expiry', {
+                    from_date: fromDate,
+                    to_date: toDate,
+                    initial_capital: initialCapital,
+                    lot_size: lotSize,
+                    lots_to_trade: lotsToTrade,
+                    signals_to_test: selectedSignals,
+                    use_hedging: useHedging,
+                    hedge_offset: hedgeOffset,
+                    use_current_week: useCurrentWeek,
+                    use_next_week: useNextWeek,
+                    compare_expiries: compareExpiries,
+                    track_5min_pnl: track5MinPnL,
+                    wednesday_exit_enabled: wednesdayExit
+                });
+                
+                // Display results
+                console.log('API Response:', response.data);
+                if (response.data && response.data.results) {
+                    // Show results section
+                    document.getElementById('resultsSection').classList.add('active');
+                    displayResults(response.data.results);
+                } else {
+                    console.error('Invalid response format:', response.data);
+                    showError('Invalid response format from API');
+                }
+                
+            } catch (error) {
+                console.error('Full error:', error);
+                console.error('Response:', error.response);
+                if (error.response) {
+                    console.error('Response data:', error.response.data);
+                    console.error('Response status:', error.response.status);
+                }
+                showError(error.response?.data?.detail || error.message || 'Error running comparison');
+            } finally {
+                document.getElementById('loadingOverlay').classList.remove('active');
+            }
+        }
+        
+        function displayResults(data) {
+            // Check if data is valid
+            if (!data) {
+                console.error('No data to display');
+                showError('No data received from API');
+                return;
+            }
+            
+            // Update expiry day badges
+            const fromDate = new Date(document.getElementById('fromDate').value);
+            const expiryChangeDate = new Date('2025-09-01');
+            
+            if (fromDate >= expiryChangeDate) {
+                document.getElementById('currentExpiryBadge').textContent = 'Tuesday';
+                document.getElementById('currentExpiryBadge').className = 'expiry-day-badge badge-tuesday';
+                document.getElementById('nextExpiryBadge').textContent = 'Tuesday';
+                document.getElementById('nextExpiryBadge').className = 'expiry-day-badge badge-tuesday';
+            } else {
+                document.getElementById('currentExpiryBadge').textContent = 'Thursday';
+                document.getElementById('currentExpiryBadge').className = 'expiry-day-badge badge-thursday';
+                document.getElementById('nextExpiryBadge').textContent = 'Thursday';
+                document.getElementById('nextExpiryBadge').className = 'expiry-day-badge badge-thursday';
+            }
+            
+            // Display current week results
+            if (data.current_week && data.current_week.trades) {
+                displayExpiryResults('current', data.current_week.trades);
+            }
+            
+            // Display next week results
+            if (data.next_week && data.next_week.trades) {
+                displayExpiryResults('next', data.next_week.trades);
+            }
+            
+            // Mark winner
+            if (data.comparison && data.comparison.better_expiry) {
+                if (data.comparison.better_expiry === 'CURRENT_WEEK') {
+                    document.getElementById('currentWeekCard').classList.add('winner');
+                    document.getElementById('currentWeekCard').insertAdjacentHTML('afterbegin', 
+                        '<div class="winner-badge">Winner</div>');
+                } else {
+                    document.getElementById('nextWeekCard').classList.add('winner');
+                    document.getElementById('nextWeekCard').insertAdjacentHTML('afterbegin', 
+                        '<div class="winner-badge">Winner</div>');
+                }
+            }
+            
+            // Display charts
+            if (data.comparison) {
+                displayComparisonChart(data);
+            }
+            
+            // Display recommendations
+            if (data.recommendation) {
+                displayRecommendations(data.recommendation);
+            }
+            
+            // Show results section
+            document.getElementById('resultsSection').classList.add('active');
+        }
+        
+        function displayExpiryResults(type, trades) {
+            const metrics = calculateMetrics(trades);
+            const metricsContainer = document.getElementById(type === 'current' ? 'currentMetrics' : 'nextMetrics');
+            const tradesContainer = document.getElementById(type === 'current' ? 'currentTrades' : 'nextTrades');
+            const tradeCount = document.getElementById(type === 'current' ? 'currentTradeCount' : 'nextTradeCount');
+            
+            // Update trade count
+            tradeCount.textContent = `${trades.length} trades`;
+            
+            // Display metrics
+            metricsContainer.innerHTML = `
+                <div class="metric-card">
+                    <div class="metric-label">Total P&L</div>
+                    <div class="metric-value ${metrics.totalPnL >= 0 ? 'positive' : 'negative'}">
+                        ₹${metrics.totalPnL.toLocaleString('en-IN', {maximumFractionDigits: 0})}
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Win Rate</div>
+                    <div class="metric-value ${metrics.winRate >= 50 ? 'positive' : 'negative'}">
+                        ${metrics.winRate.toFixed(1)}%
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Avg P&L</div>
+                    <div class="metric-value ${metrics.avgPnL >= 0 ? 'positive' : 'negative'}">
+                        ₹${metrics.avgPnL.toLocaleString('en-IN', {maximumFractionDigits: 0})}
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Max Profit</div>
+                    <div class="metric-value positive">
+                        ₹${metrics.maxProfit.toLocaleString('en-IN', {maximumFractionDigits: 0})}
+                    </div>
+                </div>
+            `;
+            
+            // Display trades (top 5)
+            tradesContainer.innerHTML = trades.slice(0, 5).map(trade => {
+                let row = `
+                <tr>
+                    <td>${trade.signal || trade.signal_type || 'N/A'}</td>
+                    <td>${formatDate(trade.entry_time)}</td>
+                    <td>${formatDate(trade.exit_time)}</td>
+                    <td class="${(trade.pnl || trade.total_pnl || 0) >= 0 ? 'positive' : 'negative'}">
+                        ₹${(trade.pnl || trade.total_pnl || 0).toFixed(0)}
+                `;
+                
+                // Add hold till expiry P&L if available (for next week options)
+                if (trade.hold_till_expiry_pnl !== undefined) {
+                    row += `
+                        <br><small style="color: #888;">
+                        (Hold: ₹${trade.hold_till_expiry_pnl.toFixed(0)})
+                        </small>
+                    `;
+                }
+                
+                row += `
+                    </td>
+                    <td>${trade.outcome || 'N/A'}</td>
+                </tr>
+                `;
+                return row;
+            }).join('');
+        }
+        
+        function calculateMetrics(trades) {
+            if (!trades || trades.length === 0) {
+                return {
+                    totalPnL: 0,
+                    winRate: 0,
+                    avgPnL: 0,
+                    maxProfit: 0,
+                    maxLoss: 0
+                };
+            }
+            
+            const totalTrades = trades.length;
+            const wins = trades.filter(t => (t.pnl || t.total_pnl || 0) > 0).length;
+            const totalPnL = trades.reduce((sum, t) => sum + (t.pnl || t.total_pnl || 0), 0);
+            const avgPnL = totalPnL / totalTrades;
+            const winRate = (wins / totalTrades) * 100;
+            const maxProfit = Math.max(...trades.map(t => t.pnl || t.total_pnl || 0));
+            const maxLoss = Math.min(...trades.map(t => t.pnl || t.total_pnl || 0));
+            
+            return { totalPnL, winRate, avgPnL, maxProfit, maxLoss, totalTrades, wins };
+        }
+        
+        function displayComparisonChart(data) {
+            const ctx = document.getElementById('comparisonChart').getContext('2d');
+            
+            if (comparisonChart) {
+                comparisonChart.destroy();
+            }
+            
+            const currentMetrics = calculateMetrics(data.current_week);
+            const nextMetrics = calculateMetrics(data.next_week);
+            
+            const chartConfig = {
+                type: 'bar',
+                data: {
+                    labels: ['Total P&L', 'Win Rate %', 'Avg P&L', 'Total Trades'],
+                    datasets: [{
+                        label: 'Current Week',
+                        data: [
+                            currentMetrics.totalPnL,
+                            currentMetrics.winRate,
+                            currentMetrics.avgPnL,
+                            currentMetrics.totalTrades
+                        ],
+                        backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1
+                    }, {
+                        label: 'Next Week',
+                        data: [
+                            nextMetrics.totalPnL,
+                            nextMetrics.winRate,
+                            nextMetrics.avgPnL,
+                            nextMetrics.totalTrades
+                        ],
+                        backgroundColor: 'rgba(16, 185, 129, 0.5)',
+                        borderColor: 'rgba(16, 185, 129, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#e0e0e0'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            },
+                            ticks: {
+                                color: '#999'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            },
+                            ticks: {
+                                color: '#999'
+                            }
+                        }
+                    }
+                }
+            };
+            
+            comparisonChart = new Chart(ctx, chartConfig);
+        }
+        
+        function displayRecommendations(recommendation) {
+            const content = document.getElementById('recommendationContent');
+            
+            content.innerHTML = `
+                <div class="recommendation-item">
+                    <i class="fas fa-chart-line"></i>
+                    <div class="recommendation-text">
+                        <strong>Recommended Expiry: ${recommendation.recommended_expiry || 'Based on Analysis'}</strong>
+                        <p>${recommendation.reason || 'Analysis shows better risk-reward ratio with this expiry selection.'}</p>
+                    </div>
+                </div>
+                <div class="recommendation-item">
+                    <i class="fas fa-info-circle"></i>
+                    <div class="recommendation-text">
+                        <strong>Key Insight</strong>
+                        <p>Consider market conditions and time decay when selecting expiry. Next week expiry offers more time value but may have lower gamma.</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function switchChart(type) {
+            currentChartType = type;
+            document.querySelectorAll('.chart-control-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            // Re-render chart based on type
+        }
+        
+        function formatDate(dateStr) {
+            if (!dateStr) return 'N/A';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: 'short'
+            });
+        }
+        
+        function showError(message) {
+            const errorEl = document.getElementById('errorMessage');
+            document.getElementById('errorText').textContent = message;
+            errorEl.classList.add('active');
+            setTimeout(() => errorEl.classList.remove('active'), 5000);
+        }
+        
+        function resetForm() {
+            document.getElementById('fromDate').value = '2025-07-01';
+            document.getElementById('toDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('initialCapital').value = '500000';
+            document.getElementById('lotSize').value = '75';
+            document.getElementById('lotsToTrade').value = '10';
+            document.getElementById('hedgeOffset').value = '200';
+            
+            // Reset checkboxes
+            document.querySelectorAll('.signal-checkbox').forEach(checkbox => {
+                const input = checkbox.querySelector('input');
+                if (['signal-S1', 'signal-S2', 'signal-S3'].includes(input.id)) {
+                    input.checked = true;
+                    checkbox.classList.add('selected');
+                } else {
+                    input.checked = false;
+                    checkbox.classList.remove('selected');
+                }
+            });
+            
+            // Reset toggles
+            document.getElementById('useCurrentWeek').checked = true;
+            document.getElementById('useNextWeek').checked = true;
+            document.getElementById('compareExpiries').checked = true;
+            document.getElementById('track5MinPnL').checked = true;
+            document.getElementById('useHedging').checked = true;
+            document.getElementById('wednesdayExit').checked = true;
+            
+            // Hide results
+            document.getElementById('resultsSection').classList.remove('active');
+            document.getElementById('errorMessage').classList.remove('active');
+        }
+    </script>
+</body>
+</html>
