@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk Management Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .header {
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 24px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .container {
+            padding: 20px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        /* Risk Metrics Grid */
+        .risk-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .risk-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .risk-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+        }
+
+        .risk-low::before {
+            background: #10b981;
+        }
+
+        .risk-medium::before {
+            background: #f59e0b;
+        }
+
+        .risk-high::before {
+            background: #ef4444;
+        }
+
+        .risk-label {
+            color: #666;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .risk-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #1a1a2e;
+            margin-bottom: 10px;
+        }
+
+        .risk-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .risk-bar {
+            flex: 1;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .risk-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .risk-status {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .status-low {
+            background: #d4f4dd;
+            color: #0e6333;
+        }
+
+        .status-medium {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-high {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* Exposure Chart */
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+
+        /* Position Risk Table */
+        .table-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px;
+            background: rgba(102, 126, 234, 0.1);
+            color: #1a1a2e;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            font-size: 14px;
+        }
+
+        tr:hover {
+            background: rgba(102, 126, 234, 0.03);
+        }
+
+        /* Alert Section */
+        .alerts-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        .alert-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 3px solid #f59e0b;
+        }
+
+        .alert-danger {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 3px solid #ef4444;
+        }
+
+        .alert-info {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 3px solid #3b82f6;
+        }
+
+        .alert-icon {
+            font-size: 20px;
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .alert-message {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .alert-time {
+            font-size: 11px;
+            color: #999;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .control-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background: #667eea;
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .control-btn:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+
+        .control-btn.danger {
+            background: #ef4444;
+        }
+
+        .control-btn.danger:hover {
+            background: #dc2626;
+        }
+
+        /* Settings Modal */
+        .settings-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>
+            <i class="fas fa-shield-alt"></i>
+            Risk Management Dashboard
+        </h1>
+        <div style="display: flex; gap: 20px; align-items: center;">
+            <button class="control-btn" onclick="showSettings()">
+                <i class="fas fa-cog"></i> Risk Settings
+            </button>
+            <button class="control-btn danger" onclick="emergencyCloseAll()">
+                <i class="fas fa-exclamation-triangle"></i> EMERGENCY CLOSE ALL
+            </button>
+            <button style="padding: 10px 20px; background: rgba(255,255,255,0.1); border: none; border-radius: 8px; color: white; cursor: pointer;" onclick="window.location.href='/'">
+                <i class="fas fa-arrow-left"></i> Dashboard
+            </button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Risk Metrics -->
+        <div class="risk-grid">
+            <div class="risk-card risk-low">
+                <div class="risk-label">Portfolio Risk Score</div>
+                <div class="risk-value" id="riskScore">2.3</div>
+                <div class="risk-indicator">
+                    <div class="risk-bar">
+                        <div class="risk-fill" style="width: 23%; background: #10b981;" id="riskBar"></div>
+                    </div>
+                    <span class="risk-status status-low">LOW</span>
+                </div>
+            </div>
+
+            <div class="risk-card risk-medium">
+                <div class="risk-label">Capital at Risk</div>
+                <div class="risk-value" id="capitalRisk">₹25,000</div>
+                <div class="risk-indicator">
+                    <div class="risk-bar">
+                        <div class="risk-fill" style="width: 50%; background: #f59e0b;" id="capitalBar"></div>
+                    </div>
+                    <span class="risk-status status-medium">5%</span>
+                </div>
+            </div>
+
+            <div class="risk-card risk-low">
+                <div class="risk-label">Position Exposure</div>
+                <div class="risk-value" id="exposure">₹1,50,000</div>
+                <div class="risk-indicator">
+                    <div class="risk-bar">
+                        <div class="risk-fill" style="width: 30%; background: #10b981;" id="exposureBar"></div>
+                    </div>
+                    <span class="risk-status status-low">30%</span>
+                </div>
+            </div>
+
+            <div class="risk-card risk-low">
+                <div class="risk-label">Margin Utilization</div>
+                <div class="risk-value" id="marginUsed">45%</div>
+                <div class="risk-indicator">
+                    <div class="risk-bar">
+                        <div class="risk-fill" style="width: 45%; background: #10b981;" id="marginBar"></div>
+                    </div>
+                    <span class="risk-status status-low">SAFE</span>
+                </div>
+            </div>
+
+            <div class="risk-card risk-medium">
+                <div class="risk-label">Max Loss Today</div>
+                <div class="risk-value negative" id="maxLoss">₹-8,500</div>
+                <div class="risk-indicator">
+                    <div class="risk-bar">
+                        <div class="risk-fill" style="width: 60%; background: #f59e0b;" id="lossBar"></div>
+                    </div>
+                    <span class="risk-status status-medium">ALERT</span>
+                </div>
+            </div>
+
+            <div class="risk-card risk-low">
+                <div class="risk-label">VaR (95%)</div>
+                <div class="risk-value" id="var95">₹12,000</div>
+                <div class="risk-indicator">
+                    <div class="risk-bar">
+                        <div class="risk-fill" style="width: 24%; background: #10b981;" id="varBar"></div>
+                    </div>
+                    <span class="risk-status status-low">2.4%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Exposure Charts -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div class="chart-title">Exposure by Strategy</div>
+                </div>
+                <canvas id="strategyExposureChart" height="150"></canvas>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div class="chart-title">Risk Distribution</div>
+                </div>
+                <canvas id="riskDistributionChart" height="150"></canvas>
+            </div>
+        </div>
+
+        <!-- Position Risk Table -->
+        <div class="table-container">
+            <div class="chart-header">
+                <div class="chart-title">Position-wise Risk Analysis</div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Position</th>
+                        <th>Exposure</th>
+                        <th>Unrealized P&L</th>
+                        <th>Risk Score</th>
+                        <th>Stop Loss</th>
+                        <th>Max Loss</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="positionRiskTable">
+                    <!-- Positions will be populated here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Risk Alerts -->
+        <div class="alerts-container">
+            <div class="chart-header">
+                <div class="chart-title">Risk Alerts</div>
+            </div>
+            <div id="alertsList">
+                <!-- Alerts will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="settings-modal" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Risk Management Settings</h2>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Max Capital at Risk (%)</label>
+                <input type="number" class="form-input" id="maxCapitalRisk" value="10" min="1" max="100">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Max Position Size (₹)</label>
+                <input type="number" class="form-input" id="maxPositionSize" value="100000" min="1000">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Max Daily Loss (₹)</label>
+                <input type="number" class="form-input" id="maxDailyLoss" value="15000" min="1000">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Stop Loss % per Trade</label>
+                <input type="number" class="form-input" id="stopLossPercent" value="2" min="0.5" max="10" step="0.5">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Max Open Positions</label>
+                <input type="number" class="form-input" id="maxPositions" value="5" min="1" max="20">
+            </div>
+            
+            <div class="modal-actions">
+                <button class="control-btn" style="background: #6b7280;" onclick="closeSettings()">Cancel</button>
+                <button class="control-btn" onclick="saveSettings()">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let strategyExposureChart = null;
+        let riskDistributionChart = null;
+        let riskSettings = {
+            maxCapitalRisk: 10,
+            maxPositionSize: 100000,
+            maxDailyLoss: 15000,
+            stopLossPercent: 2,
+            maxPositions: 5
+        };
+
+        // Initialize charts
+        function initCharts() {
+            // Strategy Exposure Chart
+            const strategyCtx = document.getElementById('strategyExposureChart').getContext('2d');
+            strategyExposureChart = new Chart(strategyCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Signal-Based', 'Momentum', 'Mean Reversion', 'Arbitrage'],
+                    datasets: [{
+                        data: [45000, 35000, 40000, 30000],
+                        backgroundColor: ['#667eea', '#10b981', '#f59e0b', '#ef4444']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // Risk Distribution Chart
+            const riskCtx = document.getElementById('riskDistributionChart').getContext('2d');
+            riskDistributionChart = new Chart(riskCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Low Risk', 'Medium Risk', 'High Risk'],
+                    datasets: [{
+                        label: 'Positions',
+                        data: [8, 4, 2],
+                        backgroundColor: ['#10b981', '#f59e0b', '#ef4444']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Load risk data
+        async function loadRiskData() {
+            try {
+                // Fetch real data from multiple endpoints
+                const [positionsResponse, pnlResponse, fundsResponse] = await Promise.all([
+                    fetch('http://localhost:8000/live/positions').catch(() => null),
+                    fetch('http://localhost:8000/live/pnl').catch(() => null),
+                    fetch('http://localhost:8000/live/funds').catch(() => null)
+                ]);
+
+                let positions = [];
+                let totalPnl = 0;
+                let funds = {};
+
+                // Process positions
+                if (positionsResponse && positionsResponse.ok) {
+                    const posData = await positionsResponse.json();
+                    positions = posData.positions || [];
+                }
+
+                // Process P&L
+                if (pnlResponse && pnlResponse.ok) {
+                    const pnlData = await pnlResponse.json();
+                    totalPnl = pnlData.total_pnl || 0;
+                }
+
+                // Process funds
+                if (fundsResponse && fundsResponse.ok) {
+                    funds = await fundsResponse.json();
+                }
+
+                // Calculate risk metrics
+                const totalExposure = positions.reduce((sum, p) => sum + Math.abs(p.value || 0), 0);
+                const capitalAtRisk = positions.reduce((sum, p) => sum + Math.abs(p.pnl || 0), 0);
+                const marginUsed = funds.utilised?.total ? (funds.utilised.total / funds.available?.total * 100) : 0;
+                const maxLossToday = Math.min(0, ...positions.map(p => p.pnl || 0));
+                
+                // Calculate risk score (0-10 scale)
+                let riskScore = 0;
+                if (marginUsed > 80) riskScore += 3;
+                else if (marginUsed > 60) riskScore += 2;
+                else if (marginUsed > 40) riskScore += 1;
+                
+                if (Math.abs(maxLossToday) > 10000) riskScore += 3;
+                else if (Math.abs(maxLossToday) > 5000) riskScore += 2;
+                else if (Math.abs(maxLossToday) > 2000) riskScore += 1;
+                
+                if (positions.length > 5) riskScore += 2;
+                else if (positions.length > 3) riskScore += 1;
+
+                // Create risk data object
+                const data = {
+                    risk_score: Math.min(10, riskScore),
+                    capital_at_risk: capitalAtRisk,
+                    exposure: totalExposure,
+                    margin_used: marginUsed,
+                    max_loss_today: maxLossToday,
+                    var_95: Math.abs(maxLossToday) * 1.5, // Simplified VaR calculation
+                    positions: positions.map(p => ({
+                        symbol: p.tradingsymbol || p.symbol || 'NIFTY',
+                        position: p.quantity || 0,
+                        exposure: Math.abs(p.value || 0),
+                        pnl: p.pnl || 0,
+                        risk_score: calculatePositionRisk(p),
+                        stop_loss: p.stop_loss || 0,
+                        max_loss: Math.abs(p.quantity * (p.average_price || 0) * 0.1) // 10% max loss estimate
+                    })),
+                    alerts: generateRiskAlerts(riskScore, marginUsed, maxLossToday, positions)
+                };
+
+                updateRiskMetrics(data);
+                updatePositionTable(data.positions);
+                updateAlerts(data.alerts);
+
+            } catch (error) {
+                console.error('Error loading risk data:', error);
+                // Load with empty data if API fails
+                loadEmptyData();
+            }
+        }
+
+        // Calculate position-specific risk score
+        function calculatePositionRisk(position) {
+            let risk = 0;
+            const pnlPercent = (position.pnl / (position.value || 1)) * 100;
+            
+            if (pnlPercent < -5) risk += 3;
+            else if (pnlPercent < -2) risk += 2;
+            else if (pnlPercent < 0) risk += 1;
+            
+            if (Math.abs(position.quantity) > 1000) risk += 2;
+            else if (Math.abs(position.quantity) > 500) risk += 1;
+            
+            return Math.min(10, risk);
+        }
+
+        // Generate risk alerts based on metrics
+        function generateRiskAlerts(riskScore, marginUsed, maxLoss, positions) {
+            const alerts = [];
+            const now = new Date();
+
+            if (riskScore > 7) {
+                alerts.push({
+                    type: 'danger',
+                    title: 'High Risk Alert',
+                    message: 'Portfolio risk score exceeds safe limits',
+                    time: now
+                });
+            } else if (riskScore > 5) {
+                alerts.push({
+                    type: 'warning',
+                    title: 'Moderate Risk',
+                    message: 'Monitor positions closely',
+                    time: now
+                });
+            }
+
+            if (marginUsed > 75) {
+                alerts.push({
+                    type: 'danger',
+                    title: 'High Margin Utilization',
+                    message: `Margin usage at ${marginUsed.toFixed(1)}%`,
+                    time: now
+                });
+            }
+
+            if (Math.abs(maxLoss) > 10000) {
+                alerts.push({
+                    type: 'danger',
+                    title: 'Significant Loss',
+                    message: `Max loss today: ₹${Math.abs(maxLoss).toLocaleString()}`,
+                    time: now
+                });
+            }
+
+            // Check for positions with high losses
+            positions.forEach(pos => {
+                if (pos.pnl < -5000) {
+                    alerts.push({
+                        type: 'warning',
+                        title: 'Position Loss Alert',
+                        message: `${pos.symbol || 'Position'} showing loss of ₹${Math.abs(pos.pnl).toLocaleString()}`,
+                        time: now
+                    });
+                }
+            });
+
+            if (alerts.length === 0) {
+                alerts.push({
+                    type: 'info',
+                    title: 'All Systems Normal',
+                    message: 'Risk levels within acceptable range',
+                    time: now
+                });
+            }
+
+            return alerts;
+        }
+
+        // Load empty data as fallback
+        function loadEmptyData() {
+            const data = {
+                risk_score: 0,
+                capital_at_risk: 0,
+                exposure: 0,
+                margin_used: 0,
+                max_loss_today: 0,
+                var_95: 0,
+                positions: [],
+                alerts: [{
+                    type: 'info',
+                    title: 'No Data Available',
+                    message: 'Connect to broker to see risk metrics',
+                    time: new Date()
+                }]
+            };
+
+            updateRiskMetrics(data);
+            updatePositionTable([]);
+            updateAlerts(data.alerts);
+        }
+
+        // Update risk metrics
+        function updateRiskMetrics(data) {
+            // Update risk score
+            document.getElementById('riskScore').textContent = data.risk_score.toFixed(1);
+            document.getElementById('riskBar').style.width = (data.risk_score * 10) + '%';
+            
+            // Update capital at risk
+            document.getElementById('capitalRisk').textContent = '₹' + data.capital_at_risk.toLocaleString();
+            document.getElementById('capitalBar').style.width = (data.capital_at_risk / 50000 * 100) + '%';
+            
+            // Update exposure
+            document.getElementById('exposure').textContent = '₹' + data.exposure.toLocaleString();
+            document.getElementById('exposureBar').style.width = (data.exposure / 500000 * 100) + '%';
+            
+            // Update margin
+            document.getElementById('marginUsed').textContent = data.margin_used + '%';
+            document.getElementById('marginBar').style.width = data.margin_used + '%';
+            
+            // Update max loss
+            document.getElementById('maxLoss').textContent = '₹' + data.max_loss_today.toLocaleString();
+            document.getElementById('lossBar').style.width = Math.abs(data.max_loss_today / 15000 * 100) + '%';
+            
+            // Update VaR
+            document.getElementById('var95').textContent = '₹' + data.var_95.toLocaleString();
+            document.getElementById('varBar').style.width = (data.var_95 / 50000 * 100) + '%';
+        }
+
+        // Update position table
+        function updatePositionTable(positions) {
+            const tbody = document.getElementById('positionRiskTable');
+            
+            if (!positions || positions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #999;">No open positions</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = positions.map(pos => `
+                <tr>
+                    <td>${pos.symbol}</td>
+                    <td>${pos.position}</td>
+                    <td>₹${pos.exposure.toLocaleString()}</td>
+                    <td class="${pos.pnl >= 0 ? 'positive' : 'negative'}">
+                        ₹${pos.pnl.toLocaleString()}
+                    </td>
+                    <td>
+                        <span class="risk-status ${
+                            pos.risk_score < 3 ? 'status-low' : 
+                            pos.risk_score < 5 ? 'status-medium' : 'status-high'
+                        }">
+                            ${pos.risk_score.toFixed(1)}
+                        </span>
+                    </td>
+                    <td>${pos.stop_loss}</td>
+                    <td>₹${pos.max_loss.toLocaleString()}</td>
+                    <td>
+                        <button class="control-btn" style="padding: 5px 10px; font-size: 12px;" 
+                                onclick="closePosition('${pos.symbol}')">
+                            Close
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Update alerts
+        function updateAlerts(alerts) {
+            const alertsList = document.getElementById('alertsList');
+            
+            if (!alerts || alerts.length === 0) {
+                alertsList.innerHTML = '<p style="color: #999;">No active alerts</p>';
+                return;
+            }
+            
+            alertsList.innerHTML = alerts.map(alert => `
+                <div class="alert-item alert-${alert.type}">
+                    <div class="alert-icon">
+                        <i class="fas fa-${
+                            alert.type === 'danger' ? 'exclamation-circle' : 
+                            alert.type === 'warning' ? 'exclamation-triangle' : 'info-circle'
+                        }"></i>
+                    </div>
+                    <div class="alert-content">
+                        <div class="alert-title">${alert.title}</div>
+                        <div class="alert-message">${alert.message}</div>
+                        <div class="alert-time">${new Date(alert.time).toLocaleTimeString()}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Show settings modal
+        function showSettings() {
+            document.getElementById('settingsModal').style.display = 'flex';
+            
+            // Load current settings
+            document.getElementById('maxCapitalRisk').value = riskSettings.maxCapitalRisk;
+            document.getElementById('maxPositionSize').value = riskSettings.maxPositionSize;
+            document.getElementById('maxDailyLoss').value = riskSettings.maxDailyLoss;
+            document.getElementById('stopLossPercent').value = riskSettings.stopLossPercent;
+            document.getElementById('maxPositions').value = riskSettings.maxPositions;
+        }
+
+        // Close settings modal
+        function closeSettings() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        // Save settings
+        async function saveSettings() {
+            riskSettings = {
+                maxCapitalRisk: parseFloat(document.getElementById('maxCapitalRisk').value),
+                maxPositionSize: parseFloat(document.getElementById('maxPositionSize').value),
+                maxDailyLoss: parseFloat(document.getElementById('maxDailyLoss').value),
+                stopLossPercent: parseFloat(document.getElementById('stopLossPercent').value),
+                maxPositions: parseInt(document.getElementById('maxPositions').value)
+            };
+            
+            // Save to API
+            try {
+                const response = await fetch('http://localhost:8000/risk/settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(riskSettings)
+                });
+                
+                if (response.ok) {
+                    alert('Risk settings saved successfully');
+                    closeSettings();
+                    loadRiskData();
+                }
+            } catch (error) {
+                console.error('Error saving settings:', error);
+                alert('Failed to save settings');
+            }
+        }
+
+        // Emergency close all positions
+        async function emergencyCloseAll() {
+            if (!confirm('⚠️ EMERGENCY CLOSE ALL\n\nThis will immediately close ALL open positions at market price.\n\nAre you absolutely sure?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:8000/orders/emergency-close-all', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(`Emergency close executed:\n${result.positions_closed} positions closed\nTotal P&L: ₹${result.total_pnl}`);
+                    loadRiskData();
+                }
+            } catch (error) {
+                console.error('Emergency close error:', error);
+                alert('Failed to execute emergency close');
+            }
+        }
+
+        // Close specific position
+        async function closePosition(symbol) {
+            if (!confirm(`Close position for ${symbol}?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`http://localhost:8000/orders/close-position`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ symbol: symbol })
+                });
+                
+                if (response.ok) {
+                    alert(`Position closed for ${symbol}`);
+                    loadRiskData();
+                }
+            } catch (error) {
+                console.error('Close position error:', error);
+                alert('Failed to close position');
+            }
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+            loadRiskData();
+            
+            // Refresh data every 5 seconds
+            setInterval(loadRiskData, 5000);
+        });
+
+        // Close modal on outside click
+        window.onclick = function(event) {
+            const modal = document.getElementById('settingsModal');
+            if (event.target === modal) {
+                closeSettings();
+            }
+        }
+    </script>
+</body>
+</html>

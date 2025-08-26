@@ -326,15 +326,12 @@ class RunBacktestUseCase:
                 daily_starting_capital = current_capital
             
             # Get previous week data for context
-            # We need at least previous week's data (5 days * 7 hours = 35 bars)
-            if i < 35:  # Changed from 7*6=42 to 35
-                continue
-            
             prev_week_data = self.context_manager.get_previous_week_data(
                 current_bar.timestamp, nifty_data[:i]
             )
             
-            if not prev_week_data:
+            # Skip if we don't have enough previous week data (need at least 20 bars for zones)
+            if not prev_week_data or len(prev_week_data) < 20:
                 continue
             
             # Update weekly context
@@ -482,8 +479,8 @@ class RunBacktestUseCase:
                 hedge_strike = main_strike + params.hedge_offset
             
             # Create trade record with zone information
-            # Entry time is at the close of next candle (signal at 10:15, enter at 11:15 close)
-            entry_time = current_bar.timestamp + timedelta(hours=1)
+            # Entry time is at the close of current candle (second candle where signal triggers)
+            entry_time = current_bar.timestamp
             
             trade = BacktestTrade(
                 backtest_run_id=backtest_run_id,

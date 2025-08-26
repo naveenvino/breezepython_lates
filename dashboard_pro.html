@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Dashboard - Dark Pro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Dark Theme Colors */
+            --bg-primary: #0f1419;
+            --bg-secondary: #1a1f2e;
+            --bg-tertiary: #242837;
+            --bg-card: #1e2332;
+            --bg-hover: #2a3042;
+            
+            /* Accent Colors */
+            --accent-blue: #00d4ff;
+            --accent-green: #00ff88;
+            --accent-red: #ff3366;
+            --accent-purple: #9945ff;
+            --accent-orange: #ff9500;
+            --accent-yellow: #ffeb3b;
+            
+            /* Text Colors */
+            --text-primary: #ffffff;
+            --text-secondary: #8892b0;
+            --text-muted: #495670;
+            
+            /* Gradients */
+            --gradient-blue: linear-gradient(135deg, #667eea 0%, #00d4ff 100%);
+            --gradient-green: linear-gradient(135deg, #00ff88 0%, #00d4aa 100%);
+            --gradient-red: linear-gradient(135deg, #ff3366 0%, #ff6b6b 100%);
+            --gradient-purple: linear-gradient(135deg, #9945ff 0%, #c770ff 100%);
+            
+            /* Shadows */
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+            --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.6);
+            
+            /* Glassmorphism */
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        /* Animated Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(153, 69, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(0, 255, 136, 0.1) 0%, transparent 50%);
+            z-index: -1;
+            animation: backgroundShift 20s ease-in-out infinite;
+        }
+
+        @keyframes backgroundShift {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.1); }
+        }
+
+        /* Animated Grid Pattern */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -1;
+            animation: gridMove 10s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        /* Main Container */
+        .dashboard-wrapper {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        .header-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 25px 30px;
+            margin-bottom: 30px;
+            animation: slideDown 0.5s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-title {
+            font-size: 28px;
+            font-weight: 700;
+            background: var(--gradient-blue);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .live-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--accent-green);
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent-green);
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 255, 136, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); }
+        }
+
+        .header-stats {
+            display: flex;
+            gap: 40px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.5s ease forwards;
+            opacity: 0;
+        }
+
+        .metric-card:nth-child(1) { animation-delay: 0.1s; }
+        .metric-card:nth-child(2) { animation-delay: 0.2s; }
+        .metric-card:nth-child(3) { animation-delay: 0.3s; }
+        .metric-card:nth-child(4) { animation-delay: 0.4s; }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-blue);
+            animation: shimmer 2s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-blue);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2);
+        }
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .metric-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .icon-primary {
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--accent-blue);
+        }
+
+        .icon-success {
+            background: rgba(0, 255, 136, 0.1);
+            color: var(--accent-green);
+        }
+
+        .icon-danger {
+            background: rgba(255, 51, 102, 0.1);
+            color: var(--accent-red);
+        }
+
+        .icon-warning {
+            background: rgba(255, 149, 0, 0.1);
+            color: var(--accent-orange);
+        }
+
+        .metric-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+
+        .metric-change {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .change-positive {
+            color: var(--accent-green);
+        }
+
+        .change-negative {
+            color: var(--accent-red);
+        }
+
+        /* Quick Actions */
+        .actions-section {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            animation: fadeIn 0.6s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .section-header {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-header i {
+            color: var(--accent-purple);
+        }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .action-btn {
+            padding: 18px 20px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 2px solid var(--glass-border);
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .action-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: var(--gradient-blue);
+            opacity: 0.3;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            transition: width 0.6s, height 0.6s, opacity 0.6s;
+        }
+
+        .action-btn:hover::before {
+            width: 300px;
+            height: 300px;
+            opacity: 0;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent-blue);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+        }
+
+        .action-btn i {
+            font-size: 18px;
+            color: var(--accent-blue);
+        }
+
+        /* Positions Table */
+        .table-section {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 30px;
+            animation: slideUp 0.7s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 15px;
+            border-bottom: 2px solid var(--glass-border);
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        tbody tr {
+            transition: all 0.2s ease;
+        }
+
+        tbody tr:hover {
+            background: var(--bg-hover);
+        }
+
+        .badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-block;
+        }
+
+        .badge-ce {
+            background: var(--gradient-blue);
+            color: white;
+        }
+
+        .badge-pe {
+            background: var(--gradient-purple);
+            color: white;
+        }
+
+        /* Market Status Widget */
+        .market-status {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            padding: 14px 24px;
+            border-radius: 50px;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            z-index: 1000;
+            color: var(--text-primary);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: blink 2s infinite;
+        }
+
+        .status-open {
+            background: var(--accent-green);
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+
+        .status-closed {
+            background: var(--accent-red);
+            box-shadow: 0 0 10px rgba(255, 51, 102, 0.5);
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--glass-border);
+            border-top: 3px solid var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Floating Particles */
+        .particle {
+            position: fixed;
+            pointer-events: none;
+            opacity: 0.5;
+            animation: float 20s infinite;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0) translateX(0) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.5;
+            }
+            90% {
+                opacity: 0.5;
+            }
+            100% {
+                transform: translateY(-100vh) translateX(100px) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .dashboard-wrapper {
+                padding: 15px;
+            }
+
+            .header-content {
+                flex-direction: column;
+            }
+
+            .header-stats {
+                width: 100%;
+                justify-content: space-around;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .actions-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Floating Particles -->
+    <div class="particle" style="left: 10%; top: 20%; width: 4px; height: 4px; background: var(--accent-blue); border-radius: 50%; animation-delay: 0s;"></div>
+    <div class="particle" style="left: 20%; top: 80%; width: 6px; height: 6px; background: var(--accent-purple); border-radius: 50%; animation-delay: 3s;"></div>
+    <div class="particle" style="left: 60%; top: 10%; width: 3px; height: 3px; background: var(--accent-green); border-radius: 50%; animation-delay: 5s;"></div>
+    <div class="particle" style="left: 80%; top: 60%; width: 5px; height: 5px; background: var(--accent-orange); border-radius: 50%; animation-delay: 7s;"></div>
+    <div class="particle" style="left: 90%; top: 30%; width: 4px; height: 4px; background: var(--accent-red); border-radius: 50%; animation-delay: 9s;"></div>
+
+    <!-- Main Dashboard Container -->
+    <div class="dashboard-wrapper">
+        
+        <!-- Header Section -->
+        <div class="header-card">
+            <div class="header-content">
+                <div class="header-left">
+                    <h1 class="header-title">
+                        <i class="fas fa-chart-line"></i>
+                        Trading Dashboard
+                    </h1>
+                    <div class="live-badge">
+                        <span class="live-dot"></span>
+                        <span>LIVE</span>
+                    </div>
+                </div>
+                <div class="header-stats">
+                    <div class="stat-item">
+                        <div class="stat-label">Total Capital</div>
+                        <div class="stat-value" id="total-capital">Loading...</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Available Margin</div>
+                        <div class="stat-value" id="available-margin">Loading...</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Current Time</div>
+                        <div class="stat-value" id="current-time">00:00:00</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metrics Cards -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div>
+                        <div class="metric-title">Today's P&L</div>
+                        <div class="metric-value" id="todays-pnl">-</div>
+                        <div class="metric-change" id="pnl-change">
+                            <span>Loading...</span>
+                        </div>
+                    </div>
+                    <div class="metric-icon icon-primary">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div>
+                        <div class="metric-title">Open Positions</div>
+                        <div class="metric-value" id="open-positions">-</div>
+                        <div class="metric-change" id="position-types">
+                            <span>Loading...</span>
+                        </div>
+                    </div>
+                    <div class="metric-icon icon-warning">
+                        <i class="fas fa-briefcase"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div>
+                        <div class="metric-title">Realized P&L</div>
+                        <div class="metric-value" id="realized-pnl">-</div>
+                        <div class="metric-change">
+                            <span>Loading...</span>
+                        </div>
+                    </div>
+                    <div class="metric-icon icon-success">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div>
+                        <div class="metric-title">Unrealized P&L</div>
+                        <div class="metric-value" id="unrealized-pnl">-</div>
+                        <div class="metric-change">
+                            <span>Loading...</span>
+                        </div>
+                    </div>
+                    <div class="metric-icon icon-danger">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="actions-section">
+            <h2 class="section-header">
+                <i class="fas fa-rocket"></i>
+                Quick Actions
+            </h2>
+            <div class="actions-grid">
+                <button class="action-btn" onclick="navigateToPage('live_trading_pro_complete.html')">
+                    <i class="fas fa-play"></i>
+                    Start Trading
+                </button>
+                <button class="action-btn" onclick="navigateToPage('option_chain.html')">
+                    <i class="fas fa-th"></i>
+                    Option Chain
+                </button>
+                <button class="action-btn" onclick="navigateToPage('positions.html')">
+                    <i class="fas fa-wallet"></i>
+                    View Positions
+                </button>
+                <button class="action-btn" onclick="navigateToPage('signals.html')">
+                    <i class="fas fa-signal"></i>
+                    View Signals
+                </button>
+                <button class="action-btn" onclick="navigateToPage('backtest.html')">
+                    <i class="fas fa-history"></i>
+                    Backtesting
+                </button>
+                <button class="action-btn" onclick="navigateToPage('paper_trading.html')">
+                    <i class="fas fa-flask"></i>
+                    Paper Trade
+                </button>
+            </div>
+        </div>
+
+        <!-- Positions Table -->
+        <div class="table-section">
+            <h2 class="section-header">
+                <i class="fas fa-list"></i>
+                Live Positions
+            </h2>
+            <div class="table-wrapper">
+                <div id="positions-content">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Loading positions...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Market Status Widget -->
+    <div class="market-status">
+        <span class="status-dot" id="market-dot"></span>
+        <span id="market-status-text">Market Status</span>
+    </div>
+
+    <script>
+        // Update time
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('current-time').textContent = now.toLocaleTimeString();
+            
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const day = now.getDay();
+            
+            let marketStatus = 'Market Closed';
+            let statusClass = 'status-closed';
+            
+            if (day >= 1 && day <= 5) {
+                if ((hours === 9 && minutes >= 15) || (hours > 9 && hours < 15) || (hours === 15 && minutes <= 30)) {
+                    marketStatus = 'Market Open';
+                    statusClass = 'status-open';
+                } else if (hours === 9 && minutes < 15) {
+                    marketStatus = 'Pre-Market';
+                }
+            }
+            
+            document.getElementById('market-status-text').textContent = marketStatus;
+            document.getElementById('market-dot').className = 'status-dot ' + statusClass;
+        }
+
+        // Load account info - REAL DATA ONLY
+        async function loadAccountInfo() {
+            try {
+                console.log('Loading real account info...');
+                let dataLoaded = false;
+                
+                // Try to get live funds data
+                try {
+                    const fundsResponse = await fetch('http://localhost:8000/live/funds');
+                    if (fundsResponse.ok) {
+                        const fundsData = await fundsResponse.json();
+                        console.log('Live funds data received:', fundsData);
+                        
+                        // Check for direct properties (from live/funds endpoint which connects to Kite)
+                        if (fundsData.source === 'kite' && (fundsData.available_cash !== undefined || fundsData.available_margin !== undefined)) {
+                            // Total capital = opening balance (this is the actual account balance)
+                            const totalCapital = fundsData.opening_balance !== undefined ? fundsData.opening_balance : fundsData.available_cash;
+                            if (totalCapital !== undefined) {
+                                document.getElementById('total-capital').textContent = 
+                                    `₹${Number(totalCapital).toLocaleString('en-IN', {maximumFractionDigits: 0})}`;
+                                dataLoaded = true;
+                            }
+                            
+                            // Available margin
+                            const availableMargin = fundsData.available_margin !== undefined ? fundsData.available_margin : fundsData.available_cash;
+                            if (availableMargin !== undefined) {
+                                document.getElementById('available-margin').textContent = 
+                                    `₹${Number(availableMargin).toLocaleString('en-IN', {maximumFractionDigits: 0})}`;
+                                dataLoaded = true;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.log('Live funds endpoint failed:', e);
+                }
+                
+                // If no data loaded yet, show error state
+                if (!dataLoaded) {
+                    document.getElementById('total-capital').textContent = 'Not Connected';
+                    document.getElementById('available-margin').textContent = 'Not Connected';
+                    
+                    // Show connection status
+                    const authResponse = await fetch('http://localhost:8000/auth/real-status');
+                    if (authResponse.ok) {
+                        const authData = await authResponse.json();
+                        if (!authData.kite || !authData.kite.connected) {
+                            document.getElementById('total-capital').textContent = 'Kite Not Connected';
+                            document.getElementById('available-margin').textContent = 'Kite Not Connected';
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading account info:', error);
+                document.getElementById('total-capital').textContent = 'Error Loading';
+                document.getElementById('available-margin').textContent = 'Error Loading';
+            }
+        }
+
+        // Load positions from Kite
+        async function loadPositions() {
+            try {
+                // Try live-trading positions first
+                const response = await fetch('http://localhost:8000/live-trading/positions');
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.net && data.net.length > 0) {
+                        const positions = data.net;
+                        document.getElementById('open-positions').textContent = positions.length;
+                        
+                        let tableHTML = `
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Symbol</th>
+                                        <th>Type</th>
+                                        <th>Qty</th>
+                                        <th>Avg Price</th>
+                                        <th>LTP</th>
+                                        <th>P&L</th>
+                                        <th>Change %</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                        `;
+                        
+                        let ceCount = 0, peCount = 0;
+                        let totalPnl = 0;
+                        let realizedPnl = 0;
+                        let unrealizedPnl = 0;
+                        
+                        positions.forEach(pos => {
+                            const optionType = pos.tradingsymbol?.includes('CE') ? 'CE' : 
+                                             pos.tradingsymbol?.includes('PE') ? 'PE' : 'FUT';
+                            
+                            if (optionType === 'CE') ceCount++;
+                            if (optionType === 'PE') peCount++;
+                            
+                            const pnl = pos.pnl || 0;
+                            const dayPnl = pos.day_buy_value - pos.day_sell_value + (pos.quantity * pos.last_price * pos.multiplier);
+                            totalPnl += pnl;
+                            
+                            if (pos.quantity === 0) {
+                                realizedPnl += pnl;
+                            } else {
+                                unrealizedPnl += pnl;
+                            }
+                            
+                            const pnlClass = pnl >= 0 ? 'change-positive' : 'change-negative';
+                            const changePercent = pos.average_price > 0 ? 
+                                ((pos.last_price - pos.average_price) / pos.average_price * 100).toFixed(2) : 0;
+                            
+                            tableHTML += `
+                                <tr>
+                                    <td>${pos.tradingsymbol}</td>
+                                    <td><span class="badge badge-${optionType.toLowerCase()}">${optionType}</span></td>
+                                    <td>${pos.quantity}</td>
+                                    <td>₹${pos.average_price.toFixed(2)}</td>
+                                    <td>₹${pos.last_price.toFixed(2)}</td>
+                                    <td class="${pnlClass}">₹${Math.abs(pnl).toFixed(2)}</td>
+                                    <td class="${pnlClass}">${changePercent}%</td>
+                                </tr>
+                            `;
+                        });
+                        
+                        tableHTML += '</tbody></table>';
+                        document.getElementById('positions-content').innerHTML = tableHTML;
+                        document.getElementById('position-types').innerHTML = 
+                            `<span>${ceCount} Calls, ${peCount} Puts</span>`;
+                        
+                        // Update P&L values with real data
+                        document.getElementById('todays-pnl').textContent = 
+                            `${totalPnl >= 0 ? '+' : ''}₹${Math.abs(totalPnl).toFixed(0)}`;
+                        document.getElementById('realized-pnl').textContent = 
+                            `${realizedPnl >= 0 ? '+' : ''}₹${Math.abs(realizedPnl).toFixed(0)}`;
+                        document.getElementById('unrealized-pnl').textContent = 
+                            `${unrealizedPnl >= 0 ? '+' : ''}₹${Math.abs(unrealizedPnl).toFixed(0)}`;
+                        
+                        // Update change indicators
+                        const changeElement = document.getElementById('pnl-change');
+                        if (totalPnl >= 0) {
+                            changeElement.innerHTML = '<i class="fas fa-arrow-up"></i><span>Profit</span>';
+                            changeElement.className = 'metric-change change-positive';
+                        } else {
+                            changeElement.innerHTML = '<i class="fas fa-arrow-down"></i><span>Loss</span>';
+                            changeElement.className = 'metric-change change-negative';
+                        }
+                    } else {
+                        // No positions - show real zero values
+                        document.getElementById('open-positions').textContent = '0';
+                        document.getElementById('positions-content').innerHTML = 
+                            '<div style="text-align: center; padding: 60px; color: var(--text-muted);"><i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px;"></i><p>No open positions</p></div>';
+                        document.getElementById('position-types').innerHTML = '<span>No positions</span>';
+                        
+                        // Set P&L to zero when no positions
+                        document.getElementById('todays-pnl').textContent = '₹0';
+                        document.getElementById('realized-pnl').textContent = '₹0';
+                        document.getElementById('unrealized-pnl').textContent = '₹0';
+                        document.getElementById('pnl-change').innerHTML = '<span>No trades today</span>';
+                        document.getElementById('pnl-change').className = 'metric-change';
+                    }
+                } else {
+                    // Fallback to mock data if API fails
+                    console.log('Kite API failed, checking live trading positions...');
+                    loadLiveTradingPositions();
+                }
+            } catch (error) {
+                console.error('Error loading positions:', error);
+                document.getElementById('positions-content').innerHTML = 
+                    '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Unable to load positions - Check Kite connection</div>';
+            }
+        }
+
+        // Fallback to live trading positions
+        async function loadLiveTradingPositions() {
+            try {
+                const response = await fetch('http://localhost:8000/live/positions');
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.positions && data.positions.length > 0) {
+                        // Process live trading positions
+                        document.getElementById('open-positions').textContent = data.positions.length;
+                        // ... rest of the processing
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading live positions:', error);
+            }
+        }
+
+        // Load market data
+        async function loadMarketData() {
+            try {
+                const response = await fetch('http://localhost:8000/market/indices');
+                if (response.ok) {
+                    const data = await response.json();
+                    // Update market indicators if needed
+                }
+            } catch (error) {
+                console.error('Error loading market data:', error);
+            }
+        }
+
+        // Navigation - Fixed to work with iframe
+        function navigateToPage(pageName) {
+            console.log('Navigating to:', pageName);
+            
+            // Check if we're in iframe and parent has navigation function
+            if (window.parent && window.parent !== window) {
+                // We're in an iframe
+                try {
+                    // Try to find the navigation menu item in parent
+                    const parentDoc = window.parent.document;
+                    const menuItem = parentDoc.querySelector(`[data-page="${pageName}"]`);
+                    
+                    if (menuItem) {
+                        // Click the menu item to navigate
+                        menuItem.click();
+                    } else if (window.parent.navigateToPage) {
+                        // Use parent's navigation function
+                        window.parent.navigateToPage(pageName);
+                    } else {
+                        // Fallback: change parent's iframe src
+                        const iframe = parentDoc.getElementById('content-frame');
+                        if (iframe) {
+                            iframe.src = pageName;
+                        }
+                    }
+                } catch (e) {
+                    console.error('Navigation error:', e);
+                    // If cross-origin or other error, try direct navigation
+                    window.location.href = pageName;
+                }
+            } else {
+                // Not in iframe, navigate directly
+                window.location.href = pageName;
+            }
+        }
+
+        // Initialize
+        setInterval(updateTime, 1000);
+        updateTime();
+        loadAccountInfo();
+        loadPositions();
+        loadMarketData();
+
+        // Auto-refresh during market hours
+        setInterval(() => {
+            const now = new Date();
+            const hours = now.getHours();
+            const day = now.getDay();
+            if (day >= 1 && day <= 5 && hours >= 9 && hours <= 16) {
+                loadPositions();
+                loadAccountInfo();
+            }
+        }, 10000);
+        
+        // Refresh account info every 30 seconds
+        setInterval(loadAccountInfo, 30000);
+
+        // Add more floating particles dynamically
+        function createParticle() {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.top = '100%';
+            particle.style.width = Math.random() * 6 + 2 + 'px';
+            particle.style.height = particle.style.width;
+            particle.style.background = `var(--accent-${['blue', 'green', 'purple', 'orange', 'red'][Math.floor(Math.random() * 5)]})`;
+            particle.style.borderRadius = '50%';
+            particle.style.animationDelay = Math.random() * 10 + 's';
+            particle.style.animationDuration = (15 + Math.random() * 10) + 's';
+            document.body.appendChild(particle);
+            
+            setTimeout(() => {
+                particle.remove();
+            }, 25000);
+        }
+
+        // Create particles periodically
+        setInterval(createParticle, 3000);
+    </script>
+</body>
+</html>

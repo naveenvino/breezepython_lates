@@ -1,5 +1,7 @@
 from fastapi import FastAPI, HTTPException, Query, BackgroundTasks, Body
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from datetime import datetime, date, timedelta
 from typing import List, Optional, Dict, Any
@@ -59,6 +61,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serve HTML files
+@app.get("/{filename}.html")
+async def serve_html(filename: str):
+    file_path = f"{filename}.html"
+    if os.path.exists(file_path):
+        return FileResponse(file_path)
+    raise HTTPException(status_code=404, detail="File not found")
+
+# Mount static directory if it exists
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Include ML routers
 app.include_router(ml_router)
@@ -843,17 +857,17 @@ async def get_recent_signals(limit: int = 20):
                 text(f"""
                     SELECT TOP {limit}
                         bt.SignalType,
-                        bt.SignalTime,
                         bt.EntryTime,
                         bt.ExitTime,
-                        bt.EntryPrice,
-                        bt.ExitPrice,
                         bt.TotalPnL,
-                        bt.Status,
                         CASE 
                             WHEN bt.SignalType IN ('S1', 'S2', 'S4', 'S7') THEN 'bullish'
                             ELSE 'bearish'
-                        END as Bias
+                        END as Bias,
+                        CASE 
+                            WHEN bt.TotalPnL > 0 THEN 'WIN'
+                            ELSE 'LOSS'
+                        END as Status
                     FROM BacktestTrades bt
                     ORDER BY bt.EntryTime DESC
                 """)
@@ -863,14 +877,12 @@ async def get_recent_signals(limit: int = 20):
             for row in result:
                 signals.append({
                     "signal_type": row[0],
-                    "signal_time": row[1].isoformat() if row[1] else None,
-                    "datetime": row[2].isoformat() if row[2] else None,
-                    "exit_time": row[3].isoformat() if row[3] else None,
-                    "entry_price": float(row[4]) if row[4] else 0,
-                    "exit_price": float(row[5]) if row[5] else None,
-                    "pnl": float(row[6]) if row[6] else 0,
-                    "status": row[7] or "CLOSED",
-                    "bias": row[8]
+                    "datetime": row[1].isoformat() if row[1] else None,
+                    "exit_time": row[2].isoformat() if row[2] else None,
+                    "pnl": float(row[3]) if row[3] else 0,
+                    "bias": row[4],
+                    "status": row[5],
+                    "strike_price": 0  # Not available in BacktestTrades table
                 })
             
             return {"status": "success", "signals": signals}
@@ -1743,6 +1755,74 @@ async def get_live_positions():
         return result
     except Exception as e:
         logger.error(f"Error getting positions: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/positions", tags=["Kite Trading"])
+async def get_kite_positions():
+    """Get real-time positions from Kite"""
+    try:
+        kite_client, _, _, _, _ = get_kite_services()
+        positions = kite_client.get_positions()
+        return positions
+    except Exception as e:
+        logger.error(f"Error getting Kite positions: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/orders", tags=["Kite Trading"])
+async def get_kite_orders():
+    """Get all orders from Kite"""
+    try:
+        kite_client, _, _, _, _ = get_kite_services()
+        orders = kite_client.kite.orders()
+        return {"orders": orders}
+    except Exception as e:
+        logger.error(f"Error getting Kite orders: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/orders", tags=["Kite Trading"])
+async def place_order(order_request: dict):
+    """Place an order through Kite"""
+    try:
+        kite_client, _, _, _, _ = get_kite_services()
+        order_id = kite_client.kite.place_order(
+            tradingsymbol=order_request.get("tradingsymbol"),
+            exchange=order_request.get("exchange", "NFO"),
+            transaction_type=order_request.get("transaction_type"),
+            quantity=order_request.get("quantity"),
+            order_type=order_request.get("order_type", "MARKET"),
+            product=order_request.get("product", "MIS"),
+            variety=order_request.get("variety", "regular")
+        )
+        return {"order_id": order_id, "status": "success"}
+    except Exception as e:
+        logger.error(f"Error placing order: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/orders/{order_id}", tags=["Kite Trading"])
+async def cancel_order(order_id: str):
+    """Cancel an order"""
+    try:
+        kite_client, _, _, _, _ = get_kite_services()
+        kite_client.kite.cancel_order(order_id=order_id, variety="regular")
+        return {"status": "success", "message": f"Order {order_id} cancelled"}
+    except Exception as e:
+        logger.error(f"Error cancelling order: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/positions/square-off-all", tags=["Kite Trading"])
+async def square_off_all():
+    """Square off all positions"""
+    try:
+        kite_client, _, _, _, _ = get_kite_services()
+        order_service = KiteOrderService(kite_client)
+        order_ids = order_service.square_off_all_positions()
+        return {
+            "status": "success",
+            "message": "All positions squared off",
+            "order_ids": order_ids
+        }
+    except Exception as e:
+        logger.error(f"Error squaring off positions: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/live/execute-signal", tags=["Live Trading - Execution"])
@@ -2752,6 +2832,84 @@ async def detect_live_signals():
         except Exception as e:
             logger.error(f"Signal detection error: {str(e)}")
             return {"signals": [], "count": 0, "timestamp": datetime.now().isoformat()}
+
+@app.get("/signals/weekly-context", tags=["Signals"])
+async def get_weekly_context():
+    """Get weekly context including zones, bias and evaluation status"""
+    db = get_db_manager()
+    with db.get_session() as session:
+        try:
+            # Get current week's data
+            from datetime import timedelta
+            today = datetime.now().date()
+            week_start = today - timedelta(days=today.weekday())  # Monday
+            
+            # Get weekly high/low/open
+            query = """
+                SELECT 
+                    MIN([DateTime]) as WeekStart,
+                    MAX([DateTime]) as LastBar,
+                    MIN([Low]) as WeekLow,
+                    MAX([High]) as WeekHigh,
+                    (SELECT TOP 1 [Open] FROM NiftyIndexData5Minute 
+                     WHERE CAST([DateTime] as DATE) >= :week_start
+                     ORDER BY [DateTime] ASC) as WeekOpen,
+                    COUNT(DISTINCT CAST([DateTime] as DATE)) as TradingDays,
+                    COUNT(*) as TotalBars
+                FROM NiftyIndexData5Minute
+                WHERE CAST([DateTime] as DATE) >= :week_start
+            """
+            
+            result = session.execute(text(query), {"week_start": week_start})
+            row = result.fetchone()
+            
+            if row:
+                week_open = float(row[4]) if row[4] else 0
+                week_high = float(row[3]) if row[3] else 0
+                week_low = float(row[2]) if row[2] else 0
+                
+                # Calculate zones (simplified version)
+                range_size = week_high - week_low
+                zone_size = range_size / 3
+                
+                return {
+                    "status": "success",
+                    "week_start": week_start.isoformat(),
+                    "last_evaluation": row[1].isoformat() if row[1] else None,
+                    "trading_days": row[5],
+                    "total_bars": row[6],
+                    "week_data": {
+                        "open": week_open,
+                        "high": week_high,
+                        "low": week_low,
+                        "range": week_high - week_low
+                    },
+                    "zones": {
+                        "upper_zone": {
+                            "top": week_high,
+                            "bottom": week_high - zone_size
+                        },
+                        "middle_zone": {
+                            "top": week_high - zone_size,
+                            "bottom": week_low + zone_size
+                        },
+                        "lower_zone": {
+                            "top": week_low + zone_size,
+                            "bottom": week_low
+                        }
+                    },
+                    "bias": "BULLISH" if week_open < (week_high + week_low) / 2 else "BEARISH",
+                    "next_evaluation": (datetime.now() + timedelta(hours=1)).replace(minute=15, second=0, microsecond=0).isoformat()
+                }
+            else:
+                return {
+                    "status": "error",
+                    "message": "No data available for current week"
+                }
+                
+        except Exception as e:
+            logger.error(f"Weekly context error: {str(e)}")
+            return {"status": "error", "message": str(e)}
 
 @app.get("/backup/status", tags=["System"])
 async def get_backup_status():
@@ -4222,6 +4380,22 @@ def kill_existing_process_on_port(port: int):
                     
     except Exception as e:
         logger.error(f"Error checking/killing process on port {port}: {str(e)}")
+
+# Add working data operations endpoints
+try:
+    from data_ops_fixed import add_data_operations
+    add_data_operations(app, get_db_manager)
+    logger.info("Added data operations endpoints")
+except Exception as e:
+    logger.warning(f"Could not add data operations: {e}")
+
+# Add TradingView webhook endpoints
+try:
+    from tradingview_webhook_handler import add_tradingview_endpoints
+    add_tradingview_endpoints(app)
+    logger.info("Added TradingView webhook endpoints")
+except Exception as e:
+    logger.warning(f"Could not add TradingView endpoints: {e}")
 
 if __name__ == "__main__":
     # Kill any existing process on port 8000

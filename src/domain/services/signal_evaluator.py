@@ -125,24 +125,66 @@ class SignalEvaluator:
         zones = context.zones
         bias = context.bias
 
+        # Debug logging for S2 evaluation
+        logger.debug(f"S2 Evaluation at {bar_close_time}:")
+        logger.debug(f"  Bias: {bias.bias.name} (dist_to_support: {bias.distance_to_support:.2f}, dist_to_resistance: {bias.distance_to_resistance:.2f})")
+        logger.debug(f"  Zones - Support Top: {zones.lower_zone_top:.2f}, Support Bottom: {zones.lower_zone_bottom:.2f}")
+        logger.debug(f"  Prev Week - High: {zones.prev_week_high:.2f}, Low: {zones.prev_week_low:.2f}, Close: {zones.prev_week_close:.2f}")
+        logger.debug(f"  4H Bodies - Max: {zones.prev_max_4h_body:.2f}, Min: {zones.prev_min_4h_body:.2f}")
+        logger.debug(f"  First Bar: O={first_bar.open:.2f} H={first_bar.high:.2f} L={first_bar.low:.2f} C={first_bar.close:.2f}")
+        logger.debug(f"  Current Bar: C={current_bar.close:.2f}")
+        logger.debug(f"  Margin Low: {zones.margin_low:.2f}")
+
         if bias.bias != TradeDirection.BULLISH:
+            logger.debug(f"  S2 REJECTED: Bias is {bias.bias.name}, not BULLISH")
             return SignalResult.no_signal()
 
-        # All 10 conditions from Pine Script, including margin checks
-        if (first_bar.open > zones.prev_week_low and
-            abs(zones.prev_week_close - zones.lower_zone_bottom) <= zones.margin_low and
-            abs(first_bar.open - zones.lower_zone_bottom) <= zones.margin_low and
-            first_bar.close >= zones.lower_zone_bottom and
-            first_bar.close >= zones.prev_week_close and
-            current_bar.close >= first_bar.low and
-            current_bar.close > zones.prev_week_close and
-            current_bar.close > zones.lower_zone_bottom):
+        # Check if first bar touches the support zone
+        first_bar_touches_support = first_bar.low <= zones.lower_zone_top
+        logger.debug(f"  First bar touches support zone: {first_bar_touches_support} (Low {first_bar.low:.2f} <= Zone Top {zones.lower_zone_top:.2f})")
+
+        # Check all conditions individually for debugging
+        cond1 = first_bar.open > zones.prev_week_low
+        
+        # Margin conditions - bypass if bar touches zone
+        if first_bar_touches_support:
+            logger.debug(f"  First bar touches support zone - bypassing margin checks")
+            cond2 = True  # Bypass margin check for prev_close
+            cond3 = True  # Bypass margin check for first_open
+        else:
+            cond2 = abs(zones.prev_week_close - zones.lower_zone_bottom) <= zones.margin_low
+            cond3 = abs(first_bar.open - zones.lower_zone_bottom) <= zones.margin_low
             
+        cond4 = first_bar.close >= zones.lower_zone_bottom
+        cond5 = first_bar.close >= zones.prev_week_close
+        cond6 = current_bar.close >= first_bar.low
+        cond7 = current_bar.close > zones.prev_week_close
+        cond8 = current_bar.close > zones.lower_zone_bottom
+        
+        logger.debug(f"  S2 Conditions:")
+        logger.debug(f"    1. first_open > prev_low: {first_bar.open:.2f} > {zones.prev_week_low:.2f} = {cond1}")
+        if not first_bar_touches_support:
+            logger.debug(f"    2. |prev_close - support| <= margin: {abs(zones.prev_week_close - zones.lower_zone_bottom):.2f} <= {zones.margin_low:.2f} = {cond2}")
+            logger.debug(f"    3. |first_open - support| <= margin: {abs(first_bar.open - zones.lower_zone_bottom):.2f} <= {zones.margin_low:.2f} = {cond3}")
+        else:
+            logger.debug(f"    2. Margin check bypassed (bar touches zone) = {cond2}")
+            logger.debug(f"    3. Margin check bypassed (bar touches zone) = {cond3}")
+        logger.debug(f"    4. first_close >= support: {first_bar.close:.2f} >= {zones.lower_zone_bottom:.2f} = {cond4}")
+        logger.debug(f"    5. first_close >= prev_close: {first_bar.close:.2f} >= {zones.prev_week_close:.2f} = {cond5}")
+        logger.debug(f"    6. curr_close >= first_low: {current_bar.close:.2f} >= {first_bar.low:.2f} = {cond6}")
+        logger.debug(f"    7. curr_close > prev_close: {current_bar.close:.2f} > {zones.prev_week_close:.2f} = {cond7}")
+        logger.debug(f"    8. curr_close > support: {current_bar.close:.2f} > {zones.lower_zone_bottom:.2f} = {cond8}")
+
+        # All conditions from Pine Script, with margin bypass if bar touches zone
+        if (cond1 and cond2 and cond3 and cond4 and cond5 and cond6 and cond7 and cond8):
+            logger.info(f"S2 TRIGGERED at {bar_close_time}! All conditions met.")
             return SignalResult.from_signal(
                 signal_type=SignalType.S2, stop_loss=zones.lower_zone_bottom,
                 entry_time=bar_close_time, entry_price=current_bar.close,
                 direction=TradeDirection.BULLISH
             )
+        
+        logger.debug(f"  S2 REJECTED: Not all conditions met")
         return SignalResult.no_signal()
 
     def _evaluate_s3(self, is_second_bar: bool, first_bar: BarData,
@@ -155,10 +197,19 @@ class SignalEvaluator:
         if bias.bias != TradeDirection.BEARISH:
             return SignalResult.no_signal()
 
-        # Base conditions
-        if not (abs(zones.prev_week_close - zones.upper_zone_bottom) <= zones.margin_high and
-                abs(first_bar.open - zones.upper_zone_bottom) <= zones.margin_high and
-                first_bar.close <= zones.prev_week_high):
+        # Check if first bar touches the resistance zone
+        first_bar_touches_resistance = first_bar.high >= zones.upper_zone_bottom
+        
+        # Base conditions with margin bypass if bar touches zone
+        if first_bar_touches_resistance:
+            # Bypass margin checks if bar touches resistance
+            margin_conditions_met = True
+        else:
+            # Apply margin checks only if bar doesn't touch zone
+            margin_conditions_met = (abs(zones.prev_week_close - zones.upper_zone_bottom) <= zones.margin_high and
+                                    abs(first_bar.open - zones.upper_zone_bottom) <= zones.margin_high)
+        
+        if not (margin_conditions_met and first_bar.close <= zones.prev_week_high):
             return SignalResult.no_signal()
 
         # Scenario A: 2nd candle rejection
@@ -258,6 +309,8 @@ class SignalEvaluator:
         if bias.bias != TradeDirection.BEARISH:
             return SignalResult.no_signal()
 
+        # For S6, the condition is that high touches zone, so no margin bypass needed here
+        # as the condition already requires touching the zone
         if not (first_bar.high >= zones.upper_zone_bottom and
                 first_bar.close <= zones.upper_zone_top and
                 first_bar.close <= zones.prev_week_high):

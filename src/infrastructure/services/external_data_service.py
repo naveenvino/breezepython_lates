@@ -47,13 +47,11 @@ class ExternalDataService:
             return []
 
     async def _get_data_from_yahoo(self, symbol: str, from_date: datetime, to_date: datetime, interval: str) -> List[Dict[str, Any]]:
-        logger.info(f"Fetching data from Yahoo Finance for {symbol} from {from_date} to {to_date} with interval {interval}")
-        # This would involve using a library like yfinance or making direct API calls
-        # For demonstration, returning dummy data
-        return []
+        logger.error(f"Yahoo Finance data fetching not implemented for {symbol}")
+        # Not implemented - Yahoo Finance API required
+        raise NotImplementedError("Yahoo Finance data fetching not implemented. Please connect to broker API.")
 
     async def _get_data_from_alpha_vantage(self, symbol: str, from_date: datetime, to_date: datetime, interval: str) -> List[Dict[str, Any]]:
-        logger.info(f"Fetching data from Alpha Vantage for {symbol} from {from_date} to {to_date} with interval {interval}")
-        # This would involve using a library like alpha_vantage or making direct API calls
-        # For demonstration, returning dummy data
-        return []
+        logger.error(f"Alpha Vantage data fetching not implemented for {symbol}")
+        # Not implemented - Alpha Vantage API required
+        raise NotImplementedError("Alpha Vantage data fetching not implemented. Please connect to broker API.")

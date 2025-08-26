@@ -53,6 +53,7 @@ class WeeklyContextManager:
     def calculate_weekly_zones(self, prev_week_data: List[NiftyIndexData]) -> WeeklyZones:
         """
         Calculate support and resistance zones from previous week data
+        Uses 4-hour candle data if available, otherwise falls back to hourly
         
         Args:
             prev_week_data: Previous week's hourly data
@@ -63,56 +64,96 @@ class WeeklyContextManager:
         if not prev_week_data:
             raise ValueError("No previous week data available")
         
-        # Convert to pandas for easier calculation
-        df = pd.DataFrame([{
-            'timestamp': d.timestamp,
-            'open': float(d.open),
-            'high': float(d.high),
-            'low': float(d.low),
-            'close': float(d.close)
-        } for d in prev_week_data])
+        # Try to use 4-hour data first
+        from ...infrastructure.database.database_manager import get_db_manager
+        from sqlalchemy import text
         
-        # Previous week high/low/close
-        prev_week_high = df['high'].max()
-        prev_week_low = df['low'].min()
-        prev_week_close = df['close'].iloc[-1]
+        db_manager = get_db_manager()
+        use_4hour_data = False
         
-        # Calculate 4-hour body extremes
-        # Since we have hourly data from 5-min aggregation, 
-        # we need to group into 4-hour blocks
+        with db_manager.get_session() as session:
+            # Check if we have 4-hour data for the previous week
+            first_date = prev_week_data[0].timestamp.date()
+            last_date = prev_week_data[-1].timestamp.date()
+            
+            result = session.execute(text("""
+                SELECT 
+                    MIN(Low) as WeekLow,
+                    MAX(High) as WeekHigh,
+                    MIN(CASE WHEN [Open] < [Close] THEN [Open] ELSE [Close] END) as MinBody,
+                    MAX(CASE WHEN [Open] > [Close] THEN [Open] ELSE [Close] END) as MaxBody
+                FROM NiftyIndexData4Hour
+                WHERE Timestamp >= :start_date AND Timestamp <= :end_date
+            """), {
+                'start_date': first_date,
+                'end_date': datetime.combine(last_date, datetime.max.time())
+            })
+            
+            four_hour_stats = result.fetchone()
+            
+            if four_hour_stats and four_hour_stats[0] is not None:
+                # Use 4-hour data
+                prev_week_low = float(four_hour_stats[0])
+                prev_week_high = float(four_hour_stats[1])
+                prev_min_4h_body = float(four_hour_stats[2])
+                prev_max_4h_body = float(four_hour_stats[3])
+                use_4hour_data = True
+                logger.info(f"Using 4-hour data for zones: Min Body={prev_min_4h_body:.2f}")
         
-        # Create 4-hour groups (0-3, 4-7, 8-11, 12-15, 16-19, 20-23)
-        df['4h_group'] = (df['timestamp'].dt.hour // 4) * 4
-        df['date'] = df['timestamp'].dt.date
-        df['4h_key'] = df['date'].astype(str) + '_' + df['4h_group'].astype(str)
+        if not use_4hour_data:
+            # Fall back to hourly data calculation
+            # Convert to pandas for easier calculation
+            df = pd.DataFrame([{
+                'timestamp': d.timestamp,
+                'open': float(d.open),
+                'high': float(d.high),
+                'low': float(d.low),
+                'close': float(d.close)
+            } for d in prev_week_data])
+            
+            # Previous week high/low/close
+            prev_week_high = df['high'].max()
+            prev_week_low = df['low'].min()
         
-        # For each 4-hour group, find the body extremes
-        four_hour_bodies = []
-        for group_key, group_df in df.groupby('4h_key'):
-            if len(group_df) > 0:
-                # Get OHLC for this 4-hour period
-                group_open = group_df.iloc[0]['open']
-                group_close = group_df.iloc[-1]['close']
-                
-                # Body top and bottom for this 4-hour candle
-                body_top = max(group_open, group_close)
-                body_bottom = min(group_open, group_close)
-                
-                four_hour_bodies.append({
-                    'body_top': body_top,
-                    'body_bottom': body_bottom
-                })
+        prev_week_close = float(prev_week_data[-1].close)
         
-        # Get max/min body levels across all 4-hour candles
-        if four_hour_bodies:
-            prev_max_4h_body = max(b['body_top'] for b in four_hour_bodies)
-            prev_min_4h_body = min(b['body_bottom'] for b in four_hour_bodies)
-        else:
-            # Fallback to hourly data if grouping fails
-            df['body_top'] = df[['open', 'close']].max(axis=1)
-            df['body_bottom'] = df[['open', 'close']].min(axis=1)
-            prev_max_4h_body = df['body_top'].max()
-            prev_min_4h_body = df['body_bottom'].min()
+        if not use_4hour_data:
+            # Calculate 4-hour body extremes from hourly data
+            # Since we have hourly data from 5-min aggregation, 
+            # we need to group into 4-hour blocks
+            
+            # Create 4-hour groups (0-3, 4-7, 8-11, 12-15, 16-19, 20-23)
+            df['4h_group'] = (df['timestamp'].dt.hour // 4) * 4
+            df['date'] = df['timestamp'].dt.date
+            df['4h_key'] = df['date'].astype(str) + '_' + df['4h_group'].astype(str)
+            
+            # For each 4-hour group, find the body extremes
+            four_hour_bodies = []
+            for group_key, group_df in df.groupby('4h_key'):
+                if len(group_df) > 0:
+                    # Get OHLC for this 4-hour period
+                    group_open = group_df.iloc[0]['open']
+                    group_close = group_df.iloc[-1]['close']
+                    
+                    # Body top and bottom for this 4-hour candle
+                    body_top = max(group_open, group_close)
+                    body_bottom = min(group_open, group_close)
+                    
+                    four_hour_bodies.append({
+                        'body_top': body_top,
+                        'body_bottom': body_bottom
+                    })
+            
+            # Get max/min body levels across all 4-hour candles
+            if four_hour_bodies:
+                prev_max_4h_body = max(b['body_top'] for b in four_hour_bodies)
+                prev_min_4h_body = min(b['body_bottom'] for b in four_hour_bodies)
+            else:
+                # Fallback to hourly data if grouping fails
+                df['body_top'] = df[['open', 'close']].max(axis=1)
+                df['body_bottom'] = df[['open', 'close']].min(axis=1)
+                prev_max_4h_body = df['body_top'].max()
+                prev_min_4h_body = df['body_bottom'].min()
         
         # Calculate zones
         zones = WeeklyZones(
@@ -148,6 +189,13 @@ class WeeklyContextManager:
         # Distance from previous week close to 4H bodies
         distance_to_resistance = abs(zones.prev_week_close - zones.prev_max_4h_body)
         distance_to_support = abs(zones.prev_week_close - zones.prev_min_4h_body)
+        
+        logger.debug(f"Bias Calculation Details:")
+        logger.debug(f"  Prev Week Close: {zones.prev_week_close:.2f}")
+        logger.debug(f"  Max 4H Body (Resistance): {zones.prev_max_4h_body:.2f}")
+        logger.debug(f"  Min 4H Body (Support): {zones.prev_min_4h_body:.2f}")
+        logger.debug(f"  Distance to Resistance: {distance_to_resistance:.2f}")
+        logger.debug(f"  Distance to Support: {distance_to_support:.2f}")
         
         # Determine bias based on which is closer
         if distance_to_support < distance_to_resistance:

@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trade Journal Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: white;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .stat-item {
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .stat-value.positive {
+            color: #10b981;
+        }
+        
+        .stat-value.negative {
+            color: #ef4444;
+        }
+        
+        .trade-form {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .form-group input,
+        .form-group select {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        
+        .btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+        
+        .trades-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .trades-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+        
+        .trades-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 0.9rem;
+        }
+        
+        .trades-table tr:hover {
+            background: #f9f9f9;
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+        
+        .status-badge.open {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        
+        .status-badge.closed {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+        
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            color: #666;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            font-weight: bold;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: none;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Trade Journal Dashboard</h1>
+        
+        <div id="alerts"></div>
+        
+        <!-- Performance Summary Cards -->
+        <div class="dashboard-grid">
+            <div class="card">
+                <div class="card-title">Performance Summary</div>
+                <div class="stat-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">Total P&L</div>
+                        <div class="stat-value" id="totalPnl">₹0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Win Rate</div>
+                        <div class="stat-value" id="winRate">0%</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Total Trades</div>
+                        <div class="stat-value" id="totalTrades">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Avg P&L</div>
+                        <div class="stat-value" id="avgPnl">₹0</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-title">Today's Performance</div>
+                <div class="stat-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">Day P&L</div>
+                        <div class="stat-value" id="dayPnl">₹0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Day Trades</div>
+                        <div class="stat-value" id="dayTrades">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Commission</div>
+                        <div class="stat-value" id="commission">₹0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Net P&L</div>
+                        <div class="stat-value" id="netPnl">₹0</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-title">Risk Metrics</div>
+                <div class="stat-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">Max Drawdown</div>
+                        <div class="stat-value" id="maxDrawdown">0%</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Best Trade</div>
+                        <div class="stat-value positive" id="bestTrade">₹0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Worst Trade</div>
+                        <div class="stat-value negative" id="worstTrade">₹0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Avg Return</div>
+                        <div class="stat-value" id="avgReturn">0%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content Area with Tabs -->
+        <div class="card">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('entry')">Trade Entry</button>
+                <button class="tab" onclick="switchTab('trades')">Trade History</button>
+                <button class="tab" onclick="switchTab('charts')">Performance Charts</button>
+                <button class="tab" onclick="switchTab('strategies')">Strategy Analysis</button>
+            </div>
+            
+            <!-- Trade Entry Tab -->
+            <div id="entryTab" class="tab-content active">
+                <div class="card-title">Record New Trade</div>
+                <form class="trade-form" id="tradeForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Symbol</label>
+                            <input type="text" id="symbol" value="NIFTY" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Trade Type</label>
+                            <select id="tradeType" required>
+                                <option value="BUY">BUY</option>
+                                <option value="SELL">SELL</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Quantity</label>
+                            <input type="number" id="quantity" value="100" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Entry Price</label>
+                            <input type="number" id="entryPrice" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Strategy</label>
+                            <input type="text" id="strategy" placeholder="Strategy name">
+                        </div>
+                        <div class="form-group">
+                            <label>Signal Type</label>
+                            <select id="signalType">
+                                <option value="">None</option>
+                                <option value="S1">S1 - Bear Trap</option>
+                                <option value="S2">S2 - Support Hold</option>
+                                <option value="S3">S3 - Resistance Hold</option>
+                                <option value="S4">S4 - Bias Failure Bull</option>
+                                <option value="S5">S5 - Bias Failure Bear</option>
+                                <option value="S6">S6 - Weakness Confirmed</option>
+                                <option value="S7">S7 - Breakout Confirmed</option>
+                                <option value="S8">S8 - Breakdown Confirmed</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <input type="text" id="notes" placeholder="Optional notes">
+                    </div>
+                    <button type="submit" class="btn">Record Trade Entry</button>
+                </form>
+                
+                <!-- Open Trades Section -->
+                <div style="margin-top: 30px;">
+                    <div class="card-title">Open Trades</div>
+                    <div id="openTradesContainer"></div>
+                </div>
+            </div>
+            
+            <!-- Trade History Tab -->
+            <div id="tradesTab" class="tab-content">
+                <div class="card-title">Trade History</div>
+                <div style="margin-bottom: 20px;">
+                    <input type="date" id="fromDate" style="margin-right: 10px;">
+                    <input type="date" id="toDate" style="margin-right: 10px;">
+                    <button class="btn btn-secondary" onclick="loadTradeHistory()">Filter</button>
+                    <button class="btn btn-secondary" onclick="exportTrades()">Export</button>
+                </div>
+                <div id="tradeHistoryContainer"></div>
+            </div>
+            
+            <!-- Performance Charts Tab -->
+            <div id="chartsTab" class="tab-content">
+                <div class="card-title">Performance Analytics</div>
+                <div class="chart-container">
+                    <canvas id="pnlChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="winRateChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Strategy Analysis Tab -->
+            <div id="strategiesTab" class="tab-content">
+                <div class="card-title">Strategy Performance</div>
+                <div id="strategyContainer"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading Indicator -->
+    <div id="loading">
+        <div class="spinner"></div>
+        <p style="text-align: center; margin-top: 20px;">Loading...</p>
+    </div>
+    
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        let pnlChart = null;
+        let winRateChart = null;
+        
+        // Show alert
+        function showAlert(message, type = 'success') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            document.getElementById('alerts').appendChild(alertDiv);
+            
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+        
+        // Show loading
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+        
+        // Hide loading
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        // Format currency
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            }).format(amount);
+        }
+        
+        // Switch tabs
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active from all tab buttons
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(`${tabName}Tab`).classList.add('active');
+            
+            // Mark tab button as active
+            event.target.classList.add('active');
+            
+            // Load data for the tab
+            if (tabName === 'trades') {
+                loadTradeHistory();
+            } else if (tabName === 'charts') {
+                loadCharts();
+            } else if (tabName === 'strategies') {
+                loadStrategyPerformance();
+            }
+        }
+        
+        // Load performance summary
+        async function loadPerformanceSummary() {
+            try {
+                const response = await fetch(`${API_BASE}/journal/performance/summary`);
+                const data = await response.json();
+                
+                document.getElementById('totalPnl').textContent = formatCurrency(data.total_pnl || 0);
+                document.getElementById('totalPnl').className = data.total_pnl >= 0 ? 'stat-value positive' : 'stat-value negative';
+                document.getElementById('winRate').textContent = `${(data.win_rate || 0).toFixed(1)}%`;
+                document.getElementById('totalTrades').textContent = data.total_trades || 0;
+                document.getElementById('avgPnl').textContent = formatCurrency(data.avg_pnl || 0);
+                document.getElementById('bestTrade').textContent = formatCurrency(data.best_trade || 0);
+                document.getElementById('worstTrade').textContent = formatCurrency(data.worst_trade || 0);
+                document.getElementById('avgReturn').textContent = `${(data.avg_return || 0).toFixed(2)}%`;
+                
+            } catch (error) {
+                console.error('Error loading performance summary:', error);
+            }
+        }
+        
+        // Load daily performance
+        async function loadDailyPerformance() {
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const response = await fetch(`${API_BASE}/journal/performance/daily?date=${today}`);
+                const data = await response.json();
+                
+                document.getElementById('dayPnl').textContent = formatCurrency(data.gross_pnl || 0);
+                document.getElementById('dayPnl').className = data.gross_pnl >= 0 ? 'stat-value positive' : 'stat-value negative';
+                document.getElementById('dayTrades').textContent = data.total_trades || 0;
+                document.getElementById('commission').textContent = formatCurrency(data.commission_paid || 0);
+                document.getElementById('netPnl').textContent = formatCurrency(data.net_pnl || 0);
+                document.getElementById('netPnl').className = data.net_pnl >= 0 ? 'stat-value positive' : 'stat-value negative';
+                document.getElementById('maxDrawdown').textContent = `${(data.max_drawdown || 0).toFixed(1)}%`;
+                
+            } catch (error) {
+                console.error('Error loading daily performance:', error);
+            }
+        }
+        
+        // Load open trades
+        async function loadOpenTrades() {
+            try {
+                const response = await fetch(`${API_BASE}/journal/trades/open`);
+                const data = await response.json();
+                
+                const container = document.getElementById('openTradesContainer');
+                
+                if (data.trades && data.trades.length > 0) {
+                    let html = `
+                        <table class="trades-table">
+                            <thead>
+                                <tr>
+                                    <th>Trade ID</th>
+                                    <th>Symbol</th>
+                                    <th>Type</th>
+                                    <th>Qty</th>
+                                    <th>Entry Price</th>
+                                    <th>Entry Time</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    
+                    data.trades.forEach(trade => {
+                        const entryTime = new Date(trade.entry_time).toLocaleString('en-IN');
+                        html += `
+                            <tr>
+                                <td>${trade.trade_id}</td>
+                                <td>${trade.symbol}</td>
+                                <td>${trade.trade_type}</td>
+                                <td>${trade.quantity}</td>
+                                <td>${formatCurrency(trade.entry_price)}</td>
+                                <td>${entryTime}</td>
+                                <td>
+                                    <button class="btn btn-danger" onclick="closeTrade('${trade.trade_id}')">
+                                        Close Trade
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += '</tbody></table>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<p style="text-align: center; color: #666;">No open trades</p>';
+                }
+                
+            } catch (error) {
+                console.error('Error loading open trades:', error);
+            }
+        }
+        
+        // Load trade history
+        async function loadTradeHistory() {
+            try {
+                showLoading();
+                
+                const fromDate = document.getElementById('fromDate').value;
+                const toDate = document.getElementById('toDate').value;
+                
+                let url = `${API_BASE}/journal/trades/history`;
+                const params = [];
+                if (fromDate) params.push(`from_date=${fromDate}`);
+                if (toDate) params.push(`to_date=${toDate}`);
+                if (params.length > 0) url += '?' + params.join('&');
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                const container = document.getElementById('tradeHistoryContainer');
+                
+                if (data.trades && data.trades.length > 0) {
+                    let html = `
+                        <table class="trades-table">
+                            <thead>
+                                <tr>
+                                    <th>Trade ID</th>
+                                    <th>Symbol</th>
+                                    <th>Type</th>
+                                    <th>Qty</th>
+                                    <th>Entry</th>
+                                    <th>Exit</th>
+                                    <th>P&L</th>
+                                    <th>Return</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    
+                    data.trades.forEach(trade => {
+                        const pnlClass = trade.pnl >= 0 ? 'positive' : 'negative';
+                        const statusClass = trade.status === 'OPEN' ? 'open' : 'closed';
+                        
+                        html += `
+                            <tr>
+                                <td>${trade.trade_id}</td>
+                                <td>${trade.symbol}</td>
+                                <td>${trade.trade_type}</td>
+                                <td>${trade.quantity}</td>
+                                <td>${formatCurrency(trade.entry_price)}</td>
+                                <td>${trade.exit_price ? formatCurrency(trade.exit_price) : '-'}</td>
+                                <td class="${pnlClass}">${trade.pnl ? formatCurrency(trade.pnl) : '-'}</td>
+                                <td class="${pnlClass}">${trade.pnl_percentage ? trade.pnl_percentage.toFixed(2) + '%' : '-'}</td>
+                                <td><span class="status-badge ${statusClass}">${trade.status}</span></td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += '</tbody></table>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<p style="text-align: center; color: #666;">No trades found</p>';
+                }
+                
+            } catch (error) {
+                console.error('Error loading trade history:', error);
+                showAlert('Failed to load trade history', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // Load strategy performance
+        async function loadStrategyPerformance() {
+            try {
+                const response = await fetch(`${API_BASE}/journal/performance/strategy`);
+                const data = await response.json();
+                
+                const container = document.getElementById('strategyContainer');
+                
+                if (data.strategies && data.strategies.length > 0) {
+                    let html = `
+                        <table class="trades-table">
+                            <thead>
+                                <tr>
+                                    <th>Strategy</th>
+                                    <th>Signal</th>
+                                    <th>Trades</th>
+                                    <th>Wins</th>
+                                    <th>Win Rate</th>
+                                    <th>Total P&L</th>
+                                    <th>Avg P&L</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    
+                    data.strategies.forEach(strategy => {
+                        const pnlClass = strategy.total_pnl >= 0 ? 'positive' : 'negative';
+                        
+                        html += `
+                            <tr>
+                                <td>${strategy.strategy_name || 'Unknown'}</td>
+                                <td>${strategy.signal_type || '-'}</td>
+                                <td>${strategy.total_trades}</td>
+                                <td>${strategy.winning_trades}</td>
+                                <td>${strategy.win_rate.toFixed(1)}%</td>
+                                <td class="${pnlClass}">${formatCurrency(strategy.total_pnl)}</td>
+                                <td class="${pnlClass}">${formatCurrency(strategy.avg_pnl_per_trade)}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += '</tbody></table>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<p style="text-align: center; color: #666;">No strategy data available</p>';
+                }
+                
+            } catch (error) {
+                console.error('Error loading strategy performance:', error);
+            }
+        }
+        
+        // Load charts
+        async function loadCharts() {
+            try {
+                const response = await fetch(`${API_BASE}/journal/trades/history`);
+                const data = await response.json();
+                
+                if (data.trades && data.trades.length > 0) {
+                    // Prepare data for charts
+                    const closedTrades = data.trades.filter(t => t.status === 'CLOSED');
+                    
+                    // P&L Chart
+                    const pnlData = closedTrades.map(t => ({
+                        x: new Date(t.exit_time),
+                        y: t.pnl
+                    })).sort((a, b) => a.x - b.x);
+                    
+                    // Calculate cumulative P&L
+                    let cumulative = 0;
+                    const cumulativePnl = pnlData.map(d => {
+                        cumulative += d.y;
+                        return {x: d.x, y: cumulative};
+                    });
+                    
+                    // Create P&L chart
+                    const pnlCtx = document.getElementById('pnlChart').getContext('2d');
+                    
+                    if (pnlChart) {
+                        pnlChart.destroy();
+                    }
+                    
+                    pnlChart = new Chart(pnlCtx, {
+                        type: 'line',
+                        data: {
+                            datasets: [{
+                                label: 'Cumulative P&L',
+                                data: cumulativePnl,
+                                borderColor: '#667eea',
+                                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                                tension: 0.4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: 'Cumulative P&L Over Time'
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    type: 'time',
+                                    time: {
+                                        unit: 'day'
+                                    }
+                                },
+                                y: {
+                                    title: {
+                                        display: true,
+                                        text: 'P&L (₹)'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    
+                    // Win Rate Chart
+                    const wins = closedTrades.filter(t => t.pnl > 0).length;
+                    const losses = closedTrades.filter(t => t.pnl <= 0).length;
+                    
+                    const winRateCtx = document.getElementById('winRateChart').getContext('2d');
+                    
+                    if (winRateChart) {
+                        winRateChart.destroy();
+                    }
+                    
+                    winRateChart = new Chart(winRateCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Wins', 'Losses'],
+                            datasets: [{
+                                data: [wins, losses],
+                                backgroundColor: ['#10b981', '#ef4444'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: 'Win/Loss Distribution'
+                                },
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            }
+                        }
+                    });
+                }
+                
+            } catch (error) {
+                console.error('Error loading charts:', error);
+            }
+        }
+        
+        // Close trade
+        async function closeTrade(tradeId) {
+            const exitPrice = prompt('Enter exit price:');
+            if (!exitPrice) return;
+            
+            const commission = prompt('Enter commission (default 40):') || 40;
+            const notes = prompt('Enter notes (optional):');
+            
+            try {
+                showLoading();
+                
+                const response = await fetch(`${API_BASE}/journal/trade/exit`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        trade_id: tradeId,
+                        exit_price: parseFloat(exitPrice),
+                        commission: parseFloat(commission),
+                        notes: notes
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showAlert(`Trade closed successfully. P&L: ${formatCurrency(data.pnl)}`);
+                    loadOpenTrades();
+                    loadPerformanceSummary();
+                    loadDailyPerformance();
+                } else {
+                    showAlert('Failed to close trade', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Error closing trade:', error);
+                showAlert('Failed to close trade', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // Export trades
+        async function exportTrades() {
+            const filepath = prompt('Enter filename for export (e.g., trades.json):');
+            if (!filepath) return;
+            
+            try {
+                const fromDate = document.getElementById('fromDate').value;
+                const toDate = document.getElementById('toDate').value;
+                
+                const response = await fetch(`${API_BASE}/journal/export`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        filepath: filepath,
+                        from_date: fromDate || null,
+                        to_date: toDate || null
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showAlert(data.message);
+                } else {
+                    showAlert('Export failed', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Error exporting trades:', error);
+                showAlert('Export failed', 'error');
+            }
+        }
+        
+        // Handle trade form submission
+        document.getElementById('tradeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const tradeData = {
+                symbol: document.getElementById('symbol').value,
+                trade_type: document.getElementById('tradeType').value,
+                quantity: parseInt(document.getElementById('quantity').value),
+                entry_price: parseFloat(document.getElementById('entryPrice').value),
+                strategy_name: document.getElementById('strategy').value || null,
+                signal_type: document.getElementById('signalType').value || null,
+                notes: document.getElementById('notes').value || null
+            };
+            
+            try {
+                showLoading();
+                
+                const response = await fetch(`${API_BASE}/journal/trade/enter`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(tradeData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showAlert(`Trade recorded successfully. ID: ${data.trade_id}`);
+                    document.getElementById('tradeForm').reset();
+                    loadOpenTrades();
+                    loadPerformanceSummary();
+                    loadDailyPerformance();
+                } else {
+                    showAlert('Failed to record trade', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Error recording trade:', error);
+                showAlert('Failed to record trade', 'error');
+            } finally {
+                hideLoading();
+            }
+        });
+        
+        // Initialize dashboard
+        async function initDashboard() {
+            await loadPerformanceSummary();
+            await loadDailyPerformance();
+            await loadOpenTrades();
+            
+            // Set today's date as default
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('toDate').value = today;
+            
+            // Set 30 days ago as default from date
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            document.getElementById('fromDate').value = thirtyDaysAgo.toISOString().split('T')[0];
+        }
+        
+        // Auto-refresh data every 30 seconds
+        setInterval(() => {
+            if (document.getElementById('entryTab').classList.contains('active')) {
+                loadOpenTrades();
+                loadPerformanceSummary();
+                loadDailyPerformance();
+            }
+        }, 30000);
+        
+        // Initialize on load
+        initDashboard();
+    </script>
+</body>
+</html>

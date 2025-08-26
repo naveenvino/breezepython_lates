@@ -94,6 +94,7 @@ class AuthRepository:
         user_id: Optional[str] = None,
         user_name: Optional[str] = None,
         expires_in_hours: int = 24,
+        expires_at: Optional[datetime] = None,
         metadata: Optional[Dict[str, Any]] = None
     ) -> str:
         """Save or update authentication session"""
@@ -109,7 +110,9 @@ class AuthRepository:
             """, service_type)
             
             # Insert new session
-            expires_at = datetime.now() + timedelta(hours=expires_in_hours)
+            # Use provided expires_at or calculate from hours
+            if not expires_at:
+                expires_at = datetime.now() + timedelta(hours=expires_in_hours)
             metadata_json = json.dumps(metadata) if metadata else None
             
             cursor.execute("""

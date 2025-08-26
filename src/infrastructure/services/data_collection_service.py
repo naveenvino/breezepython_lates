@@ -426,7 +426,7 @@ class DataCollectionService:
                 return 0  # No new records added
             
             # Generate stock code for option
-            expiry_str = expiry.strftime("%y%b").upper()  # e.g., "24JAN"
+            expiry_str = expiry.strftime("%y%b%d").upper()  # e.g., "24JAN18"
             stock_code = f"NIFTY{expiry_str}{strike}{option_type}"
             
             logger.info(f"Fetching option data for {stock_code} with {interval} interval")

@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified Trading Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #667eea;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --bg-primary: #0a0e27;
+            --bg-secondary: #151932;
+            --bg-hover: #1e2139;
+            --text-primary: #e0e6ed;
+            --text-secondary: #8892b0;
+            --border: #2a2f4a;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        /* Modern Sidebar */
+        .sidebar {
+            width: 260px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s;
+        }
+        
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+        
+        .nav-group {
+            margin-bottom: 24px;
+        }
+        
+        .nav-group-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            margin: 4px 0;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .nav-item:hover {
+            background: var(--bg-hover);
+            color: var(--primary);
+        }
+        
+        .nav-item.active {
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            color: white;
+        }
+        
+        .nav-item i {
+            width: 20px;
+            margin-right: 12px;
+            font-size: 16px;
+        }
+        
+        .nav-badge {
+            position: absolute;
+            right: 12px;
+            background: var(--danger);
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+        
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+        }
+        
+        .header-bar {
+            background: var(--bg-secondary);
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+        }
+        
+        .breadcrumb a {
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+        
+        .breadcrumb a:hover {
+            color: var(--primary);
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5a67d8;
+        }
+        
+        .btn-icon {
+            padding: 8px;
+            width: 36px;
+            height: 36px;
+            justify-content: center;
+        }
+        
+        .content-area {
+            flex: 1;
+            padding: 0;
+            overflow: hidden;
+            background: transparent;
+        }
+        
+        .content-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+        }
+        
+        .status-bar {
+            background: var(--bg-secondary);
+            padding: 12px 24px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 24px;
+            align-items: center;
+            font-size: 14px;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* Collapsed state */
+        .nav-group.collapsed .nav-group-items {
+            display: none;
+        }
+        
+        .nav-group.collapsed .nav-group-header i {
+            transform: rotate(-90deg);
+        }
+        
+        /* Loading */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            gap: 16px;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+    <script>
+        // Inline status header component for real-time API connection status
+        function createStatusHeader() {
+            const headerHTML = `
+            <div id="apiStatusHeader" style="
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 40px;
+                background: linear-gradient(90deg, #1a1a2e 0%, #16213e 100%);
+                border-bottom: 1px solid rgba(102, 126, 234, 0.3);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 0 20px;
+                z-index: 10000;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                font-size: 13px;
+                color: #e0e0e0;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            ">
+                <div style="display: flex; align-items: center; gap: 20px;">
+                    <div style="font-weight: 600; color: #667eea;">API Status</div>
+                    
+                    <!-- Kite Status -->
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span>Kite:</span>
+                        <span id="kiteStatusIndicator" style="
+                            display: inline-flex;
+                            align-items: center;
+                            gap: 5px;
+                            padding: 2px 8px;
+                            border-radius: 12px;
+                            font-size: 12px;
+                            font-weight: 500;
+                        ">
+                            <span id="kiteStatusDot" style="
+                                width: 8px;
+                                height: 8px;
+                                border-radius: 50%;
+                                background: #6b7280;
+                            "></span>
+                            <span id="kiteStatusText">Checking...</span>
+                        </span>
+                    </div>
+                    
+                    <!-- Breeze Status -->
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span>Breeze:</span>
+                        <span id="breezeStatusIndicator" style="
+                            display: inline-flex;
+                            align-items: center;
+                            gap: 5px;
+                            padding: 2px 8px;
+                            border-radius: 12px;
+                            font-size: 12px;
+                            font-weight: 500;
+                        ">
+                            <span id="breezeStatusDot" style="
+                                width: 8px;
+                                height: 8px;
+                                border-radius: 50%;
+                                background: #6b7280;
+                            "></span>
+                            <span id="breezeStatusText">Checking...</span>
+                        </span>
+                    </div>
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <!-- Last Updated -->
+                    <div style="color: #9ca3af; font-size: 11px;">
+                        Last checked: <span id="lastStatusCheck">-</span>
+                    </div>
+                    
+                    <!-- Refresh Button -->
+                    <button onclick="checkRealStatus()" style="
+                        background: rgba(102, 126, 234, 0.2);
+                        border: 1px solid rgba(102, 126, 234, 0.3);
+                        color: #667eea;
+                        padding: 4px 12px;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-size: 12px;
+                        transition: all 0.2s;
+                    " onmouseover="this.style.background='rgba(102, 126, 234, 0.3)'" 
+                       onmouseout="this.style.background='rgba(102, 126, 234, 0.2)'">
+                        Refresh
+                    </button>
+                    
+                    <!-- Login Dashboard Link -->
+                    <a href="auto_login_dashboard.html" style="
+                        color: #667eea;
+                        text-decoration: none;
+                        padding: 4px 12px;
+                        border: 1px solid rgba(102, 126, 234, 0.3);
+                        border-radius: 6px;
+                        font-size: 12px;
+                        transition: all 0.2s;
+                    " onmouseover="this.style.background='rgba(102, 126, 234, 0.1)'" 
+                       onmouseout="this.style.background='transparent'">
+                        Login Dashboard
+                    </a>
+                </div>
+            </div>`;
+            
+            // Insert at the beginning of body
+            document.body.insertAdjacentHTML('afterbegin', headerHTML);
+            // Add padding to body
+            document.body.style.paddingTop = '40px';
+        }
+
+        // Function to check real status
+        async function checkRealStatus() {
+            try {
+                console.log('Checking real status...');
+                const response = await fetch('http://localhost:8000/auth/real-status');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                console.log('Status data received:', data);
+                
+                // Update Kite status - both sets of elements
+                const kiteStatusDot = document.getElementById('kiteStatusDot');
+                const kiteStatusText = document.getElementById('kiteStatusText');
+                const kiteStatusDot2 = document.getElementById('kiteStatusDot2');
+                const kiteStatusText2 = document.getElementById('kiteStatusText2');
+                const kiteIndicator = document.getElementById('kiteStatusIndicator');
+                
+                if (data.kite.connected) {
+                    if (kiteStatusDot) kiteStatusDot.style.background = '#10b981';
+                    if (kiteStatusDot2) kiteStatusDot2.style.background = '#10b981';
+                    if (kiteStatusText) kiteStatusText.textContent = 'Connected';
+                    if (kiteStatusText2) kiteStatusText2.textContent = 'Connected';
+                    if (kiteIndicator) {
+                        kiteIndicator.style.background = 'rgba(16, 185, 129, 0.1)';
+                        kiteIndicator.style.color = '#10b981';
+                    }
+                    
+                    if (data.kite.user_id) {
+                        if (kiteStatusText) kiteStatusText.textContent = `Connected (${data.kite.user_id})`;
+                        if (kiteStatusText2) kiteStatusText2.textContent = `Connected (${data.kite.user_id})`;
+                    }
+                } else {
+                    if (kiteStatusDot) kiteStatusDot.style.background = '#ef4444';
+                    if (kiteStatusDot2) kiteStatusDot2.style.background = '#ef4444';
+                    if (kiteStatusText) kiteStatusText.textContent = 'Disconnected';
+                    if (kiteStatusText2) kiteStatusText2.textContent = 'Disconnected';
+                    if (kiteIndicator) {
+                        kiteIndicator.style.background = 'rgba(239, 68, 68, 0.1)';
+                        kiteIndicator.style.color = '#ef4444';
+                    }
+                    
+                    if (data.kite.error && data.kite.error.includes('Incorrect')) {
+                        if (kiteStatusText) kiteStatusText.textContent = 'Login Required';
+                        if (kiteStatusText2) kiteStatusText2.textContent = 'Login Required';
+                    }
+                }
+                
+                // Update Breeze status - both sets of elements
+                const breezeStatusDot = document.getElementById('breezeStatusDot');
+                const breezeStatusText = document.getElementById('breezeStatusText');
+                const breezeStatusDot2 = document.getElementById('breezeStatusDot2');
+                const breezeStatusText2 = document.getElementById('breezeStatusText2');
+                const breezeIndicator = document.getElementById('breezeStatusIndicator');
+                
+                if (data.breeze.connected) {
+                    if (breezeStatusDot) breezeStatusDot.style.background = '#10b981';
+                    if (breezeStatusDot2) breezeStatusDot2.style.background = '#10b981';
+                    if (breezeStatusText) breezeStatusText.textContent = 'Connected';
+                    if (breezeStatusText2) breezeStatusText2.textContent = 'Connected';
+                    if (breezeIndicator) {
+                        breezeIndicator.style.background = 'rgba(16, 185, 129, 0.1)';
+                        breezeIndicator.style.color = '#10b981';
+                    }
+                    
+                    if (data.breeze.user_id) {
+                        if (breezeStatusText) breezeStatusText.textContent = `Connected (${data.breeze.user_id})`;
+                        if (breezeStatusText2) breezeStatusText2.textContent = `Connected (${data.breeze.user_id})`;
+                    }
+                } else {
+                    if (breezeStatusDot) breezeStatusDot.style.background = '#ef4444';
+                    if (breezeStatusDot2) breezeStatusDot2.style.background = '#ef4444';
+                    if (breezeStatusText) breezeStatusText.textContent = 'Disconnected';
+                    if (breezeStatusText2) breezeStatusText2.textContent = 'Disconnected';
+                    if (breezeIndicator) {
+                        breezeIndicator.style.background = 'rgba(239, 68, 68, 0.1)';
+                        breezeIndicator.style.color = '#ef4444';
+                    }
+                    
+                    if (data.breeze.error) {
+                        if (data.breeze.error.includes('expired') || data.breeze.error.includes('Session')) {
+                            if (breezeStatusText) breezeStatusText.textContent = 'Session Expired';
+                            if (breezeStatusText2) breezeStatusText2.textContent = 'Session Expired';
+                        }
+                    }
+                }
+                
+                // Update last checked time
+                const now = new Date();
+                document.getElementById('lastStatusCheck').textContent = 
+                    now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                
+            } catch (error) {
+                console.error('Error checking status:', error);
+                document.getElementById('kiteStatusText').textContent = 'API Offline';
+                document.getElementById('breezeStatusText').textContent = 'API Offline';
+            }
+        }
+
+        // Initialize when page is fully loaded
+        window.addEventListener('load', function() {
+            // Ensure body exists
+            if (document.body) {
+                createStatusHeader();
+                checkRealStatus();
+                // Auto-refresh every 30 seconds
+                setInterval(checkRealStatus, 30000);
+            } else {
+                console.error('Body not found');
+            }
+        });
+        
+        // Also try on DOMContentLoaded as backup
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if header already exists
+            if (!document.getElementById('apiStatusHeader')) {
+                createStatusHeader();
+                checkRealStatus();
+            }
+        });
+    </script>
+</head>
+<body>
+    <!-- Status Header - Direct HTML -->
+    <div id="apiStatusHeader" style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 40px;
+        background: linear-gradient(90deg, #1a1a2e 0%, #16213e 100%);
+        border-bottom: 1px solid rgba(102, 126, 234, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20px;
+        z-index: 10000;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 13px;
+        color: #e0e0e0;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    ">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <div style="font-weight: 600; color: #667eea;">API Status</div>
+            
+            <!-- Kite Status -->
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span>Kite:</span>
+                <span id="kiteStatusIndicator" style="
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 5px;
+                    padding: 2px 8px;
+                    border-radius: 12px;
+                    font-size: 12px;
+                    font-weight: 500;
+                    background: rgba(107, 114, 128, 0.1);
+                    color: #6b7280;
+                ">
+                    <span id="kiteStatusDot2" style="
+                        width: 8px;
+                        height: 8px;
+                        border-radius: 50%;
+                        background: #6b7280;
+                        animation: pulse 2s infinite;
+                    "></span>
+                    <span id="kiteStatusText2">Checking...</span>
+                </span>
+            </div>
+            
+            <!-- Breeze Status -->
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span>Breeze:</span>
+                <span id="breezeStatusIndicator" style="
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 5px;
+                    padding: 2px 8px;
+                    border-radius: 12px;
+                    font-size: 12px;
+                    font-weight: 500;
+                    background: rgba(107, 114, 128, 0.1);
+                    color: #6b7280;
+                ">
+                    <span id="breezeStatusDot2" style="
+                        width: 8px;
+                        height: 8px;
+                        border-radius: 50%;
+                        background: #6b7280;
+                        animation: pulse 2s infinite;
+                    "></span>
+                    <span id="breezeStatusText2">Checking...</span>
+                </span>
+            </div>
+        </div>
+        
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="color: #9ca3af; font-size: 11px;">
+                Last: <span id="lastStatusCheck">-</span>
+            </div>
+            <button onclick="checkRealStatus()" style="
+                background: rgba(102, 126, 234, 0.2);
+                border: 1px solid rgba(102, 126, 234, 0.3);
+                color: #667eea;
+                padding: 4px 12px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 12px;
+            ">Refresh</button>
+            <a href="auto_login_dashboard.html" style="
+                color: #667eea;
+                text-decoration: none;
+                padding: 4px 12px;
+                border: 1px solid rgba(102, 126, 234, 0.3);
+                border-radius: 6px;
+                font-size: 12px;
+            ">Login Dashboard</a>
+        </div>
+    </div>
+    
+    <script>
+        // Immediately check status when this script runs
+        (function() {
+            if (typeof checkRealStatus === 'function') {
+                checkRealStatus();
+                setInterval(checkRealStatus, 30000);
+            }
+        })();
+    </script>
+    
+    <div class="app-container" style="padding-top: 40px;">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Trading Platform</span>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <!-- Dashboard -->
+                <div class="nav-group">
+                    <a class="nav-item active" data-page="dashboard" data-title="Dashboard" onclick="loadPage(this)">
+                        <i class="fas fa-home"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </div>
+                
+                <!-- Trading Group -->
+                <div class="nav-group">
+                    <div class="nav-group-header" onclick="toggleGroup(this)">
+                        <span>Trading</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="nav-group-items">
+                        <a class="nav-item" data-page="live_trading_pro_complete.html" data-title="Live Trading Pro" onclick="loadPage(this)">
+                            <i class="fas fa-play-circle"></i>
+                            <span>Live Trading Pro</span>
+                        </a>
+                        <a class="nav-item" data-page="paper_trading.html" data-title="Paper Trading" onclick="loadPage(this)">
+                            <i class="fas fa-flask"></i>
+                            <span>Paper Trading</span>
+                        </a>
+                        <a class="nav-item" data-page="positions.html" data-title="Positions" onclick="loadPage(this)">
+                            <i class="fas fa-wallet"></i>
+                            <span>Positions</span>
+                        </a>
+                        <a class="nav-item" data-page="option_chain.html" data-title="Option Chain" onclick="loadPage(this)">
+                            <i class="fas fa-th"></i>
+                            <span>Option Chain</span>
+                        </a>
+                        <a class="nav-item" data-page="backtest.html" data-title="Backtesting" onclick="loadPage(this)">
+                            <i class="fas fa-history"></i>
+                            <span>Backtesting</span>
+                        </a>
+                        <a class="nav-item" data-page="signals.html" data-title="Signals" onclick="loadPage(this)">
+                            <i class="fas fa-signal"></i>
+                            <span>Signals</span>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Analytics Group -->
+                <div class="nav-group">
+                    <div class="nav-group-header" onclick="toggleGroup(this)">
+                        <span>Analytics</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="nav-group-items">
+                        <a class="nav-item" data-page="trade_journey_dashboard.html" data-title="Trade Journey" onclick="loadPage(this)">
+                            <i class="fas fa-route"></i>
+                            <span>Trade Journey</span>
+                        </a>
+                        <a class="nav-item" data-page="ml_validation_form.html" data-title="ML Validation" onclick="loadPage(this)">
+                            <i class="fas fa-check-circle"></i>
+                            <span>ML Validation</span>
+                        </a>
+                        <a class="nav-item" data-page="ml_analysis.html" data-title="ML Analysis" onclick="loadPage(this)">
+                            <i class="fas fa-brain"></i>
+                            <span>ML Analysis</span>
+                        </a>
+                        <a class="nav-item" data-page="ml_optimization.html" data-title="ML Optimization" onclick="loadPage(this)">
+                            <i class="fas fa-chart-area"></i>
+                            <span>ML Optimization</span>
+                        </a>
+                        <a class="nav-item" data-page="expiry_comparison.html" data-title="Expiry Comparison" onclick="loadPage(this)">
+                            <i class="fas fa-calendar-check"></i>
+                            <span>Expiry Comparison</span>
+                            <span class="nav-badge">NEW</span>
+                        </a>
+                        <a class="nav-item" data-page="performance_analytics.html" data-title="Performance Analytics" onclick="loadPage(this)">
+                            <i class="fas fa-chart-pie"></i>
+                            <span>Performance Analytics</span>
+                            <span class="nav-badge">NEW</span>
+                        </a>
+                        <a class="nav-item" data-page="performance_dashboard.html" data-title="Performance Dashboard" onclick="loadPage(this)">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Performance Dashboard</span>
+                        </a>
+                        <a class="nav-item" data-page="risk_dashboard.html" data-title="Risk Management" onclick="loadPage(this)">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>Risk Management</span>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- System Management -->
+                <div class="nav-group">
+                    <div class="nav-group-header" onclick="toggleGroup(this)">
+                        <span style="color: #f59e0b;">System Management</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="nav-group-items">
+                        <a class="nav-item" data-page="integrated_trading_dashboard.html" data-title="Integrated Trading Engine" onclick="loadPage(this)">
+                            <i class="fas fa-cogs"></i>
+                            <span>Trading Engine</span>
+                            <span class="nav-badge" style="background: #f59e0b;">NEW</span>
+                        </a>
+                        <a class="nav-item" data-page="monitoring_dashboard.html" data-title="System Monitoring" onclick="loadPage(this)">
+                            <i class="fas fa-heartbeat"></i>
+                            <span>System Monitoring</span>
+                            <span class="nav-badge" style="background: #f59e0b;">NEW</span>
+                        </a>
+                        <a class="nav-item" data-page="test_websocket.html" data-title="WebSocket Dashboard" onclick="loadPage(this)">
+                            <i class="fas fa-plug"></i>
+                            <span>WebSocket Dashboard</span>
+                            <span class="nav-badge" style="background: #10b981;">LIVE</span>
+                        </a>
+                        <a class="nav-item" data-page="trade_journal_dashboard.html" data-title="Trade Journal" onclick="loadPage(this)">
+                            <i class="fas fa-book"></i>
+                            <span>Trade Journal</span>
+                            <span class="nav-badge" style="background: #f59e0b;">NEW</span>
+                        </a>
+                    </div>
+                </div>
+                
+                
+                <!-- Data Group -->
+                <div class="nav-group collapsed">
+                    <div class="nav-group-header" onclick="toggleGroup(this)">
+                        <span>Data</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="nav-group-items">
+                        <a class="nav-item" data-page="data_collection.html" data-title="Data Collection" onclick="loadPage(this)">
+                            <i class="fas fa-download"></i>
+                            <span>Data Collection</span>
+                        </a>
+                        <a class="nav-item" data-page="data_management.html" data-title="Data Management" onclick="loadPage(this)">
+                            <i class="fas fa-database"></i>
+                            <span>Data Management</span>
+                        </a>
+                        <a class="nav-item" data-page="holidays.html" data-title="Market Holidays" onclick="loadPage(this)">
+                            <i class="fas fa-calendar"></i>
+                            <span>Holidays</span>
+                        </a>
+                        <a class="nav-item" data-page="margin_calculator.html" data-title="Margin Calculator" onclick="loadPage(this)">
+                            <i class="fas fa-calculator"></i>
+                            <span>Margin Calculator</span>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Authentication Group -->
+                <div class="nav-group collapsed">
+                    <div class="nav-group-header" onclick="toggleGroup(this)">
+                        <span>Authentication</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="nav-group-items">
+                        <a class="nav-item" data-page="auto_login_dashboard.html" data-title="Auto Login" onclick="loadPage(this)">
+                            <i class="fas fa-robot"></i>
+                            <span>Auto Login</span>
+                        </a>
+                        <a class="nav-item" data-page="scheduler_dashboard.html" data-title="Scheduler" onclick="loadPage(this)">
+                            <i class="fas fa-clock"></i>
+                            <span>Scheduler</span>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Settings -->
+                <div class="nav-group">
+                    <a class="nav-item" data-page="settings.html" data-title="Settings" onclick="loadPage(this)">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header Bar -->
+            <header class="header-bar">
+                <div class="breadcrumb">
+                    <a href="#" onclick="loadHome()">Home</a>
+                    <span>/</span>
+                    <span id="current-page">Dashboard</span>
+                </div>
+                
+                <div class="header-actions">
+                    <span id="auth-status" style="margin-right: 15px; color: var(--text-secondary); font-size: 14px;">
+                        <i class="fas fa-user-circle"></i>
+                        <span id="auth-username">Guest</span>
+                    </span>
+                    <button class="btn btn-icon btn-primary" onclick="refreshPage()" title="Refresh">
+                        <i class="fas fa-sync"></i>
+                    </button>
+                    <button class="btn btn-icon btn-primary" onclick="showSystemHealth()" title="System Health" style="background: var(--success);">
+                        <i class="fas fa-heartbeat"></i>
+                    </button>
+                    <button class="btn btn-icon btn-primary" onclick="toggleFullscreen()" title="Fullscreen">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+            </header>
+            
+            <!-- Content Area -->
+            <div class="content-area">
+                <div id="dashboard-content" style="display: block; height: 100%;">
+                    <!-- Dashboard embedded content -->
+                    <iframe class="content-frame" src="dashboard_pro.html"></iframe>
+                </div>
+                <iframe id="content-frame" class="content-frame" style="display: none;"></iframe>
+            </div>
+            
+            <!-- Status Bar -->
+            <footer class="status-bar">
+                <div class="status-item">
+                    <span class="status-indicator"></span>
+                    <span>API Connected</span>
+                </div>
+                <div class="status-item">
+                    <i class="fas fa-clock"></i>
+                    <span id="current-time">00:00:00</span>
+                </div>
+                <div class="status-item">
+                    <i class="fas fa-chart-bar"></i>
+                    <span id="market-status">Market: Checking...</span>
+                </div>
+            </footer>
+        </main>
+    </div>
+    
+    <script>
+        // Page navigation
+        function loadPage(element) {
+            // If element is a string (page name), find the element
+            if (typeof element === 'string') {
+                element = document.querySelector(`[data-page="${element}"]`);
+                if (!element) {
+                    console.error(`Page not found: ${element}`);
+                    return;
+                }
+            }
+            
+            // Update active state
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            element.classList.add('active');
+            
+            const page = element.dataset.page;
+            const title = element.dataset.title;
+            
+            // Save current page to sessionStorage
+            sessionStorage.setItem('currentPage', page);
+            sessionStorage.setItem('currentTitle', title);
+            
+            if (page === 'dashboard') {
+                // Show dashboard content
+                document.getElementById('dashboard-content').style.display = 'block';
+                document.getElementById('content-frame').style.display = 'none';
+                // Reload dashboard iframe to refresh data
+                const dashboardFrame = document.querySelector('#dashboard-content iframe');
+                if (dashboardFrame) {
+                    dashboardFrame.src = dashboardFrame.src;
+                }
+            } else {
+                // Hide dashboard, show iframe
+                document.getElementById('dashboard-content').style.display = 'none';
+                const frame = document.getElementById('content-frame');
+                frame.style.display = 'block';
+                frame.style.opacity = '0.5';
+                
+                // Load new page
+                frame.src = page;
+                frame.onload = () => {
+                    frame.style.opacity = '1';
+                };
+            }
+            
+            // Update breadcrumb
+            document.getElementById('current-page').textContent = title;
+        }
+        
+        // Global function to navigate to a page (can be called from iframe)
+        window.navigateToPage = function(pageName) {
+            const element = document.querySelector(`[data-page="${pageName}"]`);
+            if (element) {
+                loadPage(element);
+            } else {
+                console.error(`Page not found in navigation: ${pageName}`);
+            }
+        }
+        
+        function loadHome() {
+            const dashboard = document.querySelector('[data-page="dashboard"]');
+            if (dashboard) loadPage(dashboard);
+        }
+        
+        function refreshPage() {
+            const activePage = document.querySelector('.nav-item.active');
+            if (activePage && activePage.dataset.page === 'dashboard') {
+                document.querySelector('#dashboard-content iframe').contentWindow.location.reload();
+            } else {
+                document.getElementById('content-frame').contentWindow.location.reload();
+            }
+        }
+        
+        function toggleGroup(header) {
+            header.parentElement.classList.toggle('collapsed');
+        }
+        
+        // Update time
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('current-time').textContent = now.toLocaleTimeString();
+            
+            // Check market hours
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const day = now.getDay();
+            
+            let marketStatus = 'Closed';
+            if (day >= 1 && day <= 5) { // Monday to Friday
+                if (hours === 9 && minutes >= 15) {
+                    marketStatus = 'Open';
+                } else if (hours > 9 && hours < 15) {
+                    marketStatus = 'Open';
+                } else if (hours === 15 && minutes <= 30) {
+                    marketStatus = 'Open';
+                } else if (hours === 9 && minutes < 15) {
+                    marketStatus = 'Pre-Open';
+                } else if (hours === 15 && minutes > 30) {
+                    marketStatus = 'Post-Close';
+                }
+            }
+            
+            document.getElementById('market-status').textContent = `Market: ${marketStatus}`;
+        }
+        
+        // Initialize
+        setInterval(updateTime, 1000);
+        updateTime();
+        
+        // Restore last page after browser refresh
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedPage = sessionStorage.getItem('currentPage');
+            const savedTitle = sessionStorage.getItem('currentTitle');
+            
+            if (savedPage && savedPage !== 'dashboard') {
+                // Find and click the saved page
+                const pageElement = document.querySelector(`[data-page="${savedPage}"]`);
+                if (pageElement) {
+                    loadPage(pageElement);
+                }
+            }
+        });
+        
+        
+        // New Functions for Enhanced Features
+        async function showSystemHealth() {
+            try {
+                const response = await fetch('http://localhost:8000/monitoring/health');
+                const health = await response.json();
+                
+                let healthMessage = `System Health Status\n\n`;
+                healthMessage += `Status: ${health.status}\n`;
+                healthMessage += `Monitoring: ${health.checks.monitoring_service ? '✅' : '❌'}\n`;
+                healthMessage += `Alerts Queue: ${health.checks.alerts_queue ? '✅' : '❌'}\n`;
+                healthMessage += `Email Config: ${health.checks.email_configured ? '✅' : '❌'}\n`;
+                healthMessage += `Webhook Config: ${health.checks.webhook_configured ? '✅' : '❌'}\n`;
+                healthMessage += `\nTimestamp: ${new Date(health.timestamp).toLocaleString()}`;
+                
+                alert(healthMessage);
+            } catch (error) {
+                alert('Failed to fetch system health: ' + error.message);
+            }
+        }
+        
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+        
+        // Check authentication status
+        async function checkAuthStatus() {
+            try {
+                const token = localStorage.getItem('jwt_token');
+                if (token) {
+                    // Verify token is valid
+                    const response = await fetch('http://localhost:8000/auth/user?token=' + token);
+                    if (response.ok) {
+                        const user = await response.json();
+                        document.getElementById('auth-username').textContent = user.username;
+                    } else {
+                        document.getElementById('auth-username').textContent = 'Guest';
+                        localStorage.removeItem('jwt_token');
+                    }
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+            }
+        }
+        
+        // Check monitoring status
+        async function checkMonitoringStatus() {
+            try {
+                const response = await fetch('http://localhost:8000/monitoring/status');
+                if (response.ok) {
+                    const status = await response.json();
+                    
+                    // Update status bar with monitoring info
+                    if (status.monitoring_active) {
+                        const alertCount = status.active_alerts || 0;
+                        if (alertCount > 0) {
+                            // Show alert indicator
+                            const statusBar = document.querySelector('.status-bar');
+                            if (statusBar && !document.getElementById('alert-indicator')) {
+                                const alertIndicator = document.createElement('div');
+                                alertIndicator.id = 'alert-indicator';
+                                alertIndicator.className = 'status-item';
+                                alertIndicator.innerHTML = `
+                                    <span class="status-indicator" style="background: var(--warning);"></span>
+                                    <span>${alertCount} Active Alert${alertCount > 1 ? 's' : ''}</span>
+                                `;
+                                alertIndicator.style.cursor = 'pointer';
+                                alertIndicator.onclick = () => {
+                                    const monitoringPage = document.querySelector('[data-page="monitoring_dashboard.html"]');
+                                    if (monitoringPage) loadPage(monitoringPage);
+                                };
+                                statusBar.insertBefore(alertIndicator, statusBar.firstChild);
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Monitoring check failed:', error);
+            }
+        }
+        
+        // Initialize enhanced features on load
+        window.addEventListener('load', () => {
+            checkAuthStatus();
+            checkMonitoringStatus();
+            // Check every minute
+            setInterval(checkMonitoringStatus, 60000);
+        });
+        
+    </script>
+</body>
+</html>

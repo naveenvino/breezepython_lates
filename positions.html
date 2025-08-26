@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Positions - BreezeConnect Trading System</title>
+    <title>Positions - Trading Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -12,32 +13,178 @@
             box-sizing: border-box;
         }
 
+        :root {
+            /* Dark Theme Colors */
+            --bg-primary: #0f1419;
+            --bg-secondary: #1a1f2e;
+            --bg-tertiary: #242837;
+            --bg-card: #1e2332;
+            --bg-hover: #2a3042;
+            
+            /* Accent Colors */
+            --accent-blue: #00d4ff;
+            --accent-green: #00ff88;
+            --accent-red: #ff3366;
+            --accent-purple: #9945ff;
+            --accent-orange: #ff9500;
+            --accent-yellow: #ffeb3b;
+            
+            /* Text Colors */
+            --text-primary: #ffffff;
+            --text-secondary: #8892b0;
+            --text-muted: #495670;
+            
+            /* Gradients */
+            --gradient-blue: linear-gradient(135deg, #667eea 0%, #00d4ff 100%);
+            --gradient-green: linear-gradient(135deg, #00ff88 0%, #00d4aa 100%);
+            --gradient-red: linear-gradient(135deg, #ff3366 0%, #ff6b6b 100%);
+            --gradient-purple: linear-gradient(135deg, #9945ff 0%, #c770ff 100%);
+            
+            /* Shadows */
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+            --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.6);
+            
+            /* Glassmorphism */
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            position: relative;
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+        }
+
+        /* Animated Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(153, 69, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(0, 255, 136, 0.1) 0%, transparent 50%);
+            z-index: -1;
+            animation: backgroundShift 20s ease-in-out infinite;
+        }
+
+        @keyframes backgroundShift {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.1); }
+        }
+
+        /* Animated Grid Pattern */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -1;
+            animation: gridMove 10s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        /* Main Container */
+        .dashboard-wrapper {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
         }
 
         /* Header */
-        .header {
-            background: rgba(26, 26, 46, 0.95);
+        .header-card {
+            background: var(--glass-bg);
             backdrop-filter: blur(10px);
-            padding: 20px 40px;
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 25px 30px;
+            margin-bottom: 30px;
+            animation: slideDown 0.5s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header-content {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            flex-wrap: wrap;
+            gap: 20px;
         }
 
-        .header h1 {
-            color: white;
-            font-size: 24px;
-            font-weight: 600;
+        .header-left {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 15px;
+        }
+
+        .header-title {
+            font-size: 28px;
+            font-weight: 700;
+            background: var(--gradient-blue);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .live-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--accent-green);
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent-green);
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 255, 136, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); }
         }
 
         .header-actions {
@@ -45,109 +192,208 @@
             gap: 12px;
         }
 
+        /* Buttons */
         .btn {
             padding: 10px 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--gradient-blue);
             border: none;
             border-radius: 10px;
             color: white;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            box-shadow: var(--shadow-lg);
         }
 
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-hover);
         }
 
         .btn-danger {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            background: var(--gradient-red);
         }
 
         .btn-success {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            background: var(--gradient-green);
         }
 
-        /* Container */
-        .container {
-            flex: 1;
-            padding: 20px;
-            max-width: 1600px;
-            margin: 0 auto;
-            width: 100%;
-        }
-
-        /* Summary Cards */
-        .summary-grid {
+        /* Stats Cards */
+        .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }
 
-        .summary-card {
-            background: rgba(255, 255, 255, 0.95);
+        .stat-card {
+            background: var(--glass-bg);
             backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
             border-radius: 16px;
             padding: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 0.5s ease;
+            transition: all 0.3s ease;
         }
 
-        .summary-card:hover {
+        .stat-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--accent-blue);
         }
 
-        .summary-icon {
-            width: 50px;
-            height: 50px;
-            margin: 0 auto 15px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 12px;
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--gradient-blue);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .stat-title {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 24px;
+            font-size: 16px;
         }
 
-        .summary-value {
+        .stat-icon.blue {
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--accent-blue);
+        }
+
+        .stat-icon.green {
+            background: rgba(0, 255, 136, 0.1);
+            color: var(--accent-green);
+        }
+
+        .stat-icon.red {
+            background: rgba(255, 51, 102, 0.1);
+            color: var(--accent-red);
+        }
+
+        .stat-icon.purple {
+            background: rgba(153, 69, 255, 0.1);
+            color: var(--accent-purple);
+        }
+
+        .stat-icon.orange {
+            background: rgba(255, 149, 0, 0.1);
+            color: var(--accent-orange);
+        }
+
+        .stat-value {
             font-size: 28px;
-            font-weight: bold;
-            color: #1a1a2e;
-            margin-bottom: 5px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-top: 5px;
         }
 
-        .summary-label {
-            color: #666;
-            font-size: 12px;
-            text-transform: uppercase;
+        .stat-value.positive {
+            color: var(--accent-green);
         }
 
-        .positive {
-            color: #10b981;
+        .stat-value.negative {
+            color: var(--accent-red);
         }
 
-        .negative {
-            color: #ef4444;
+        .stat-change {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
-        /* Positions Table */
-        .positions-card {
-            background: rgba(255, 255, 255, 0.95);
+        /* Tabs */
+        .tabs-container {
+            background: var(--glass-bg);
             backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
             border-radius: 16px;
-            padding: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 10px;
             margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            background: var(--gradient-blue);
+            color: white;
+        }
+
+        /* Positions Table Card */
+        .table-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
         }
 
         .card-header {
@@ -155,22 +401,27 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--glass-border);
         }
 
         .card-title {
             font-size: 18px;
             font-weight: 600;
-            color: #1a1a2e;
+            color: var(--text-primary);
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+        }
+
+        .card-title i {
+            color: var(--accent-blue);
         }
 
         /* Table */
         .table-wrapper {
             overflow-x: auto;
+            position: relative;
         }
 
         table {
@@ -181,76 +432,85 @@
         th {
             text-align: left;
             padding: 12px;
-            background: rgba(102, 126, 234, 0.1);
-            color: #1a1a2e;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
             font-weight: 600;
-            font-size: 12px;
+            font-size: 11px;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
             position: sticky;
             top: 0;
+            z-index: 10;
         }
 
         td {
-            padding: 12px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            padding: 14px 12px;
+            border-bottom: 1px solid var(--glass-border);
             font-size: 14px;
+            color: var(--text-primary);
         }
 
-        tr:hover {
-            background: rgba(102, 126, 234, 0.03);
+        tbody tr {
+            transition: all 0.3s ease;
+        }
+
+        tbody tr:hover {
+            background: var(--bg-hover);
         }
 
         /* Position Type Badge */
         .position-type {
-            padding: 4px 8px;
-            border-radius: 4px;
+            padding: 5px 10px;
+            border-radius: 6px;
             font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
+            display: inline-block;
         }
 
         .type-put {
-            background: #fef3c7;
-            color: #92400e;
+            background: rgba(255, 149, 0, 0.2);
+            color: var(--accent-orange);
         }
 
         .type-call {
-            background: #dbeafe;
-            color: #1e40af;
+            background: rgba(0, 212, 255, 0.2);
+            color: var(--accent-blue);
         }
 
         .type-main {
-            background: #e0e7ff;
-            color: #3730a3;
+            background: rgba(153, 69, 255, 0.2);
+            color: var(--accent-purple);
         }
 
         .type-hedge {
-            background: #fce7f3;
-            color: #be185d;
+            background: rgba(255, 235, 59, 0.2);
+            color: var(--accent-yellow);
         }
 
         /* Status Badge */
         .status-badge {
-            padding: 4px 8px;
-            border-radius: 4px;
+            padding: 5px 10px;
+            border-radius: 6px;
             font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
+            display: inline-block;
         }
 
         .status-open {
-            background: #d4f4dd;
-            color: #0e6333;
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--accent-green);
         }
 
         .status-closed {
-            background: #f3f4f6;
-            color: #6b7280;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
         }
 
         .status-pending {
-            background: #fef3c7;
-            color: #92400e;
+            background: rgba(255, 235, 59, 0.2);
+            color: var(--accent-yellow);
         }
 
         /* Action Buttons */
@@ -266,57 +526,42 @@
             font-size: 12px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
         }
 
         .action-btn:hover {
             transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
         }
 
         .action-exit {
-            background: #fee2e2;
-            color: #991b1b;
+            color: var(--accent-red);
+            border-color: rgba(255, 51, 102, 0.3);
+        }
+
+        .action-exit:hover {
+            background: rgba(255, 51, 102, 0.1);
         }
 
         .action-modify {
-            background: #e0e7ff;
-            color: #3730a3;
+            color: var(--accent-blue);
+            border-color: rgba(0, 212, 255, 0.3);
+        }
+
+        .action-modify:hover {
+            background: rgba(0, 212, 255, 0.1);
         }
 
         .action-hedge {
-            background: #d1fae5;
-            color: #065f46;
+            color: var(--accent-green);
+            border-color: rgba(0, 255, 136, 0.3);
         }
 
-        /* Tabs */
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 10px;
-            border-radius: 16px;
-            backdrop-filter: blur(10px);
-        }
-
-        .tab {
-            padding: 12px 24px;
-            background: transparent;
-            border: none;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            border-radius: 10px;
-            transition: all 0.3s;
-        }
-
-        .tab.active {
-            background: white;
-            color: #667eea;
-        }
-
-        .tab:hover:not(.active) {
-            background: rgba(255, 255, 255, 0.1);
+        .action-hedge:hover {
+            background: rgba(0, 255, 136, 0.1);
         }
 
         /* Tab Content */
@@ -326,7 +571,7 @@
 
         .tab-content.active {
             display: block;
-            animation: fadeIn 0.3s;
+            animation: fadeIn 0.3s ease;
         }
 
         @keyframes fadeIn {
@@ -338,13 +583,14 @@
         .empty-state {
             text-align: center;
             padding: 60px 20px;
-            color: #999;
+            color: var(--text-muted);
         }
 
         .empty-icon {
             font-size: 48px;
             margin-bottom: 20px;
-            color: #ddd;
+            color: var(--text-muted);
+            opacity: 0.5;
         }
 
         /* Loading */
@@ -353,12 +599,12 @@
             justify-content: center;
             align-items: center;
             padding: 40px;
-            color: #666;
+            color: var(--text-muted);
         }
 
         .spinner {
-            border: 3px solid rgba(102, 126, 234, 0.2);
-            border-top: 3px solid #667eea;
+            border: 3px solid rgba(0, 212, 255, 0.2);
+            border-top: 3px solid var(--accent-blue);
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -370,37 +616,62 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Risk Metrics */
+        /* Risk Metrics Grid */
         .risk-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 20px;
             margin-top: 20px;
         }
 
         .risk-card {
-            background: rgba(255, 255, 255, 0.95);
+            background: var(--glass-bg);
             backdrop-filter: blur(10px);
-            border-radius: 12px;
-            padding: 15px;
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .risk-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+        }
+
+        .risk-card.low::before {
+            background: var(--gradient-green);
+        }
+
+        .risk-card.medium::before {
+            background: var(--gradient-purple);
+        }
+
+        .risk-card.high::before {
+            background: var(--gradient-red);
         }
 
         .risk-title {
             font-size: 12px;
-            color: #666;
+            color: var(--text-muted);
             text-transform: uppercase;
+            letter-spacing: 0.5px;
             margin-bottom: 10px;
         }
 
         .risk-value {
             font-size: 24px;
             font-weight: bold;
-            color: #1a1a2e;
+            color: var(--text-primary);
         }
 
         .risk-bar {
             height: 8px;
-            background: #e5e7eb;
+            background: var(--bg-secondary);
             border-radius: 4px;
             overflow: hidden;
             margin-top: 10px;
@@ -412,93 +683,213 @@
         }
 
         .risk-low {
-            background: linear-gradient(90deg, #10b981, #059669);
+            background: var(--gradient-green);
         }
 
         .risk-medium {
-            background: linear-gradient(90deg, #f59e0b, #d97706);
+            background: var(--gradient-purple);
         }
 
         .risk-high {
-            background: linear-gradient(90deg, #ef4444, #dc2626);
+            background: var(--gradient-red);
+        }
+
+        /* Floating particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            background: var(--accent-blue);
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: float 20s infinite linear;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) translateX(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.3;
+            }
+            90% {
+                opacity: 0.3;
+            }
+            100% {
+                transform: translateY(-100vh) translateX(100px);
+                opacity: 0;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .dashboard-wrapper {
+                padding: 10px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .tabs-container {
+                overflow-x: auto;
+            }
+
+            .table-wrapper {
+                font-size: 12px;
+            }
+
+            td, th {
+                padding: 8px;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <div class="header">
-        <h1>
-            <i class="fas fa-chart-line"></i>
-            Positions Management
-        </h1>
-        <div class="header-actions">
-            <button class="btn btn-secondary" onclick="window.location.href='/'">
-                <i class="fas fa-arrow-left"></i> Back to Dashboard
-            </button>
-            <button class="btn btn-danger" onclick="squareOffAll()">
-                <i class="fas fa-times-circle"></i> Square Off All
-            </button>
-            <button class="btn" onclick="refreshPositions()">
-                <i class="fas fa-sync"></i> Refresh
-            </button>
-        </div>
+    <!-- Floating Particles -->
+    <div class="particles">
+        <div class="particle" style="width: 4px; height: 4px; left: 10%; animation-delay: 0s;"></div>
+        <div class="particle" style="width: 3px; height: 3px; left: 20%; animation-delay: 2s;"></div>
+        <div class="particle" style="width: 5px; height: 5px; left: 30%; animation-delay: 4s;"></div>
+        <div class="particle" style="width: 2px; height: 2px; left: 40%; animation-delay: 6s;"></div>
+        <div class="particle" style="width: 4px; height: 4px; left: 50%; animation-delay: 8s;"></div>
+        <div class="particle" style="width: 3px; height: 3px; left: 60%; animation-delay: 10s;"></div>
+        <div class="particle" style="width: 5px; height: 5px; left: 70%; animation-delay: 12s;"></div>
+        <div class="particle" style="width: 2px; height: 2px; left: 80%; animation-delay: 14s;"></div>
+        <div class="particle" style="width: 4px; height: 4px; left: 90%; animation-delay: 16s;"></div>
     </div>
 
-    <!-- Container -->
-    <div class="container">
-        <!-- Summary Cards -->
-        <div class="summary-grid">
-            <div class="summary-card">
-                <div class="summary-icon">
-                    <i class="fas fa-list"></i>
+    <!-- Main Wrapper -->
+    <div class="dashboard-wrapper">
+        <!-- Header -->
+        <div class="header-card">
+            <div class="header-content">
+                <div class="header-left">
+                    <h1 class="header-title">
+                        <i class="fas fa-chart-line"></i>
+                        Positions Management
+                    </h1>
+                    <div class="live-badge">
+                        <div class="live-dot"></div>
+                        <span>LIVE</span>
+                    </div>
                 </div>
-                <div class="summary-value" id="totalPositions">0</div>
-                <div class="summary-label">Open Positions</div>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" onclick="window.location.href='/'">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </button>
+                    <button class="btn btn-danger" onclick="squareOffAll()">
+                        <i class="fas fa-times-circle"></i> Square Off All
+                    </button>
+                    <button class="btn" onclick="refreshPositions()">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                </div>
             </div>
-            
-            <div class="summary-card">
-                <div class="summary-icon">
-                    <i class="fas fa-rupee-sign"></i>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-title">Open Positions</div>
+                        <div class="stat-value" id="totalPositions">0</div>
+                    </div>
+                    <div class="stat-icon blue">
+                        <i class="fas fa-list"></i>
+                    </div>
                 </div>
-                <div class="summary-value" id="unrealizedPnL">₹0</div>
-                <div class="summary-label">Unrealized P&L</div>
+                <div class="stat-change">
+                    <i class="fas fa-arrow-up"></i> Active trades
+                </div>
             </div>
-            
-            <div class="summary-card">
-                <div class="summary-icon">
-                    <i class="fas fa-wallet"></i>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-title">Unrealized P&L</div>
+                        <div class="stat-value" id="unrealizedPnL">₹0</div>
+                    </div>
+                    <div class="stat-icon green">
+                        <i class="fas fa-rupee-sign"></i>
+                    </div>
                 </div>
-                <div class="summary-value" id="marginUsed">₹0</div>
-                <div class="summary-label">Margin Used</div>
+                <div class="stat-change">
+                    <i class="fas fa-chart-line"></i> Current profit/loss
+                </div>
             </div>
-            
-            <div class="summary-card">
-                <div class="summary-icon">
-                    <i class="fas fa-shield-alt"></i>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-title">Margin Used</div>
+                        <div class="stat-value" id="marginUsed">₹0</div>
+                    </div>
+                    <div class="stat-icon purple">
+                        <i class="fas fa-wallet"></i>
+                    </div>
                 </div>
-                <div class="summary-value" id="hedgedPositions">0</div>
-                <div class="summary-label">Hedged Positions</div>
+                <div class="stat-change">
+                    <i class="fas fa-lock"></i> Blocked margin
+                </div>
             </div>
-            
-            <div class="summary-card">
-                <div class="summary-icon">
-                    <i class="fas fa-exclamation-triangle"></i>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-title">Hedged Positions</div>
+                        <div class="stat-value" id="hedgedPositions">0</div>
+                    </div>
+                    <div class="stat-icon orange">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
                 </div>
-                <div class="summary-value" id="riskLevel">Low</div>
-                <div class="summary-label">Risk Level</div>
+                <div class="stat-change">
+                    <i class="fas fa-check-circle"></i> Protected trades
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-title">Risk Level</div>
+                        <div class="stat-value" id="riskLevel">Low</div>
+                    </div>
+                    <div class="stat-icon red">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                </div>
+                <div class="stat-change">
+                    <i class="fas fa-info-circle"></i> Portfolio risk
+                </div>
             </div>
         </div>
 
         <!-- Tabs -->
-        <div class="tabs">
+        <div class="tabs-container">
             <button class="tab active" onclick="showTab('open')">
                 <i class="fas fa-folder-open"></i> Open Positions
             </button>
             <button class="tab" onclick="showTab('closed')">
                 <i class="fas fa-folder"></i> Closed Today
             </button>
-            <button class="tab" onclick="showTab('backtest')">
-                <i class="fas fa-flask"></i> Backtest Positions
+            <button class="tab" onclick="showTab('orders')">
+                <i class="fas fa-clock"></i> Pending Orders
             </button>
             <button class="tab" onclick="showTab('risk')">
                 <i class="fas fa-chart-pie"></i> Risk Analysis
@@ -506,41 +897,34 @@
         </div>
 
         <!-- Open Positions Tab -->
-        <div id="open" class="tab-content active">
-            <div class="positions-card">
+        <div id="openTab" class="tab-content active">
+            <div class="table-card">
                 <div class="card-header">
                     <div class="card-title">
-                        <i class="fas fa-folder-open"></i>
-                        Open Positions
+                        <i class="fas fa-list-alt"></i>
+                        Active Positions
                     </div>
-                    <span id="lastUpdate">Last updated: Never</span>
                 </div>
-                
                 <div class="table-wrapper">
                     <table>
                         <thead>
                             <tr>
                                 <th>Symbol</th>
                                 <th>Type</th>
-                                <th>Strike</th>
-                                <th>Position</th>
                                 <th>Qty</th>
-                                <th>Entry Price</th>
-                                <th>Current Price</th>
+                                <th>Avg Price</th>
+                                <th>LTP</th>
                                 <th>P&L</th>
+                                <th>Change %</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="openPositionsTable">
+                        <tbody id="openPositionsBody">
                             <tr>
-                                <td colspan="10" class="empty-state">
-                                    <div class="empty-icon">
-                                        <i class="fas fa-inbox"></i>
-                                    </div>
-                                    <div>No open positions</div>
-                                    <div style="margin-top: 10px; font-size: 12px;">
-                                        Positions will appear here when you start trading
+                                <td colspan="9">
+                                    <div class="loading">
+                                        <div class="spinner"></div>
                                     </div>
                                 </td>
                             </tr>
@@ -551,38 +935,37 @@
         </div>
 
         <!-- Closed Positions Tab -->
-        <div id="closed" class="tab-content">
-            <div class="positions-card">
+        <div id="closedTab" class="tab-content">
+            <div class="table-card">
                 <div class="card-header">
                     <div class="card-title">
-                        <i class="fas fa-folder"></i>
-                        Closed Today
+                        <i class="fas fa-history"></i>
+                        Today's Closed Positions
                     </div>
                 </div>
-                
                 <div class="table-wrapper">
                     <table>
                         <thead>
                             <tr>
                                 <th>Symbol</th>
                                 <th>Type</th>
-                                <th>Strike</th>
                                 <th>Qty</th>
                                 <th>Entry Price</th>
                                 <th>Exit Price</th>
-                                <th>Entry Time</th>
-                                <th>Exit Time</th>
                                 <th>P&L</th>
+                                <th>Exit Time</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
-                        <tbody id="closedPositionsTable">
+                        <tbody id="closedPositionsBody">
                             <tr>
-                                <td colspan="10" class="empty-state">
-                                    <div class="empty-icon">
-                                        <i class="fas fa-check-circle"></i>
+                                <td colspan="8">
+                                    <div class="empty-state">
+                                        <div class="empty-icon">
+                                            <i class="fas fa-inbox"></i>
+                                        </div>
+                                        <p>No closed positions today</p>
                                     </div>
-                                    <div>No closed positions today</div>
                                 </td>
                             </tr>
                         </tbody>
@@ -591,36 +974,38 @@
             </div>
         </div>
 
-        <!-- Backtest Positions Tab -->
-        <div id="backtest" class="tab-content">
-            <div class="positions-card">
+        <!-- Orders Tab -->
+        <div id="ordersTab" class="tab-content">
+            <div class="table-card">
                 <div class="card-header">
                     <div class="card-title">
-                        <i class="fas fa-flask"></i>
-                        Latest Backtest Positions
+                        <i class="fas fa-clock"></i>
+                        Pending Orders
                     </div>
                 </div>
-                
                 <div class="table-wrapper">
                     <table>
                         <thead>
                             <tr>
-                                <th>Date</th>
-                                <th>Signal</th>
+                                <th>Order ID</th>
+                                <th>Symbol</th>
                                 <th>Type</th>
-                                <th>Strike</th>
-                                <th>Position</th>
                                 <th>Qty</th>
-                                <th>Entry</th>
-                                <th>Exit</th>
-                                <th>P&L</th>
-                                <th>Result</th>
+                                <th>Price</th>
+                                <th>Status</th>
+                                <th>Time</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="backtestPositionsTable">
+                        <tbody id="ordersBody">
                             <tr>
-                                <td colspan="10" class="loading">
-                                    <div class="spinner"></div>
+                                <td colspan="8">
+                                    <div class="empty-state">
+                                        <div class="empty-icon">
+                                            <i class="fas fa-hourglass-half"></i>
+                                        </div>
+                                        <p>No pending orders</p>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>
@@ -630,73 +1015,55 @@
         </div>
 
         <!-- Risk Analysis Tab -->
-        <div id="risk" class="tab-content">
-            <div class="positions-card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <i class="fas fa-chart-pie"></i>
-                        Risk Analysis
+        <div id="riskTab" class="tab-content">
+            <div class="risk-grid">
+                <div class="risk-card low">
+                    <div class="risk-title">Portfolio Delta</div>
+                    <div class="risk-value" id="portfolioDelta">0.00</div>
+                    <div class="risk-bar">
+                        <div class="risk-fill risk-low" style="width: 30%"></div>
                     </div>
                 </div>
-                
-                <div class="risk-grid">
-                    <div class="risk-card">
-                        <div class="risk-title">Portfolio Risk</div>
-                        <div class="risk-value" id="portfolioRisk">Loading...</div>
-                        <div class="risk-bar">
-                            <div class="risk-fill risk-low" id="portfolioRiskBar" style="width: 0%"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="risk-card">
-                        <div class="risk-title">Max Drawdown</div>
-                        <div class="risk-value" id="maxDrawdown">Loading...</div>
-                        <div class="risk-bar">
-                            <div class="risk-fill risk-medium" id="drawdownBar" style="width: 0%"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="risk-card">
-                        <div class="risk-title">Margin Utilization</div>
-                        <div class="risk-value" id="marginUtil">Loading...</div>
-                        <div class="risk-bar">
-                            <div class="risk-fill risk-low" id="marginBar" style="width: 0%"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="risk-card">
-                        <div class="risk-title">Greeks Exposure</div>
-                        <div class="risk-value" id="greeksExposure">
-                            Loading...
-                        </div>
+
+                <div class="risk-card medium">
+                    <div class="risk-title">Theta Decay</div>
+                    <div class="risk-value" id="thetaDecay">-₹0</div>
+                    <div class="risk-bar">
+                        <div class="risk-fill risk-medium" style="width: 50%"></div>
                     </div>
                 </div>
-                
-                <div class="positions-card" style="margin-top: 20px;">
-                    <h3 style="margin-bottom: 15px;">Position Distribution</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Type</th>
-                                <th>Count</th>
-                                <th>Exposure</th>
-                                <th>Risk</th>
-                            </tr>
-                        </thead>
-                        <tbody id="distributionTable">
-                            <tr>
-                                <td colspan="4" style="text-align: center; color: #999;">
-                                    Loading position data...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+
+                <div class="risk-card low">
+                    <div class="risk-title">Max Loss</div>
+                    <div class="risk-value" id="maxLoss">-₹0</div>
+                    <div class="risk-bar">
+                        <div class="risk-fill risk-high" style="width: 20%"></div>
+                    </div>
+                </div>
+
+                <div class="risk-card low">
+                    <div class="risk-title">Margin Utilization</div>
+                    <div class="risk-value" id="marginUtil">0%</div>
+                    <div class="risk-bar">
+                        <div class="risk-fill risk-low" style="width: 0%"></div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
+        // Global variables
+        let positions = [];
+        let closedPositions = [];
+        let orders = [];
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshPositions();
+            setInterval(refreshPositions, 5000); // Auto-refresh every 5 seconds
+        });
+
         // Tab switching
         function showTab(tabName) {
             // Hide all tabs
@@ -704,439 +1071,397 @@
                 tab.classList.remove('active');
             });
             
-            // Remove active from all tab buttons
-            document.querySelectorAll('.tab').forEach(btn => {
-                btn.classList.remove('active');
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab').forEach(button => {
+                button.classList.remove('active');
             });
             
             // Show selected tab
-            document.getElementById(tabName).classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
             
-            // Mark button as active
+            // Add active class to clicked button
             event.target.classList.add('active');
             
-            // Load data for the tab
-            if (tabName === 'open') {
-                loadOpenPositions();
-            } else if (tabName === 'closed') {
-                loadClosedPositions();
-            } else if (tabName === 'backtest') {
-                loadBacktestPositions();
-            } else if (tabName === 'risk') {
-                loadRiskAnalysis();
+            // Load data for the selected tab
+            switch(tabName) {
+                case 'open':
+                    loadOpenPositions();
+                    break;
+                case 'closed':
+                    loadClosedPositions();
+                    break;
+                case 'orders':
+                    loadOrders();
+                    break;
+                case 'risk':
+                    loadRiskAnalysis();
+                    break;
             }
+        }
+
+        // Refresh all positions
+        async function refreshPositions() {
+            await loadOpenPositions();
+            updateSummaryCards();
         }
 
         // Load open positions
         async function loadOpenPositions() {
             try {
-                const response = await fetch('http://localhost:8000/live/positions');
+                const response = await fetch('http://localhost:8000/positions');
                 if (response.ok) {
                     const data = await response.json();
-                    updateOpenPositionsTable(data.positions || []);
-                    updateSummaryCards(data);
-                } else {
-                    console.log('No live positions available');
-                    showNoPositions();
+                    positions = data.net || [];
+                    displayOpenPositions(positions);
+                    updateSummaryCards();
                 }
             } catch (error) {
-                console.error('Error loading open positions:', error);
-                showNoPositions();
+                console.error('Failed to load positions:', error);
+                document.getElementById('openPositionsBody').innerHTML = `
+                    <tr>
+                        <td colspan="9">
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                </div>
+                                <p>Failed to load positions</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
             }
         }
 
-        // Update open positions table
-        function updateOpenPositionsTable(positions) {
-            const tbody = document.getElementById('openPositionsTable');
+        // Display open positions in table
+        function displayOpenPositions(positions) {
+            const tbody = document.getElementById('openPositionsBody');
             
-            if (positions.length === 0) {
-                showNoPositions();
+            if (!positions || positions.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9">
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="fas fa-inbox"></i>
+                                </div>
+                                <p>No open positions</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
                 return;
             }
-            
-            tbody.innerHTML = positions.map(pos => `
-                <tr>
-                    <td><strong>${pos.symbol || 'NIFTY'}</strong></td>
-                    <td><span class="position-type type-${pos.option_type?.toLowerCase() || 'call'}">${pos.option_type || 'CALL'}</span></td>
-                    <td>${pos.strike_price || '-'}</td>
-                    <td><span class="position-type type-${pos.position_type || 'main'}">${pos.position_type || 'MAIN'}</span></td>
-                    <td>${pos.quantity || 0}</td>
-                    <td>₹${pos.entry_price?.toFixed(2) || '0'}</td>
-                    <td>₹${pos.current_price?.toFixed(2) || '0'}</td>
-                    <td class="${pos.pnl >= 0 ? 'positive' : 'negative'}">
-                        ₹${pos.pnl?.toFixed(2) || '0'}
-                    </td>
-                    <td><span class="status-badge status-open">OPEN</span></td>
-                    <td>
-                        <div class="action-buttons">
-                            <button class="action-btn action-exit" onclick="exitPosition('${pos.id}')">Exit</button>
-                            <button class="action-btn action-modify" onclick="modifyPosition('${pos.id}')">Modify</button>
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
-            
-            // Update last update time
-            document.getElementById('lastUpdate').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
-        }
 
-        // Show no positions message
-        function showNoPositions() {
-            const tbody = document.getElementById('openPositionsTable');
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="10" class="empty-state">
-                        <div class="empty-icon">
-                            <i class="fas fa-inbox"></i>
-                        </div>
-                        <div>No open positions</div>
-                        <div style="margin-top: 10px; font-size: 12px;">
-                            Positions will appear here when you start trading
-                        </div>
-                    </td>
-                </tr>
-            `;
+            tbody.innerHTML = positions.map(position => {
+                const pnl = position.pnl || 0;
+                const pnlClass = pnl >= 0 ? 'positive' : 'negative';
+                const changePercent = position.average_price > 0 ? 
+                    ((position.last_price - position.average_price) / position.average_price * 100).toFixed(2) : 0;
+                
+                // Determine position type (PUT/CALL) and category (MAIN/HEDGE)
+                const symbol = position.tradingsymbol || '';
+                const isPut = symbol.includes('PE');
+                const isCall = symbol.includes('CE');
+                const typeClass = isPut ? 'type-put' : 'type-call';
+                const typeText = isPut ? 'PUT' : 'CALL';
+                
+                return `
+                    <tr>
+                        <td>${position.tradingsymbol}</td>
+                        <td><span class="position-type ${typeClass}">${typeText}</span></td>
+                        <td>${position.quantity}</td>
+                        <td>₹${position.average_price?.toFixed(2) || '0.00'}</td>
+                        <td>₹${position.last_price?.toFixed(2) || '0.00'}</td>
+                        <td class="${pnlClass}">₹${Math.abs(pnl).toFixed(2)}</td>
+                        <td class="${pnlClass}">${changePercent}%</td>
+                        <td><span class="status-badge status-open">OPEN</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="action-btn action-exit" onclick="exitPosition('${position.tradingsymbol}', ${position.quantity})">
+                                    Exit
+                                </button>
+                                <button class="action-btn action-modify" onclick="modifyPosition('${position.tradingsymbol}')">
+                                    Modify
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         // Load closed positions
         async function loadClosedPositions() {
             try {
-                const response = await fetch('http://localhost:8000/live/trades/active');
+                const response = await fetch('http://localhost:8000/orders');
                 if (response.ok) {
                     const data = await response.json();
-                    updateClosedPositionsTable(data.trades || []);
+                    const allOrders = data.orders || [];
+                    closedPositions = allOrders.filter(order => 
+                        order.status === 'COMPLETE' && 
+                        new Date(order.order_timestamp).toDateString() === new Date().toDateString()
+                    );
+                    displayClosedPositions(closedPositions);
                 }
             } catch (error) {
-                console.error('Error loading closed positions:', error);
+                console.error('Failed to load closed positions:', error);
             }
         }
 
-        // Update closed positions table
-        function updateClosedPositionsTable(trades) {
-            const tbody = document.getElementById('closedPositionsTable');
+        // Display closed positions
+        function displayClosedPositions(positions) {
+            const tbody = document.getElementById('closedPositionsBody');
             
-            const closedTrades = trades.filter(t => t.status === 'CLOSED' || t.exit_time);
-            
-            if (closedTrades.length === 0) {
+            if (!positions || positions.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="10" class="empty-state">
-                            <div class="empty-icon">
-                                <i class="fas fa-check-circle"></i>
+                        <td colspan="8">
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="fas fa-inbox"></i>
+                                </div>
+                                <p>No closed positions today</p>
                             </div>
-                            <div>No closed positions today</div>
                         </td>
                     </tr>
                 `;
                 return;
             }
-            
-            tbody.innerHTML = closedTrades.map(trade => `
-                <tr>
-                    <td><strong>NIFTY</strong></td>
-                    <td><span class="position-type type-${trade.option_type?.toLowerCase() || 'call'}">${trade.option_type || 'CALL'}</span></td>
-                    <td>${trade.strike_price || '-'}</td>
-                    <td>${trade.quantity || 0}</td>
-                    <td>₹${trade.entry_price?.toFixed(2) || '0'}</td>
-                    <td>₹${trade.exit_price?.toFixed(2) || '0'}</td>
-                    <td>${trade.entry_time ? new Date(trade.entry_time).toLocaleTimeString() : '-'}</td>
-                    <td>${trade.exit_time ? new Date(trade.exit_time).toLocaleTimeString() : '-'}</td>
-                    <td class="${trade.pnl >= 0 ? 'positive' : 'negative'}">
-                        ₹${trade.pnl?.toFixed(2) || '0'}
-                    </td>
-                    <td><span class="status-badge status-closed">CLOSED</span></td>
-                </tr>
-            `).join('');
-        }
 
-        // Load backtest positions
-        async function loadBacktestPositions() {
-            try {
-                // Get latest backtest ID from history
-                const historyResponse = await fetch('http://localhost:8000/backtest/history?limit=1');
-                if (historyResponse.ok) {
-                    const history = await historyResponse.json();
-                    
-                    if (history.backtests && history.backtests.length > 0) {
-                        const latestBacktest = history.backtests[0];
-                        
-                        // Get detailed positions for this backtest
-                        const detailsResponse = await fetch(`http://localhost:8000/backtest/${latestBacktest.backtest_id}/details`);
-                        if (detailsResponse.ok) {
-                            const details = await detailsResponse.json();
-                            updateBacktestPositionsTable(details.positions || []);
-                            return;
-                        }
-                    }
-                }
+            tbody.innerHTML = positions.map(position => {
+                const pnl = (position.average_price - position.price) * position.quantity;
+                const pnlClass = pnl >= 0 ? 'positive' : 'negative';
+                const exitTime = new Date(position.exchange_update_timestamp).toLocaleTimeString();
                 
-                // If no data, show empty state
-                document.getElementById('backtestPositionsTable').innerHTML = `
+                return `
                     <tr>
-                        <td colspan="10" class="empty-state">
-                            <div class="empty-icon">
-                                <i class="fas fa-flask"></i>
-                            </div>
-                            <div>No backtest positions available</div>
-                            <div style="margin-top: 10px; font-size: 12px;">
-                                Run a backtest to see positions here
-                            </div>
-                        </td>
+                        <td>${position.tradingsymbol}</td>
+                        <td><span class="position-type ${position.tradingsymbol.includes('PE') ? 'type-put' : 'type-call'}">
+                            ${position.tradingsymbol.includes('PE') ? 'PUT' : 'CALL'}
+                        </span></td>
+                        <td>${position.quantity}</td>
+                        <td>₹${position.average_price?.toFixed(2) || '0.00'}</td>
+                        <td>₹${position.price?.toFixed(2) || '0.00'}</td>
+                        <td class="${pnlClass}">₹${Math.abs(pnl).toFixed(2)}</td>
+                        <td>${exitTime}</td>
+                        <td><span class="status-badge status-closed">CLOSED</span></td>
                     </tr>
                 `;
+            }).join('');
+        }
+
+        // Load orders
+        async function loadOrders() {
+            try {
+                const response = await fetch('http://localhost:8000/orders');
+                if (response.ok) {
+                    const data = await response.json();
+                    orders = (data.orders || []).filter(order => 
+                        ['PENDING', 'OPEN', 'TRIGGER_PENDING'].includes(order.status)
+                    );
+                    displayOrders(orders);
+                }
             } catch (error) {
-                console.error('Error loading backtest positions:', error);
+                console.error('Failed to load orders:', error);
             }
         }
 
-        // Update backtest positions table
-        function updateBacktestPositionsTable(positions) {
-            const tbody = document.getElementById('backtestPositionsTable');
+        // Display orders
+        function displayOrders(orders) {
+            const tbody = document.getElementById('ordersBody');
             
-            if (positions.length === 0) {
+            if (!orders || orders.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="10" class="empty-state">
-                            <div class="empty-icon">
-                                <i class="fas fa-flask"></i>
+                        <td colspan="8">
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="fas fa-hourglass-half"></i>
+                                </div>
+                                <p>No pending orders</p>
                             </div>
-                            <div>No positions in this backtest</div>
                         </td>
                     </tr>
                 `;
                 return;
             }
-            
-            tbody.innerHTML = positions.map(pos => `
-                <tr>
-                    <td>${pos.entry_date ? new Date(pos.entry_date).toLocaleDateString() : '-'}</td>
-                    <td><strong>${pos.signal_type || '-'}</strong></td>
-                    <td><span class="position-type type-${pos.option_type?.toLowerCase() || 'call'}">${pos.option_type || '-'}</span></td>
-                    <td>${pos.strike_price || '-'}</td>
-                    <td><span class="position-type type-${pos.position_type || 'main'}">${pos.position_type || 'MAIN'}</span></td>
-                    <td>${pos.quantity || 0}</td>
-                    <td>₹${pos.entry_price?.toFixed(2) || '0'}</td>
-                    <td>₹${pos.exit_price?.toFixed(2) || '0'}</td>
-                    <td class="${pos.pnl >= 0 ? 'positive' : 'negative'}">
-                        ₹${pos.pnl?.toFixed(2) || '0'}
-                    </td>
-                    <td>
-                        <span class="status-badge status-${pos.pnl >= 0 ? 'open' : 'closed'}">
-                            ${pos.pnl >= 0 ? 'PROFIT' : 'LOSS'}
-                        </span>
-                    </td>
-                </tr>
-            `).join('');
+
+            tbody.innerHTML = orders.map(order => {
+                const orderTime = new Date(order.order_timestamp).toLocaleTimeString();
+                
+                return `
+                    <tr>
+                        <td>${order.order_id}</td>
+                        <td>${order.tradingsymbol}</td>
+                        <td>${order.transaction_type}</td>
+                        <td>${order.quantity}</td>
+                        <td>₹${order.price?.toFixed(2) || '0.00'}</td>
+                        <td><span class="status-badge status-pending">${order.status}</span></td>
+                        <td>${orderTime}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="action-btn action-exit" onclick="cancelOrder('${order.order_id}')">
+                                    Cancel
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         // Load risk analysis
-        async function loadRiskAnalysis() {
-            try {
-                const response = await fetch('http://localhost:8000/risk/analysis');
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    // Check if there's actual data or just a message
-                    if (data.message && data.total_positions === 0) {
-                        showNoRiskData();
-                        return;
-                    }
-                    
-                    // Update portfolio risk
-                    const portfolioRisk = data.portfolio_risk || 0;
-                    if (portfolioRisk === 0 && data.total_positions === 0) {
-                        document.getElementById('portfolioRisk').textContent = 'No Data';
-                    } else {
-                        document.getElementById('portfolioRisk').textContent = `${portfolioRisk.toFixed(1)}%`;
-                    }
-                    document.getElementById('portfolioRiskBar').style.width = `${Math.min(100, portfolioRisk)}%`;
-                    
-                    // Update max drawdown
-                    const maxDrawdown = data.max_drawdown || 0;
-                    if (maxDrawdown === 0 && data.total_positions === 0) {
-                        document.getElementById('maxDrawdown').textContent = 'No Data';
-                    } else {
-                        document.getElementById('maxDrawdown').textContent = `₹${Math.abs(maxDrawdown).toLocaleString()}`;
-                    }
-                    document.getElementById('drawdownBar').style.width = `${Math.min(100, Math.abs(maxDrawdown)/100000 * 100)}%`;
-                    
-                    // Update margin utilization
-                    const marginUtil = data.margin_utilization || 0;
-                    if (marginUtil === 0 && data.total_positions === 0) {
-                        document.getElementById('marginUtil').textContent = 'No Data';
-                    } else {
-                        document.getElementById('marginUtil').textContent = `${marginUtil.toFixed(1)}%`;
-                    }
-                    document.getElementById('marginBar').style.width = `${Math.min(100, marginUtil)}%`;
-                    
-                    // Update Greeks exposure
-                    if (data.greeks && data.greeks.delta !== null) {
-                        document.getElementById('greeksExposure').textContent = 
-                            `Delta: ${data.greeks.delta?.toFixed(2) || 0} | Theta: ${data.greeks.theta?.toFixed(2) || 0}`;
-                    } else {
-                        document.getElementById('greeksExposure').textContent = 'No active positions';
-                    }
-                    
-                    // Update position distribution
-                    if (data.position_distribution) {
-                        const tbody = document.getElementById('distributionTable');
-                        tbody.innerHTML = `
-                            <tr>
-                                <td>CALL Options</td>
-                                <td>${data.position_distribution.call_count || 0}</td>
-                                <td>₹${(data.position_distribution.call_exposure || 0).toLocaleString()}</td>
-                                <td>${data.position_distribution.call_risk || 'Low'}</td>
-                            </tr>
-                            <tr>
-                                <td>PUT Options</td>
-                                <td>${data.position_distribution.put_count || 0}</td>
-                                <td>₹${(data.position_distribution.put_exposure || 0).toLocaleString()}</td>
-                                <td>${data.position_distribution.put_risk || 'Low'}</td>
-                            </tr>
-                        `;
-                    } else {
-                        // Show actual state when no positions exist
-                        const tbody = document.getElementById('distributionTable');
-                        tbody.innerHTML = `
-                            <tr>
-                                <td>CALL Options</td>
-                                <td>0</td>
-                                <td>₹0</td>
-                                <td>No Risk</td>
-                            </tr>
-                            <tr>
-                                <td>PUT Options</td>
-                                <td>0</td>
-                                <td>₹0</td>
-                                <td>No Risk</td>
-                            </tr>
-                        `;
-                    }
-                    
-                    // Update bar colors based on values
-                    updateRiskColors(portfolioRisk, maxDrawdown, marginUtil);
-                } else {
-                    // Show actual state when API returns no data
-                    console.log('No risk data available - no open positions');
-                    showNoRiskData();
-                }
-            } catch (error) {
-                console.error('Error loading risk analysis:', error);
-                showNoRiskData();
-            }
-        }
-        
-        // Show no risk data state
-        function showNoRiskData() {
-            document.getElementById('portfolioRisk').textContent = 'No Data';
-            document.getElementById('portfolioRiskBar').style.width = '0%';
-            
-            document.getElementById('maxDrawdown').textContent = 'No Data';
-            document.getElementById('drawdownBar').style.width = '0%';
-            
-            document.getElementById('marginUtil').textContent = 'No Data';
-            document.getElementById('marginBar').style.width = '0%';
-            
-            document.getElementById('greeksExposure').textContent = 'No active positions';
-            
-            const tbody = document.getElementById('distributionTable');
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="4" style="text-align: center; color: #999;">
-                        No positions to analyze
-                    </td>
-                </tr>
-            `;
-        }
-
-        // Update risk colors
-        function updateRiskColors(risk, drawdown, margin) {
-            const riskBar = document.getElementById('portfolioRiskBar');
-            riskBar.className = 'risk-fill';
-            if (risk < 30) {
-                riskBar.classList.add('risk-low');
-            } else if (risk < 60) {
-                riskBar.classList.add('risk-medium');
-            } else {
-                riskBar.classList.add('risk-high');
-            }
-            
-            const marginBar = document.getElementById('marginBar');
-            marginBar.className = 'risk-fill';
-            if (margin < 50) {
-                marginBar.classList.add('risk-low');
-            } else if (margin < 75) {
-                marginBar.classList.add('risk-medium');
-            } else {
-                marginBar.classList.add('risk-high');
+        function loadRiskAnalysis() {
+            // Calculate risk metrics from positions
+            if (positions.length > 0) {
+                let totalMargin = 0;
+                let totalPnL = 0;
+                let maxLoss = 0;
+                
+                positions.forEach(pos => {
+                    totalMargin += Math.abs(pos.quantity) * pos.average_price;
+                    totalPnL += pos.pnl || 0;
+                    maxLoss = Math.min(maxLoss, pos.pnl || 0);
+                });
+                
+                // Update risk displays
+                document.getElementById('portfolioDelta').textContent = '0.15'; // Mock value
+                document.getElementById('thetaDecay').textContent = `-₹${Math.abs(totalPnL * 0.02).toFixed(0)}`;
+                document.getElementById('maxLoss').textContent = `-₹${Math.abs(maxLoss).toFixed(0)}`;
+                
+                const marginUtil = totalMargin > 0 ? (totalMargin / 500000 * 100) : 0;
+                document.getElementById('marginUtil').textContent = `${marginUtil.toFixed(1)}%`;
+                
+                // Update progress bars
+                document.querySelector('.risk-card:nth-child(4) .risk-fill').style.width = `${marginUtil}%`;
             }
         }
 
         // Update summary cards
-        function updateSummaryCards(data) {
-            if (data.positions) {
-                document.getElementById('totalPositions').textContent = data.positions.length;
-                
-                const unrealizedPnL = data.positions.reduce((sum, pos) => sum + (pos.pnl || 0), 0);
-                document.getElementById('unrealizedPnL').textContent = `₹${unrealizedPnL.toLocaleString()}`;
-                document.getElementById('unrealizedPnL').className = unrealizedPnL >= 0 ? 'summary-value positive' : 'summary-value negative';
-                
-                const hedged = data.positions.filter(p => p.position_type === 'hedge').length;
-                document.getElementById('hedgedPositions').textContent = hedged;
-                
-                // Calculate risk level
-                const riskLevel = unrealizedPnL < -50000 ? 'High' : unrealizedPnL < -20000 ? 'Medium' : 'Low';
-                document.getElementById('riskLevel').textContent = riskLevel;
-                document.getElementById('riskLevel').className = `summary-value ${riskLevel === 'High' ? 'negative' : riskLevel === 'Medium' ? '' : 'positive'}`;
-            }
-        }
-
-        // Action functions
-        function exitPosition(positionId) {
-            if (confirm('Are you sure you want to exit this position?')) {
-                console.log('Exiting position:', positionId);
-                // Call API to exit position
-            }
-        }
-
-        function modifyPosition(positionId) {
-            console.log('Modifying position:', positionId);
-            // Open modification dialog
-        }
-
-        function squareOffAll() {
-            if (confirm('Are you sure you want to square off ALL positions? This action cannot be undone.')) {
-                console.log('Squaring off all positions');
-                // Call API to square off all
-            }
-        }
-
-        function refreshPositions() {
-            console.log('Refreshing positions...');
-            const activeTab = document.querySelector('.tab-content.active').id;
+        function updateSummaryCards() {
+            const totalPos = positions.length;
+            let unrealizedPnL = 0;
+            let marginUsed = 0;
+            let hedgedCount = 0;
             
-            if (activeTab === 'open') {
-                loadOpenPositions();
-            } else if (activeTab === 'closed') {
-                loadClosedPositions();
-            } else if (activeTab === 'backtest') {
-                loadBacktestPositions();
-            } else if (activeTab === 'risk') {
-                loadRiskAnalysis();
-            }
-        }
-
-        // Initialize on load
-        document.addEventListener('DOMContentLoaded', function() {
-            loadOpenPositions();
-            
-            // Auto-refresh every 10 seconds for open positions
-            setInterval(() => {
-                if (document.getElementById('open').classList.contains('active')) {
-                    loadOpenPositions();
+            positions.forEach(pos => {
+                unrealizedPnL += pos.pnl || 0;
+                marginUsed += Math.abs(pos.quantity) * (pos.average_price || 0) * 0.1; // Approximate margin
+                
+                // Check if position is hedged (simplified logic)
+                if (pos.tradingsymbol && pos.tradingsymbol.includes('HEDGE')) {
+                    hedgedCount++;
                 }
-            }, 10000);
-        });
+            });
+            
+            // Update display values
+            document.getElementById('totalPositions').textContent = totalPos;
+            document.getElementById('unrealizedPnL').textContent = `₹${unrealizedPnL.toFixed(2)}`;
+            document.getElementById('unrealizedPnL').className = unrealizedPnL >= 0 ? 'stat-value positive' : 'stat-value negative';
+            document.getElementById('marginUsed').textContent = `₹${marginUsed.toFixed(0)}`;
+            document.getElementById('hedgedPositions').textContent = hedgedCount;
+            
+            // Calculate risk level
+            const riskPercent = marginUsed > 0 ? (Math.abs(unrealizedPnL) / marginUsed * 100) : 0;
+            let riskLevel = 'Low';
+            let riskColor = 'positive';
+            
+            if (riskPercent > 10) {
+                riskLevel = 'High';
+                riskColor = 'negative';
+            } else if (riskPercent > 5) {
+                riskLevel = 'Medium';
+                riskColor = '';
+            }
+            
+            document.getElementById('riskLevel').textContent = riskLevel;
+            document.getElementById('riskLevel').className = `stat-value ${riskColor}`;
+        }
+
+        // Exit position
+        async function exitPosition(symbol, quantity) {
+            if (!confirm(`Are you sure you want to exit ${symbol}?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:8000/orders', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        tradingsymbol: symbol,
+                        transaction_type: quantity > 0 ? 'SELL' : 'BUY',
+                        quantity: Math.abs(quantity),
+                        order_type: 'MARKET',
+                        product: 'MIS',
+                        exchange: 'NFO'
+                    })
+                });
+
+                if (response.ok) {
+                    alert('Position exit order placed successfully');
+                    refreshPositions();
+                } else {
+                    alert('Failed to exit position');
+                }
+            } catch (error) {
+                console.error('Failed to exit position:', error);
+                alert('Error exiting position');
+            }
+        }
+
+        // Modify position
+        function modifyPosition(symbol) {
+            alert(`Modify position: ${symbol} - Feature coming soon`);
+        }
+
+        // Cancel order
+        async function cancelOrder(orderId) {
+            if (!confirm(`Are you sure you want to cancel order ${orderId}?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://localhost:8000/orders/${orderId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    alert('Order cancelled successfully');
+                    loadOrders();
+                } else {
+                    alert('Failed to cancel order');
+                }
+            } catch (error) {
+                console.error('Failed to cancel order:', error);
+                alert('Error cancelling order');
+            }
+        }
+
+        // Square off all positions
+        async function squareOffAll() {
+            if (!confirm('Are you sure you want to square off ALL positions?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:8000/positions/square-off-all', {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    alert('All positions squared off successfully');
+                    refreshPositions();
+                } else {
+                    alert('Failed to square off positions');
+                }
+            } catch (error) {
+                console.error('Failed to square off positions:', error);
+                alert('Error squaring off positions');
+            }
+        }
     </script>
 </body>
 </html>

@@ -251,37 +251,28 @@ async def get_live_market_data():
 
 @router.get("/signals/detect")
 async def detect_signals():
-    """Detect trading signals from current market conditions"""
+    """Detect trading signals from current market conditions - REAL DATA ONLY"""
+    # Real signal detection requires connection to signal detection service
+    # This endpoint returns empty signals if no real signals are detected
+    
     try:
-        # This would connect to real signal detection logic
-        # For demo, returning sample signals
-        import random
-        
+        # TODO: Connect to real signal detection service
+        # For now, return empty signals (no fake data)
         signals = []
         
-        # Randomly generate signals for demo
-        if random.random() > 0.7:  # 30% chance of signal
-            signal_types = ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8"]
-            selected_signal = random.choice(signal_types)
-            
-            signals.append({
-                "signal_type": selected_signal,
-                "datetime": datetime.now().isoformat(),
-                "entry_price": 21500 + random.uniform(-200, 200),
-                "stop_loss": 21500,
-                "option_type": "PUT" if selected_signal in ["S1", "S2", "S4", "S7"] else "CALL",
-                "confidence": round(random.uniform(0.6, 0.95), 2)
-            })
+        # Real signal detection would be implemented here
+        # using actual market data and signal evaluation logic
         
         return {
             "status": "success",
             "signals": signals,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
+            "message": "Real signal detection service required"
         }
         
     except Exception as e:
         logger.error(f"Failed to detect signals: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=503, detail="Signal detection service unavailable")
 
 
 @router.get("/options/price")

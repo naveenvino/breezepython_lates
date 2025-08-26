@@ -4,8 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Data Collection Module</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        :root {
+            --bg-primary: #0f1419;
+            --bg-secondary: #1a1f2a;
+            --bg-tertiary: #2a3141;
+            --text-primary: #e7e9ea;
+            --text-secondary: #8b98a5;
+            --text-tertiary: #536471;
+            --accent-primary: #1d9bf0;
+            --accent-secondary: #10b981;
+            --accent-danger: #ef4444;
+            --accent-warning: #f59e0b;
+            --accent-purple: #8b5cf6;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --glass-bg: rgba(30, 39, 50, 0.8);
+            --glass-border: rgba(255, 255, 255, 0.05);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -13,25 +31,168 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0f0f1e;
-            color: #e0e0e0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(29, 155, 240, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 50%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 50% 100%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
+            animation: gradientShift 20s ease infinite;
+            z-index: 0;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(90deg) scale(1.1); }
+            50% { transform: rotate(180deg) scale(1); }
+            75% { transform: rotate(270deg) scale(1.1); }
+        }
+
+        .floating-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(29, 155, 240, 0.3);
+            border-radius: 50%;
+            animation: float 20s infinite linear;
+        }
+
+        @keyframes float {
+            from {
+                transform: translateY(100vh) translateX(0) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.6;
+            }
+            90% {
+                opacity: 0.6;
+            }
+            to {
+                transform: translateY(-100vh) translateX(100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
             padding: 20px;
+            position: relative;
+            z-index: 1;
         }
 
         .module-header {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 35px;
             margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .module-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, 
+                transparent, 
+                var(--accent-primary), 
+                var(--accent-purple), 
+                transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
         }
 
         .module-title {
-            font-size: 24px;
+            font-size: 32px;
             font-weight: 700;
-            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
         }
 
         .module-description {
-            color: #999;
+            color: var(--text-secondary);
             font-size: 14px;
+        }
+
+        .feature-banner {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-purple));
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 20px;
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            box-shadow: 0 4px 12px rgba(29, 155, 240, 0.2);
+        }
+
+        .feature-banner strong {
+            color: #ffd700;
+            font-weight: 600;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            padding: 10px 20px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .action-btn:hover {
+            background: var(--bg-tertiary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(29, 155, 240, 0.2);
+        }
+
+        .action-btn i {
+            font-size: 16px;
+            color: var(--accent-primary);
         }
 
         .collection-grid {
@@ -42,16 +203,40 @@
         }
 
         .card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
             padding: 24px;
             transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, 
+                var(--accent-primary), 
+                var(--accent-purple), 
+                var(--accent-secondary));
+            border-radius: 16px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+
+        .card:hover::before {
+            opacity: 0.3;
         }
 
         .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(29, 155, 240, 0.2);
         }
 
         .card-header {
@@ -62,38 +247,41 @@
         }
 
         .card-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
+            font-size: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
 
         .card-icon.nifty {
-            background: rgba(102, 126, 234, 0.1);
-            color: #667eea;
+            background: linear-gradient(135deg, var(--accent-primary), #0284c7);
+            color: white;
         }
 
         .card-icon.options {
-            background: rgba(168, 85, 247, 0.1);
-            color: #a855f7;
+            background: linear-gradient(135deg, var(--accent-purple), #7c3aed);
+            color: white;
         }
 
         .card-icon.weekly {
-            background: rgba(34, 197, 94, 0.1);
-            color: #22c55e;
+            background: linear-gradient(135deg, var(--accent-secondary), #059669);
+            color: white;
         }
 
         .card-title {
             font-size: 18px;
             font-weight: 600;
+            color: var(--text-primary);
         }
 
         .card-subtitle {
             font-size: 12px;
-            color: #999;
+            color: var(--text-secondary);
+            margin-top: 2px;
         }
 
         .form-group {
@@ -103,19 +291,21 @@
         .form-group label {
             display: block;
             margin-bottom: 8px;
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 14px;
+            color: var(--text-secondary);
+            font-size: 13px;
             font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .form-group input,
         .form-group select {
             width: 100%;
             padding: 10px 14px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
             border-radius: 8px;
-            color: #fff;
+            color: var(--text-primary);
             font-size: 14px;
             transition: all 0.3s;
         }
@@ -123,9 +313,9 @@
         .form-group input:focus,
         .form-group select:focus {
             outline: none;
-            background: rgba(255, 255, 255, 0.08);
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            background: var(--bg-tertiary);
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(29, 155, 240, 0.1);
         }
 
         .checkbox-group {
@@ -137,32 +327,76 @@
 
         .checkbox-group input[type="checkbox"] {
             width: auto;
+            accent-color: var(--accent-primary);
+        }
+
+        .checkbox-group label {
+            color: var(--text-secondary);
+            font-size: 14px;
         }
 
         .btn {
-            padding: 10px 20px;
+            padding: 12px 24px;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
             font-size: 14px;
             width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--accent-primary), #0284c7);
             color: white;
+            box-shadow: 0 4px 12px rgba(29, 155, 240, 0.3);
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 6px 20px rgba(29, 155, 240, 0.4);
         }
 
         .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .data-source-selector {
+            background: var(--bg-secondary);
+            padding: 15px;
+            border-radius: 12px;
+            border: 2px solid var(--accent-primary);
+            margin-bottom: 20px;
+        }
+
+        .data-source-selector label {
+            color: var(--accent-warning);
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 10px;
+            display: block;
         }
 
         .status-section {
@@ -170,10 +404,11 @@
         }
 
         .status-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 20px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
         }
 
         .status-header {
@@ -181,101 +416,49 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .status-title {
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 600;
+            color: var(--text-primary);
         }
 
         .status-badge {
-            padding: 4px 12px;
+            padding: 6px 14px;
             border-radius: 20px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-badge.idle {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
         }
 
         .status-badge.running {
-            background: rgba(251, 146, 60, 0.1);
-            color: #fb923c;
+            background: linear-gradient(135deg, var(--accent-warning), #d97706);
+            color: white;
+            animation: pulse 2s infinite;
         }
 
         .status-badge.completed {
-            background: rgba(34, 197, 94, 0.1);
-            color: #22c55e;
+            background: linear-gradient(135deg, var(--accent-secondary), #059669);
+            color: white;
         }
 
         .status-badge.failed {
-            background: rgba(239, 68, 68, 0.1);
-            color: #ef4444;
+            background: linear-gradient(135deg, var(--accent-danger), #dc2626);
+            color: white;
         }
 
-        .log-container {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            padding: 12px;
-            max-height: 200px;
-            overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            color: #999;
-        }
-
-        .log-entry {
-            margin-bottom: 4px;
-        }
-
-        .log-entry.info {
-            color: #3b82f6;
-        }
-
-        .log-entry.success {
-            color: #22c55e;
-        }
-
-        .log-entry.error {
-            color: #ef4444;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 2px;
-            overflow: hidden;
-            margin: 16px 0;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            border-radius: 2px;
-            transition: width 0.3s;
-        }
-
-        .quick-actions {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 30px;
-        }
-
-        .action-btn {
-            padding: 10px 20px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            color: #fff;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .action-btn:hover {
-            background: rgba(255, 255, 255, 0.08);
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
         }
 
         .stats-grid {
@@ -287,180 +470,352 @@
 
         .stat-item {
             text-align: center;
+            padding: 15px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
         }
 
         .stat-value {
             font-size: 24px;
             font-weight: 700;
-            color: #fff;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .stat-label {
-            font-size: 12px;
-            color: #999;
+            font-size: 11px;
+            color: var(--text-secondary);
             margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--bg-secondary);
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-purple));
+            border-radius: 3px;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px rgba(29, 155, 240, 0.5);
+        }
+
+        .log-container {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 15px;
+            max-height: 250px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .log-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .log-container::-webkit-scrollbar-track {
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+        }
+
+        .log-container::-webkit-scrollbar-thumb {
+            background: var(--accent-primary);
+            border-radius: 10px;
+        }
+
+        .log-entry {
+            margin-bottom: 6px;
+            padding: 4px 0;
+            opacity: 0.8;
+        }
+
+        .log-entry.info {
+            color: var(--accent-primary);
+        }
+
+        .log-entry.success {
+            color: var(--accent-secondary);
+        }
+
+        .log-entry.error {
+            color: var(--accent-danger);
+        }
+
+        @media (max-width: 768px) {
+            .collection-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .quick-actions {
+                flex-direction: column;
+            }
+
+            .action-btn {
+                width: 100%;
+                justify-content: center;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="module-header">
-        <h1 class="module-title">Data Collection</h1>
-        <p class="module-description">Collect and manage historical market data</p>
-    </div>
+    <div class="animated-bg"></div>
+    <div class="floating-particles"></div>
 
-    <div class="quick-actions">
-        <button class="action-btn" onclick="checkDataStatus()">
-            <i class="fas fa-sync"></i> Check Status
-        </button>
-        <button class="action-btn" onclick="clearLogs()">
-            <i class="fas fa-eraser"></i> Clear Logs
-        </button>
-        <button class="action-btn" onclick="loadHolidays()">
-            <i class="fas fa-calendar"></i> Load Holidays
-        </button>
-    </div>
-
-    <div class="collection-grid">
-        <!-- NIFTY Data Collection -->
-        <div class="card">
-            <div class="card-header">
-                <div class="card-icon nifty">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-                <div>
-                    <div class="card-title">NIFTY Data</div>
-                    <div class="card-subtitle">5-minute and hourly candles</div>
-                </div>
+    <div class="container">
+        <div class="module-header">
+            <h1 class="module-title">Data Collection</h1>
+            <p class="module-description">Collect and manage historical market data</p>
+            <div class="feature-banner">
+                <strong>✨ NEW FEATURE:</strong> 
+                <span style="color: white;">TradingView Webhook support added! Look for the "Data Source" dropdown in the NIFTY Data section below to switch between Breeze API and TradingView Webhook.</span>
             </div>
+        </div>
 
-            <div class="form-group">
-                <label for="niftyFromDate">From Date</label>
-                <input type="date" id="niftyFromDate" value="2025-07-01">
-            </div>
-
-            <div class="form-group">
-                <label for="niftyToDate">To Date</label>
-                <input type="date" id="niftyToDate" value="2025-07-31">
-            </div>
-
-            <div class="checkbox-group">
-                <input type="checkbox" id="niftyForceRefresh">
-                <label for="niftyForceRefresh">Force Refresh</label>
-            </div>
-
-            <button class="btn btn-primary" onclick="collectNiftyData()" id="niftyBtn">
-                <i class="fas fa-download"></i> Collect NIFTY Data
+        <div class="quick-actions">
+            <button class="action-btn" onclick="checkDataStatus()">
+                <i class="fas fa-sync"></i> Check Status
+            </button>
+            <button class="action-btn" onclick="clearLogs()">
+                <i class="fas fa-eraser"></i> Clear Logs
+            </button>
+            <button class="action-btn" onclick="loadHolidays()">
+                <i class="fas fa-calendar"></i> Load Holidays
             </button>
         </div>
 
-        <!-- Options Data Collection -->
-        <div class="card">
-            <div class="card-header">
-                <div class="card-icon options">
-                    <i class="fas fa-coins"></i>
+        <div class="collection-grid">
+            <!-- NIFTY Data Collection -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon nifty">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <div class="card-title">NIFTY Data</div>
+                        <div class="card-subtitle">5-minute and hourly candles</div>
+                    </div>
                 </div>
-                <div>
-                    <div class="card-title">Options Data</div>
-                    <div class="card-subtitle">Weekly options with Greeks</div>
+
+                <div class="data-source-selector">
+                    <label for="niftyDataSource">📊 Data Source</label>
+                    <select id="niftyDataSource" onchange="updateNiftyUI()">
+                        <option value="breeze">Breeze API</option>
+                        <option value="tradingview-api">📈 TradingView API (Manual Collection)</option>
+                        <option value="tradingview-webhook">🔴 TradingView Webhook (Real-time)</option>
+                    </select>
                 </div>
+
+                <div id="breezeDateInputs">
+                    <div class="form-group">
+                        <label for="niftyFromDate">From Date</label>
+                        <input type="date" id="niftyFromDate" value="2025-07-01">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="niftyToDate">To Date</label>
+                        <input type="date" id="niftyToDate" value="2025-07-31">
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="niftyForceRefresh">
+                        <label for="niftyForceRefresh">Force Refresh</label>
+                    </div>
+                </div>
+
+                <div id="tradingviewApiConfig" style="display:none;">
+                    <div class="form-group">
+                        <label for="tvApiFromDate">From Date</label>
+                        <input type="date" id="tvApiFromDate" value="2025-07-01">
+                    </div>
+                    <div class="form-group">
+                        <label for="tvApiToDate">To Date</label>
+                        <input type="date" id="tvApiToDate" value="2025-07-31">
+                    </div>
+                    <div class="form-group">
+                        <label for="tvInterval">Interval</label>
+                        <select id="tvInterval">
+                            <option value="5minute">5 Minute</option>
+                            <option value="15minute">15 Minute</option>
+                            <option value="60minute">1 Hour</option>
+                            <option value="1day">Daily</option>
+                        </select>
+                    </div>
+                    <small style="color: var(--text-tertiary);">Collect historical data from TradingView</small>
+                </div>
+
+                <div id="tradingviewWebhookConfig" style="display:none;">
+                    <div class="form-group">
+                        <label>Webhook Status</label>
+                        <div id="webhookStatus" class="status-badge idle">Waiting for data</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Webhook URL</label>
+                        <input type="text" value="http://localhost:8000/webhook/tradingview" readonly 
+                               style="background: var(--bg-secondary); border: 1px solid var(--border-color); 
+                                      padding: 8px; border-radius: 4px; width: 100%; color: var(--text-secondary);">
+                    </div>
+                    <small style="color: var(--text-tertiary);">Configure this URL in your TradingView alert</small>
+                </div>
+
+                <button class="btn btn-primary" onclick="collectNiftyData()" id="niftyBtn">
+                    <i class="fas fa-download"></i> <span id="niftyBtnText">Collect NIFTY Data</span>
+                </button>
             </div>
 
-            <div class="form-group">
-                <label for="optionsFromDate">From Date</label>
-                <input type="date" id="optionsFromDate" value="2025-07-01">
+            <!-- Options Data Collection -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon options">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                    <div>
+                        <div class="card-title">Options Data</div>
+                        <div class="card-subtitle">Weekly options with Greeks</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="optionsFromDate">From Date</label>
+                    <input type="date" id="optionsFromDate" value="2025-07-01">
+                </div>
+
+                <div class="form-group">
+                    <label for="optionsToDate">To Date</label>
+                    <input type="date" id="optionsToDate" value="2025-07-31">
+                </div>
+
+                <div class="form-group">
+                    <label for="strikeRange">Strike Range (points)</label>
+                    <input type="number" id="strikeRange" value="1000">
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="optionsOptimized" checked>
+                    <label for="optionsOptimized">Use Optimization</label>
+                </div>
+
+                <button class="btn btn-primary" onclick="collectOptionsData()" id="optionsBtn">
+                    <i class="fas fa-download"></i> Collect Options Data
+                </button>
             </div>
 
-            <div class="form-group">
-                <label for="optionsToDate">To Date</label>
-                <input type="date" id="optionsToDate" value="2025-07-31">
-            </div>
+            <!-- Weekly Data Collection -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon weekly">
+                        <i class="fas fa-calendar-week"></i>
+                    </div>
+                    <div>
+                        <div class="card-title">Weekly Collection</div>
+                        <div class="card-subtitle">Automated weekly data collection</div>
+                    </div>
+                </div>
 
-            <div class="form-group">
-                <label for="strikeRange">Strike Range (points)</label>
-                <input type="number" id="strikeRange" value="1000">
-            </div>
+                <div class="form-group">
+                    <label for="weeklyDate">Select Week</label>
+                    <input type="week" id="weeklyDate">
+                </div>
 
-            <div class="checkbox-group">
-                <input type="checkbox" id="optionsOptimized" checked>
-                <label for="optionsOptimized">Use Optimization</label>
-            </div>
+                <div class="form-group">
+                    <label for="weeklyStrikeRange">Strike Range (points)</label>
+                    <input type="number" id="weeklyStrikeRange" value="500">
+                </div>
 
-            <button class="btn btn-primary" onclick="collectOptionsData()" id="optionsBtn">
-                <i class="fas fa-download"></i> Collect Options Data
-            </button>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="weeklyIncludeOptions" checked>
+                    <label for="weeklyIncludeOptions">Include Options</label>
+                </div>
+
+                <button class="btn btn-primary" onclick="collectWeeklyData()" id="weeklyBtn">
+                    <i class="fas fa-download"></i> Collect Weekly Data
+                </button>
+            </div>
         </div>
 
-        <!-- Weekly Data Collection -->
-        <div class="card">
-            <div class="card-header">
-                <div class="card-icon weekly">
-                    <i class="fas fa-calendar-week"></i>
+        <!-- Status Section -->
+        <div class="status-section">
+            <div class="status-card">
+                <div class="status-header">
+                    <h3 class="status-title">Collection Status</h3>
+                    <span class="status-badge idle" id="statusBadge">Idle</span>
                 </div>
-                <div>
-                    <div class="card-title">Weekly Collection</div>
-                    <div class="card-subtitle">Automated weekly data collection</div>
+
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="recordsCollected">0</div>
+                        <div class="stat-label">Records Collected</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="timeElapsed">0s</div>
+                        <div class="stat-label">Time Elapsed</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="apiCalls">0</div>
+                        <div class="stat-label">API Calls</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="errorCount">0</div>
+                        <div class="stat-label">Errors</div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="form-group">
-                <label for="weeklyDate">Select Week</label>
-                <input type="week" id="weeklyDate">
-            </div>
-
-            <div class="form-group">
-                <label for="weeklyStrikeRange">Strike Range (points)</label>
-                <input type="number" id="weeklyStrikeRange" value="500">
-            </div>
-
-            <div class="checkbox-group">
-                <input type="checkbox" id="weeklyIncludeOptions" checked>
-                <label for="weeklyIncludeOptions">Include Options</label>
-            </div>
-
-            <button class="btn btn-primary" onclick="collectWeeklyData()" id="weeklyBtn">
-                <i class="fas fa-download"></i> Collect Weekly Data
-            </button>
-        </div>
-    </div>
-
-    <!-- Status Section -->
-    <div class="status-section">
-        <div class="status-card">
-            <div class="status-header">
-                <h3 class="status-title">Collection Status</h3>
-                <span class="status-badge" id="statusBadge">Idle</span>
-            </div>
-
-            <div class="stats-grid">
-                <div class="stat-item">
-                    <div class="stat-value" id="recordsCollected">0</div>
-                    <div class="stat-label">Records Collected</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
                 </div>
-                <div class="stat-item">
-                    <div class="stat-value" id="timeElapsed">0s</div>
-                    <div class="stat-label">Time Elapsed</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value" id="apiCalls">0</div>
-                    <div class="stat-label">API Calls</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value" id="errorCount">0</div>
-                    <div class="stat-label">Errors</div>
-                </div>
-            </div>
 
-            <div class="progress-bar">
-                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
-            </div>
-
-            <div class="log-container" id="logContainer">
-                <div class="log-entry info">Ready to collect data...</div>
+                <div class="log-container" id="logContainer">
+                    <div class="log-entry info">Ready to collect data...</div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
+        // Create floating particles
+        function createParticles() {
+            const particlesContainer = document.querySelector('.floating-particles');
+            const particleCount = 30;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                const size = Math.random() * 4 + 2;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 20 + 's';
+                particle.style.animationDuration = (Math.random() * 20 + 20) + 's';
+                
+                const colors = [
+                    'rgba(29, 155, 240, 0.3)',
+                    'rgba(139, 92, 246, 0.3)',
+                    'rgba(16, 185, 129, 0.3)'
+                ];
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        createParticles();
+
         let startTime = null;
         let timerInterval = null;
 
@@ -502,12 +857,70 @@
             document.getElementById('progressFill').style.width = `${percent}%`;
         }
 
+        function updateNiftyUI() {
+            const source = document.getElementById('niftyDataSource').value;
+            const breezeInputs = document.getElementById('breezeDateInputs');
+            const tvApiConfig = document.getElementById('tradingviewApiConfig');
+            const tvWebhookConfig = document.getElementById('tradingviewWebhookConfig');
+            const btnText = document.getElementById('niftyBtnText');
+            
+            // Hide all configs first
+            breezeInputs.style.display = 'none';
+            tvApiConfig.style.display = 'none';
+            tvWebhookConfig.style.display = 'none';
+            
+            if (source === 'breeze') {
+                breezeInputs.style.display = 'block';
+                btnText.textContent = 'Collect NIFTY Data (Breeze)';
+            } else if (source === 'tradingview-api') {
+                tvApiConfig.style.display = 'block';
+                btnText.textContent = 'Collect TradingView Data';
+            } else if (source === 'tradingview-webhook') {
+                tvWebhookConfig.style.display = 'block';
+                btnText.textContent = 'Start Webhook Listener';
+                checkWebhookStatus();
+            }
+        }
+
+        async function checkWebhookStatus() {
+            try {
+                const response = await fetch('http://localhost:8000/webhook/status');
+                const data = await response.json();
+                const statusEl = document.getElementById('webhookStatus');
+                
+                if (data.listening) {
+                    statusEl.textContent = `Active - ${data.received_count || 0} messages received`;
+                    statusEl.className = 'status-badge completed';
+                } else {
+                    statusEl.textContent = 'Waiting for data';
+                    statusEl.className = 'status-badge idle';
+                }
+            } catch (error) {
+                console.error('Error checking webhook status:', error);
+            }
+        }
+
         async function collectNiftyData() {
+            const source = document.getElementById('niftyDataSource').value;
             const btn = document.getElementById('niftyBtn');
             btn.disabled = true;
             
+            try {
+                if (source === 'breeze') {
+                    await collectBreezeData();
+                } else if (source === 'tradingview-api') {
+                    await collectTradingViewApiData();
+                } else if (source === 'tradingview-webhook') {
+                    await startTradingViewListener();
+                }
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function collectBreezeData() {
             updateStatus('Collecting NIFTY Data', 'running');
-            addLog('Starting NIFTY data collection...', 'info');
+            addLog('Starting NIFTY data collection from Breeze...', 'info');
             startTimer();
             updateProgress(10);
 
@@ -549,8 +962,94 @@
                 document.getElementById('errorCount').textContent = 
                     parseInt(document.getElementById('errorCount').textContent) + 1;
             } finally {
-                btn.disabled = false;
                 stopTimer();
+            }
+        }
+
+        async function collectTradingViewApiData() {
+            updateStatus('Collecting TradingView Data', 'running');
+            addLog('Starting TradingView API data collection...', 'info');
+            startTimer();
+            updateProgress(10);
+
+            const params = {
+                from_date: document.getElementById('tvApiFromDate').value,
+                to_date: document.getElementById('tvApiToDate').value,
+                symbol: 'NIFTY',
+                interval: document.getElementById('tvInterval').value
+            };
+
+            try {
+                addLog('Calling TradingView collection API...', 'info');
+                updateProgress(30);
+                
+                const response = await fetch('http://localhost:8000/collect/tradingview-bulk', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(params)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to collect TradingView data');
+                }
+
+                updateProgress(80);
+                const result = await response.json();
+                
+                if (result.note === "This endpoint is a placeholder") {
+                    addLog('Note: TradingView API endpoint is not yet implemented', 'info');
+                    addLog('This will be used to fetch historical data from TradingView', 'info');
+                } else {
+                    addLog(`Successfully collected ${result.records_collected || 0} TradingView records`, 'success');
+                    document.getElementById('recordsCollected').textContent = result.records_collected || 0;
+                }
+                
+                updateProgress(100);
+                updateStatus('Completed', 'completed');
+                
+            } catch (error) {
+                addLog(`Error: ${error.message}`, 'error');
+                updateStatus('Failed', 'failed');
+                document.getElementById('errorCount').textContent = 
+                    parseInt(document.getElementById('errorCount').textContent) + 1;
+            } finally {
+                stopTimer();
+            }
+        }
+
+        async function startTradingViewListener() {
+            updateStatus('Starting TradingView Webhook', 'running');
+            addLog('Initializing TradingView webhook listener...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:8000/webhook/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to start webhook listener');
+                }
+
+                const result = await response.json();
+                addLog('TradingView webhook listener started successfully', 'success');
+                addLog('Webhook URL: http://localhost:8000/webhook/tradingview', 'info');
+                addLog('Configure this URL in your TradingView alert', 'info');
+                
+                updateStatus('Listening for Webhooks', 'completed');
+                document.getElementById('webhookStatus').textContent = 'Active - Listening';
+                document.getElementById('webhookStatus').className = 'status-badge completed';
+                
+                // Start polling for webhook status
+                setInterval(checkWebhookStatus, 5000);
+                
+            } catch (error) {
+                addLog(`Error: ${error.message}`, 'error');
+                updateStatus('Failed to start listener', 'failed');
             }
         }
 
@@ -682,8 +1181,8 @@
             
             try {
                 // Get date range from form or use defaults
-                const fromDate = document.getElementById('fromDate').value || new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0];
-                const toDate = document.getElementById('toDate').value || new Date().toISOString().split('T')[0];
+                const fromDate = document.getElementById('niftyFromDate').value || new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0];
+                const toDate = document.getElementById('niftyToDate').value || new Date().toISOString().split('T')[0];
                 
                 const response = await fetch(`http://localhost:8000/data/check?from_date=${fromDate}&to_date=${toDate}`);
                 const data = await response.json();

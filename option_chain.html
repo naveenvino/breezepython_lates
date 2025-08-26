@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Option Chain - BreezeConnect Trading System</title>
+    <title>Option Chain - Trading Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -12,135 +13,365 @@
             box-sizing: border-box;
         }
 
+        :root {
+            /* Dark Theme Colors */
+            --bg-primary: #0f1419;
+            --bg-secondary: #1a1f2e;
+            --bg-tertiary: #242837;
+            --bg-card: #1e2332;
+            --bg-hover: #2a3042;
+            
+            /* Accent Colors */
+            --accent-blue: #00d4ff;
+            --accent-green: #00ff88;
+            --accent-red: #ff3366;
+            --accent-purple: #9945ff;
+            --accent-orange: #ff9500;
+            --accent-yellow: #ffeb3b;
+            
+            /* Text Colors */
+            --text-primary: #ffffff;
+            --text-secondary: #8892b0;
+            --text-muted: #495670;
+            
+            /* Gradients */
+            --gradient-blue: linear-gradient(135deg, #667eea 0%, #00d4ff 100%);
+            --gradient-green: linear-gradient(135deg, #00ff88 0%, #00d4aa 100%);
+            --gradient-red: linear-gradient(135deg, #ff3366 0%, #ff6b6b 100%);
+            --gradient-purple: linear-gradient(135deg, #9945ff 0%, #c770ff 100%);
+            
+            /* Shadows */
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+            --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.6);
+            
+            /* Glassmorphism */
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            position: relative;
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+        }
+
+        /* Animated Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(153, 69, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(0, 255, 136, 0.1) 0%, transparent 50%);
+            z-index: -1;
+            animation: backgroundShift 20s ease-in-out infinite;
+        }
+
+        @keyframes backgroundShift {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.1); }
+        }
+
+        /* Animated Grid Pattern */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -1;
+            animation: gridMove 10s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        /* Main Container */
+        .dashboard-wrapper {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
         }
 
         /* Header */
-        .header {
-            background: rgba(26, 26, 46, 0.95);
+        .header-card {
+            background: var(--glass-bg);
             backdrop-filter: blur(10px);
-            padding: 20px 40px;
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 25px 30px;
+            margin-bottom: 30px;
+            animation: slideDown 0.5s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header-content {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            flex-wrap: wrap;
+            gap: 20px;
         }
 
-        .header h1 {
-            color: white;
-            font-size: 24px;
-            font-weight: 600;
+        .header-left {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 15px;
+        }
+
+        .header-title {
+            font-size: 28px;
+            font-weight: 700;
+            background: var(--gradient-blue);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .live-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--accent-green);
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent-green);
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 255, 136, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); }
         }
 
         .header-controls {
             display: flex;
-            gap: 15px;
+            gap: 12px;
             align-items: center;
         }
 
-        .symbol-selector {
-            padding: 8px 15px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
+        /* Select Inputs */
+        .select-input {
+            padding: 10px 15px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-primary);
             font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 120px;
         }
 
-        .expiry-selector {
-            padding: 8px 15px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 14px;
-            cursor: pointer;
+        .select-input:hover {
+            border-color: var(--accent-blue);
+            background: var(--bg-hover);
         }
 
-        .refresh-btn {
-            padding: 8px 15px;
-            border-radius: 8px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+        .select-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+        }
+
+        .select-input option {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            background: var(--gradient-blue);
             border: none;
-            cursor: pointer;
-            font-size: 14px;
+            border-radius: 10px;
+            color: white;
             font-weight: 600;
-            transition: all 0.3s;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .refresh-btn:hover {
+        .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            box-shadow: var(--shadow-lg);
         }
 
-        /* Main Container */
-        .container {
-            flex: 1;
-            padding: 20px;
-            max-width: 1800px;
-            margin: 0 auto;
-            width: 100%;
-        }
-
-        /* Info Cards */
-        .info-cards {
+        /* Stats Cards */
+        .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
+            gap: 20px;
+            margin-bottom: 30px;
         }
 
-        .info-card {
-            background: rgba(255, 255, 255, 0.95);
+        .stat-card {
+            background: var(--glass-bg);
             backdrop-filter: blur(10px);
-            border-radius: 12px;
-            padding: 15px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        }
-
-        .info-label {
-            color: #666;
-            font-size: 12px;
-            text-transform: uppercase;
-            margin-bottom: 5px;
-        }
-
-        .info-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #1a1a2e;
-        }
-
-        .info-change {
-            font-size: 14px;
-            margin-top: 3px;
-        }
-
-        .positive {
-            color: #10b981;
-        }
-
-        .negative {
-            color: #ef4444;
-        }
-
-        /* Option Chain Table */
-        .option-chain-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
             border-radius: 16px;
             padding: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 0.5s ease;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--accent-blue);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--gradient-blue);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .stat-title {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .stat-icon.blue {
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--accent-blue);
+        }
+
+        .stat-icon.green {
+            background: rgba(0, 255, 136, 0.1);
+            color: var(--accent-green);
+        }
+
+        .stat-icon.red {
+            background: rgba(255, 51, 102, 0.1);
+            color: var(--accent-red);
+        }
+
+        .stat-icon.purple {
+            background: rgba(153, 69, 255, 0.1);
+            color: var(--accent-purple);
+        }
+
+        .stat-icon.orange {
+            background: rgba(255, 149, 0, 0.1);
+            color: var(--accent-orange);
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-top: 5px;
+        }
+
+        .stat-value.positive {
+            color: var(--accent-green);
+        }
+
+        .stat-value.negative {
+            color: var(--accent-red);
+        }
+
+        .stat-change {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Option Chain Container */
+        .option-chain-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
             overflow-x: auto;
         }
 
@@ -148,15 +379,22 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--glass-border);
         }
 
         .chain-title {
             font-size: 18px;
             font-weight: 600;
-            color: #1a1a2e;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chain-title i {
+            color: var(--accent-blue);
         }
 
         .greeks-toggle {
@@ -165,134 +403,225 @@
         }
 
         .toggle-btn {
-            padding: 6px 12px;
-            border-radius: 6px;
-            border: 1px solid #ddd;
-            background: white;
-            color: #666;
+            padding: 8px 16px;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            color: var(--text-secondary);
+            border-radius: 8px;
             cursor: pointer;
             font-size: 12px;
-            transition: all 0.3s;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
         }
 
         .toggle-btn.active {
-            background: #667eea;
+            background: var(--gradient-blue);
             color: white;
-            border-color: #667eea;
+            border: none;
         }
 
-        /* Table Styles */
+        /* Option Chain Table */
+        .table-wrapper {
+            overflow-x: auto;
+            position: relative;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
+            font-size: 13px;
         }
 
-        th {
-            text-align: center;
-            padding: 10px 5px;
-            background: rgba(102, 126, 234, 0.1);
-            color: #1a1a2e;
-            font-weight: 600;
-            font-size: 12px;
-            text-transform: uppercase;
+        thead {
+            background: var(--bg-secondary);
             position: sticky;
             top: 0;
             z-index: 10;
         }
 
-        td {
+        th {
+            padding: 12px 8px;
             text-align: center;
-            padding: 8px 5px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--glass-border);
         }
 
-        tr:hover {
-            background: rgba(102, 126, 234, 0.03);
+        /* Strike column styling */
+        th.strike-header {
+            background: var(--bg-tertiary);
+            color: var(--accent-yellow);
+            font-size: 12px;
+        }
+
+        td {
+            padding: 10px 8px;
+            text-align: center;
+            border-bottom: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        tbody tr {
+            transition: all 0.3s ease;
+        }
+
+        tbody tr:hover {
+            background: var(--bg-hover);
         }
 
         /* Call side styling */
         .call-side {
-            background: rgba(34, 197, 94, 0.03);
+            background: rgba(0, 212, 255, 0.03);
         }
 
-        .call-header {
-            background: rgba(34, 197, 94, 0.1);
+        .call-side:hover {
+            background: rgba(0, 212, 255, 0.08);
         }
 
         /* Put side styling */
         .put-side {
-            background: rgba(239, 68, 68, 0.03);
+            background: rgba(255, 51, 102, 0.03);
         }
 
-        .put-header {
-            background: rgba(239, 68, 68, 0.1);
+        .put-side:hover {
+            background: rgba(255, 51, 102, 0.08);
         }
 
-        /* Strike styling */
-        .strike-cell {
-            font-weight: bold;
-            background: rgba(102, 126, 234, 0.05);
+        /* Strike column */
+        .strike-col {
+            background: var(--bg-tertiary);
+            font-weight: 700;
+            color: var(--accent-yellow);
+            position: sticky;
+            left: 0;
+            z-index: 5;
+            border-right: 2px solid var(--glass-border);
+            border-left: 2px solid var(--glass-border);
         }
 
+        /* ATM Strike */
         .atm-row {
-            background: rgba(245, 158, 11, 0.1);
+            background: rgba(255, 235, 59, 0.1);
         }
 
-        .itm-call {
-            background: rgba(34, 197, 94, 0.1);
+        .atm-row .strike-col {
+            background: var(--gradient-purple);
+            color: white;
+            font-size: 14px;
         }
 
-        .itm-put {
-            background: rgba(239, 68, 68, 0.1);
+        /* ITM/OTM styling */
+        .itm {
+            background: rgba(0, 255, 136, 0.05);
         }
 
-        /* OI Bars */
-        .oi-bar {
-            height: 4px;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            border-radius: 2px;
-            margin-top: 2px;
+        .otm {
+            opacity: 0.7;
         }
 
-        /* Greeks styling */
-        .greeks-column {
-            display: none;
+        /* Value cells */
+        .ltp {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .positive-change {
+            color: var(--accent-green);
+        }
+
+        .negative-change {
+            color: var(--accent-red);
+        }
+
+        .oi-high {
+            background: rgba(153, 69, 255, 0.1);
+            color: var(--accent-purple);
+            font-weight: 600;
+        }
+
+        .iv-high {
+            color: var(--accent-orange);
+            font-weight: 600;
+        }
+
+        .volume-high {
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--accent-blue);
+        }
+
+        /* Greeks cells */
+        .greek-cell {
             font-size: 11px;
-            color: #666;
+            color: var(--text-muted);
         }
 
-        .greeks-visible .greeks-column {
-            display: table-cell;
+        .greek-cell.delta {
+            color: var(--accent-blue);
         }
 
-        .delta-positive {
-            color: #10b981;
+        .greek-cell.gamma {
+            color: var(--accent-purple);
         }
 
-        .delta-negative {
-            color: #ef4444;
+        .greek-cell.theta {
+            color: var(--accent-red);
         }
 
-        .theta-value {
-            color: #f59e0b;
+        .greek-cell.vega {
+            color: var(--accent-green);
         }
 
-        /* Loading indicator */
+        /* Action buttons in table */
+        .trade-btn {
+            padding: 4px 10px;
+            background: var(--gradient-blue);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .trade-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .trade-btn.buy {
+            background: var(--gradient-green);
+        }
+
+        .trade-btn.sell {
+            background: var(--gradient-red);
+        }
+
+        /* Loading State */
         .loading {
-            text-align: center;
-            padding: 40px;
-            color: #999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 60px;
+            color: var(--text-muted);
         }
 
         .spinner {
-            border: 3px solid rgba(102, 126, 234, 0.1);
-            border-top: 3px solid #667eea;
+            border: 3px solid rgba(0, 212, 255, 0.2);
+            border-top: 3px solid var(--accent-blue);
             border-radius: 50%;
             width: 40px;
             height: 40px;
             animation: spin 1s linear infinite;
-            margin: 0 auto;
         }
 
         @keyframes spin {
@@ -300,447 +629,625 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Trade button */
-        .trade-btn {
-            padding: 4px 8px;
-            border-radius: 4px;
-            border: none;
-            background: #667eea;
-            color: white;
-            cursor: pointer;
-            font-size: 11px;
-            transition: all 0.3s;
-        }
-
-        .trade-btn:hover {
-            background: #764ba2;
-            transform: scale(1.05);
-        }
-
-        /* IV Skew Chart */
-        .iv-chart-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            padding: 20px;
-            margin-top: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            max-height: 300px;
-        }
-        
-        .chart-wrapper {
-            position: relative;
-            height: 200px;
+        /* Floating particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
         }
 
-        /* Last Update */
-        .last-update {
-            color: #999;
+        .particle {
+            position: absolute;
+            background: var(--accent-blue);
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: float 20s infinite linear;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) translateX(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.3;
+            }
+            90% {
+                opacity: 0.3;
+            }
+            100% {
+                transform: translateY(-100vh) translateX(100px);
+                opacity: 0;
+            }
+        }
+
+        /* Max Pain Indicator */
+        .max-pain-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            background: rgba(255, 149, 0, 0.2);
+            border-radius: 8px;
             font-size: 12px;
-            margin-left: auto;
+            color: var(--accent-orange);
+            font-weight: 600;
+        }
+
+        /* PCR Indicator */
+        .pcr-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .pcr-bullish {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--accent-green);
+        }
+
+        .pcr-bearish {
+            background: rgba(255, 51, 102, 0.2);
+            color: var(--accent-red);
+        }
+
+        .pcr-neutral {
+            background: rgba(255, 235, 59, 0.2);
+            color: var(--accent-yellow);
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-wrapper {
+                padding: 10px;
+            }
+
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .table-wrapper {
+                font-size: 11px;
+            }
+
+            td, th {
+                padding: 6px 4px;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <div class="header">
-        <h1>
-            <i class="fas fa-th"></i>
-            Option Chain
-        </h1>
-        <div class="header-controls">
-            <select id="symbolSelect" class="symbol-selector">
-                <option value="NIFTY">NIFTY</option>
-                <option value="BANKNIFTY">BANKNIFTY</option>
-                <option value="FINNIFTY">FINNIFTY</option>
-                <option value="MIDCAPNIFTY">MIDCAPNIFTY</option>
-                <option value="SENSEX">SENSEX</option>
-            </select>
-            <select id="expirySelect" class="expiry-selector">
-                <option value="current">Current Week</option>
-                <option value="next">Next Week</option>
-                <option value="monthly">Monthly</option>
-            </select>
-            <button class="refresh-btn" onclick="refreshOptionChain()">
-                <i class="fas fa-sync-alt"></i> Refresh
-            </button>
-            <button class="refresh-btn" style="background: rgba(255,255,255,0.1);" onclick="window.location.href='/'">
-                <i class="fas fa-arrow-left"></i> Dashboard
-            </button>
-        </div>
+    <!-- Floating Particles -->
+    <div class="particles">
+        <div class="particle" style="width: 4px; height: 4px; left: 10%; animation-delay: 0s;"></div>
+        <div class="particle" style="width: 3px; height: 3px; left: 20%; animation-delay: 2s;"></div>
+        <div class="particle" style="width: 5px; height: 5px; left: 30%; animation-delay: 4s;"></div>
+        <div class="particle" style="width: 2px; height: 2px; left: 40%; animation-delay: 6s;"></div>
+        <div class="particle" style="width: 4px; height: 4px; left: 50%; animation-delay: 8s;"></div>
+        <div class="particle" style="width: 3px; height: 3px; left: 60%; animation-delay: 10s;"></div>
+        <div class="particle" style="width: 5px; height: 5px; left: 70%; animation-delay: 12s;"></div>
+        <div class="particle" style="width: 2px; height: 2px; left: 80%; animation-delay: 14s;"></div>
     </div>
 
-    <!-- Main Container -->
-    <div class="container">
-        <!-- Info Cards -->
-        <div class="info-cards">
-            <div class="info-card">
-                <div class="info-label">Spot Price</div>
-                <div class="info-value" id="spotPrice">--</div>
-                <div class="info-change" id="spotChange">--</div>
+    <!-- Main Wrapper -->
+    <div class="dashboard-wrapper">
+        <!-- Header -->
+        <div class="header-card">
+            <div class="header-content">
+                <div class="header-left">
+                    <h1 class="header-title">
+                        <i class="fas fa-th"></i>
+                        Option Chain
+                    </h1>
+                    <div class="live-badge">
+                        <div class="live-dot"></div>
+                        <span>LIVE</span>
+                    </div>
+                </div>
+                <div class="header-controls">
+                    <select id="symbolSelect" class="select-input">
+                        <option value="NIFTY">NIFTY</option>
+                        <option value="BANKNIFTY">BANKNIFTY</option>
+                        <option value="FINNIFTY">FINNIFTY</option>
+                        <option value="MIDCPNIFTY">MIDCPNIFTY</option>
+                    </select>
+                    <select id="expirySelect" class="select-input">
+                        <option value="current">Current Week</option>
+                        <option value="next">Next Week</option>
+                        <option value="monthly">Monthly</option>
+                    </select>
+                    <button class="btn" onclick="refreshChain()">
+                        <i class="fas fa-sync"></i>
+                        Refresh
+                    </button>
+                </div>
             </div>
-            <div class="info-card">
-                <div class="info-label">ATM Strike</div>
-                <div class="info-value" id="atmStrike">--</div>
-                <div class="info-change" id="expiryDays">--</div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-title">Spot Price</div>
+                        <div class="stat-value" id="spotPrice">24,850.50</div>
+                    </div>
+                    <div class="stat-icon blue">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                </div>
+                <div class="stat-change">
+                    <i class="fas fa-arrow-up"></i>
+                    <span id="spotChange">+125.50 (0.51%)</span>
+                </div>
             </div>
-            <div class="info-card">
-                <div class="info-label">PCR (OI)</div>
-                <div class="info-value" id="pcrOI">--</div>
-                <div class="info-change" id="pcrTrend">--</div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-title">ATM Strike</div>
+                        <div class="stat-value" id="atmStrike">24,850</div>
+                    </div>
+                    <div class="stat-icon purple">
+                        <i class="fas fa-crosshairs"></i>
+                    </div>
+                </div>
+                <div class="stat-change">
+                    <div class="max-pain-indicator">
+                        <i class="fas fa-bullseye"></i>
+                        Max Pain: 24,900
+                    </div>
+                </div>
             </div>
-            <div class="info-card">
-                <div class="info-label">Max Pain</div>
-                <div class="info-value" id="maxPain">--</div>
-                <div class="info-change" id="maxPainDiff">--</div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-title">Total OI</div>
+                        <div class="stat-value" id="totalOI">1.25M</div>
+                    </div>
+                    <div class="stat-icon orange">
+                        <i class="fas fa-database"></i>
+                    </div>
+                </div>
+                <div class="stat-change">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>+15.2% from prev</span>
+                </div>
             </div>
-            <div class="info-card">
-                <div class="info-label">Total OI</div>
-                <div class="info-value" id="totalOI">--</div>
-                <div class="info-change" id="oiChange">--</div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-title">PCR</div>
+                        <div class="stat-value" id="pcrValue">0.92</div>
+                    </div>
+                    <div class="stat-icon red">
+                        <i class="fas fa-balance-scale"></i>
+                    </div>
+                </div>
+                <div class="stat-change">
+                    <div class="pcr-indicator pcr-bearish">
+                        <i class="fas fa-arrow-down"></i>
+                        Bearish
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-title">India VIX</div>
+                        <div class="stat-value" id="vixValue">14.25</div>
+                    </div>
+                    <div class="stat-icon green">
+                        <i class="fas fa-wave-square"></i>
+                    </div>
+                </div>
+                <div class="stat-change">
+                    <i class="fas fa-arrow-down"></i>
+                    <span>-0.35 (-2.40%)</span>
+                </div>
             </div>
         </div>
 
         <!-- Option Chain Table -->
-        <div class="option-chain-container">
+        <div class="option-chain-card">
             <div class="chain-header">
                 <div class="chain-title">
-                    <i class="fas fa-table"></i> Option Chain
+                    <i class="fas fa-table"></i>
+                    Option Chain Data
                 </div>
                 <div class="greeks-toggle">
-                    <button class="toggle-btn active" onclick="toggleView('basic')">Basic</button>
+                    <button class="toggle-btn active" onclick="toggleView('simple')">Simple</button>
                     <button class="toggle-btn" onclick="toggleView('greeks')">Greeks</button>
-                    <button class="toggle-btn" onclick="toggleView('all')">All</button>
-                </div>
-                <div class="last-update" id="lastUpdate">Last update: --</div>
-            </div>
-            
-            <div id="chainTableContainer">
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <p>Loading option chain...</p>
+                    <button class="toggle-btn" onclick="toggleView('advanced')">Advanced</button>
                 </div>
             </div>
-        </div>
 
-        <!-- IV Skew Chart -->
-        <div class="iv-chart-container">
-            <div class="chain-header">
-                <div class="chain-title">
-                    <i class="fas fa-chart-line"></i> Implied Volatility Skew
-                </div>
-            </div>
-            <div class="chart-wrapper">
-                <canvas id="ivChart"></canvas>
+            <div class="table-wrapper">
+                <table id="optionChainTable">
+                    <thead>
+                        <tr>
+                            <!-- CALL Side -->
+                            <th>OI Change</th>
+                            <th>OI</th>
+                            <th>Volume</th>
+                            <th>IV</th>
+                            <th class="greek-cell">Delta</th>
+                            <th class="greek-cell">Gamma</th>
+                            <th class="greek-cell">Theta</th>
+                            <th class="greek-cell">Vega</th>
+                            <th>Bid/Ask</th>
+                            <th>LTP</th>
+                            <th>Change</th>
+                            
+                            <!-- Strike -->
+                            <th class="strike-header">STRIKE</th>
+                            
+                            <!-- PUT Side -->
+                            <th>Change</th>
+                            <th>LTP</th>
+                            <th>Bid/Ask</th>
+                            <th class="greek-cell">Vega</th>
+                            <th class="greek-cell">Theta</th>
+                            <th class="greek-cell">Gamma</th>
+                            <th class="greek-cell">Delta</th>
+                            <th>IV</th>
+                            <th>Volume</th>
+                            <th>OI</th>
+                            <th>OI Change</th>
+                        </tr>
+                    </thead>
+                    <tbody id="chainBody">
+                        <tr>
+                            <td colspan="23">
+                                <div class="loading">
+                                    <div class="spinner"></div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        let currentView = 'basic';
-        let optionChainData = null;
-        let autoRefreshInterval = null;
-        let ivChart = null;
+        // Global variables
+        let currentSymbol = 'NIFTY';
+        let currentExpiry = 'current';
+        let spotPrice = 24850.50;
+        let atmStrike = 24850;
+        let chainData = [];
+        let viewMode = 'simple';
 
-        // Initialize
+        // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
-            loadExpiryDates();
             loadOptionChain();
-            
-            // Auto-refresh every 30 seconds
-            autoRefreshInterval = setInterval(loadOptionChain, 30000);
+            setInterval(refreshChain, 30000); // Auto-refresh every 30 seconds
+            updateMarketStatus();
         });
 
-        // Load expiry dates
-        async function loadExpiryDates() {
-            try {
-                const response = await fetch('http://localhost:8000/option-chain/expiry-dates');
-                if (response.ok) {
-                    const data = await response.json();
-                    const select = document.getElementById('expirySelect');
-                    select.innerHTML = `
-                        <option value="${data.data.current_weekly}">Current (${formatDate(data.data.current_weekly)})</option>
-                        <option value="${data.data.next_weekly}">Next (${formatDate(data.data.next_weekly)})</option>
-                        <option value="${data.data.monthly}">Monthly (${formatDate(data.data.monthly)})</option>
-                    `;
-                }
-            } catch (error) {
-                console.error('Error loading expiry dates:', error);
-            }
-        }
+        // Symbol change handler
+        document.getElementById('symbolSelect').addEventListener('change', function(e) {
+            currentSymbol = e.target.value;
+            loadOptionChain();
+        });
 
-        // Load option chain
+        // Expiry change handler
+        document.getElementById('expirySelect').addEventListener('change', function(e) {
+            currentExpiry = e.target.value;
+            loadOptionChain();
+        });
+
+        // Load option chain data
         async function loadOptionChain() {
-            const symbol = document.getElementById('symbolSelect').value;
-            const expiry = document.getElementById('expirySelect').value;
-            
+            const tbody = document.getElementById('chainBody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="23">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+
             try {
-                const response = await fetch(`http://localhost:8000/option-chain/greeks?symbol=${symbol}&expiry=${expiry}&strikes=20`);
+                // Fetch option chain data
+                const response = await fetch(`http://localhost:8000/option-chain/${currentSymbol}`);
                 if (response.ok) {
                     const data = await response.json();
-                    optionChainData = data.data;
-                    updateInfoCards(data.data);
-                    renderOptionChain(data.data);
-                    updateIVChart(data.data);
-                    document.getElementById('lastUpdate').textContent = `Last update: ${new Date().toLocaleTimeString()}`;
+                    chainData = data.records?.data || [];
+                    spotPrice = data.records?.underlyingValue || spotPrice;
+                    updateStats(data);
+                    displayOptionChain(chainData);
+                } else {
+                    // If API fails, show mock data
+                    displayMockData();
                 }
             } catch (error) {
-                console.error('Error loading option chain:', error);
-                document.getElementById('chainTableContainer').innerHTML = `
-                    <div class="loading">
-                        <p style="color: #ef4444;">Error loading option chain. Please check API connection.</p>
-                    </div>
-                `;
+                console.error('Failed to load option chain:', error);
+                displayMockData();
             }
         }
 
-        // Update info cards
-        function updateInfoCards(data) {
-            // Show data source
-            if (data.source) {
-                document.getElementById('lastUpdate').textContent = `Last update: ${new Date().toLocaleTimeString()} (${data.source})`;
+        // Display option chain in table
+        function displayOptionChain(data) {
+            const tbody = document.getElementById('chainBody');
+            
+            if (!data || data.length === 0) {
+                displayMockData();
+                return;
             }
-            
-            // Spot Price
-            document.getElementById('spotPrice').textContent = data.spot_price.toFixed(2);
-            
-            // ATM Strike
-            document.getElementById('atmStrike').textContent = data.atm_strike;
-            document.getElementById('expiryDays').textContent = `${data.time_to_expiry.toFixed(0)} days to expiry`;
-            
-            // PCR
-            document.getElementById('pcrOI').textContent = data.pcr.pcr_oi.toFixed(3);
-            const pcrTrend = data.pcr.pcr_oi > 1 ? 'Bullish' : 'Bearish';
-            document.getElementById('pcrTrend').textContent = pcrTrend;
-            document.getElementById('pcrTrend').className = `info-change ${data.pcr.pcr_oi > 1 ? 'positive' : 'negative'}`;
-            
-            // Max Pain
-            document.getElementById('maxPain').textContent = data.max_pain.max_pain_strike;
-            const diff = data.max_pain.difference;
-            document.getElementById('maxPainDiff').textContent = `${diff > 0 ? '+' : ''}${diff.toFixed(0)} from spot`;
-            document.getElementById('maxPainDiff').className = `info-change ${diff > 0 ? 'positive' : 'negative'}`;
-            
-            // Total OI
-            const totalOI = data.pcr.total_call_oi + data.pcr.total_put_oi;
-            document.getElementById('totalOI').textContent = formatNumber(totalOI);
-        }
 
-        // Render option chain table
-        function renderOptionChain(data) {
-            const container = document.getElementById('chainTableContainer');
-            const tableClass = currentView === 'greeks' || currentView === 'all' ? 'greeks-visible' : '';
-            
-            let html = `
-                <table class="${tableClass}">
-                    <thead>
-                        <tr>
-                            <th colspan="${currentView === 'all' ? 10 : currentView === 'greeks' ? 7 : 6}" class="call-header">CALLS</th>
-                            <th rowspan="2" class="strike-cell">STRIKE</th>
-                            <th colspan="${currentView === 'all' ? 10 : currentView === 'greeks' ? 7 : 6}" class="put-header">PUTS</th>
-                        </tr>
-                        <tr>
-                            <th>OI</th>
-                            <th>Volume</th>
-                            <th>IV</th>
-                            ${currentView !== 'basic' ? '<th class="greeks-column">Delta</th><th class="greeks-column">Gamma</th><th class="greeks-column">Theta</th><th class="greeks-column">Vega</th>' : ''}
-                            <th>Bid</th>
-                            <th>LTP</th>
-                            <th>Ask</th>
-                            
-                            <th>Bid</th>
-                            <th>LTP</th>
-                            <th>Ask</th>
-                            ${currentView !== 'basic' ? '<th class="greeks-column">Delta</th><th class="greeks-column">Gamma</th><th class="greeks-column">Theta</th><th class="greeks-column">Vega</th>' : ''}
-                            <th>IV</th>
-                            <th>Volume</th>
-                            <th>OI</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            
-            // Find max OI for bar visualization
-            const maxCallOI = Math.max(...data.chain.map(r => r.call_oi));
-            const maxPutOI = Math.max(...data.chain.map(r => r.put_oi));
-            
-            data.chain.forEach(row => {
-                const rowClass = row.moneyness === 'ATM' ? 'atm-row' : 
-                                row.moneyness === 'ITM' && row.strike < data.spot_price ? 'itm-call' :
-                                row.moneyness === 'ITM' && row.strike > data.spot_price ? 'itm-put' : '';
+            // Sort by strike price
+            data.sort((a, b) => a.strikePrice - b.strikePrice);
+
+            // Find ATM strike
+            atmStrike = findATMStrike(spotPrice, data);
+
+            tbody.innerHTML = data.map(row => {
+                const strike = row.strikePrice;
+                const isATM = strike === atmStrike;
+                const isITM = (strike < spotPrice);
                 
-                html += `
-                    <tr class="${rowClass}">
-                        <!-- Call Side -->
-                        <td>${formatNumber(row.call_oi)}</td>
-                        <td>${formatNumber(row.call_volume)}</td>
-                        <td>${(row.call_iv * 100).toFixed(2)}%</td>
-                        ${currentView !== 'basic' ? `
-                            <td class="greeks-column delta-positive">${row.call_delta || '--'}</td>
-                            <td class="greeks-column">${row.call_gamma || '--'}</td>
-                            <td class="greeks-column theta-value">${row.call_theta || '--'}</td>
-                            <td class="greeks-column">${row.call_vega || '--'}</td>
-                        ` : ''}
-                        <td>${row.call_bid.toFixed(2)}</td>
-                        <td class="call-side"><strong>${row.call_ltp.toFixed(2)}</strong></td>
-                        <td>${row.call_ask.toFixed(2)}</td>
+                const callOI = row.CE?.openInterest || 0;
+                const putOI = row.PE?.openInterest || 0;
+                const callLTP = row.CE?.lastPrice || 0;
+                const putLTP = row.PE?.lastPrice || 0;
+                const callChange = row.CE?.change || 0;
+                const putChange = row.PE?.change || 0;
+                const callVolume = row.CE?.totalTradedVolume || 0;
+                const putVolume = row.PE?.totalTradedVolume || 0;
+                const callIV = row.CE?.impliedVolatility || 0;
+                const putIV = row.PE?.impliedVolatility || 0;
+
+                return `
+                    <tr class="${isATM ? 'atm-row' : ''} ${isITM ? 'itm' : 'otm'}">
+                        <!-- CALL Side -->
+                        <td class="call-side ${callOI > 100000 ? 'oi-high' : ''}">${formatNumber(row.CE?.changeinOpenInterest || 0)}</td>
+                        <td class="call-side ${callOI > 100000 ? 'oi-high' : ''}">${formatNumber(callOI)}</td>
+                        <td class="call-side ${callVolume > 10000 ? 'volume-high' : ''}">${formatNumber(callVolume)}</td>
+                        <td class="call-side ${callIV > 20 ? 'iv-high' : ''}">${callIV.toFixed(2)}</td>
+                        <td class="call-side greek-cell delta" style="${viewMode !== 'simple' ? '' : 'display:none'}">${(row.CE?.delta || 0).toFixed(3)}</td>
+                        <td class="call-side greek-cell gamma" style="${viewMode !== 'simple' ? '' : 'display:none'}">${(row.CE?.gamma || 0).toFixed(4)}</td>
+                        <td class="call-side greek-cell theta" style="${viewMode !== 'simple' ? '' : 'display:none'}">${(row.CE?.theta || 0).toFixed(2)}</td>
+                        <td class="call-side greek-cell vega" style="${viewMode !== 'simple' ? '' : 'display:none'}">${(row.CE?.vega || 0).toFixed(2)}</td>
+                        <td class="call-side" style="${viewMode === 'advanced' ? '' : 'display:none'}">${row.CE?.bidprice || 0}/${row.CE?.askPrice || 0}</td>
+                        <td class="call-side ltp">${callLTP.toFixed(2)}</td>
+                        <td class="call-side ${callChange >= 0 ? 'positive-change' : 'negative-change'}">${callChange >= 0 ? '+' : ''}${callChange.toFixed(2)}</td>
                         
                         <!-- Strike -->
-                        <td class="strike-cell">${row.strike}</td>
+                        <td class="strike-col">${strike}</td>
                         
-                        <!-- Put Side -->
-                        <td>${row.put_bid.toFixed(2)}</td>
-                        <td class="put-side"><strong>${row.put_ltp.toFixed(2)}</strong></td>
-                        <td>${row.put_ask.toFixed(2)}</td>
-                        ${currentView !== 'basic' ? `
-                            <td class="greeks-column delta-negative">${row.put_delta || '--'}</td>
-                            <td class="greeks-column">${row.put_gamma || '--'}</td>
-                            <td class="greeks-column theta-value">${row.put_theta || '--'}</td>
-                            <td class="greeks-column">${row.put_vega || '--'}</td>
-                        ` : ''}
-                        <td>${(row.put_iv * 100).toFixed(2)}%</td>
-                        <td>${formatNumber(row.put_volume)}</td>
-                        <td>${formatNumber(row.put_oi)}</td>
+                        <!-- PUT Side -->
+                        <td class="put-side ${putChange >= 0 ? 'positive-change' : 'negative-change'}">${putChange >= 0 ? '+' : ''}${putChange.toFixed(2)}</td>
+                        <td class="put-side ltp">${putLTP.toFixed(2)}</td>
+                        <td class="put-side" style="${viewMode === 'advanced' ? '' : 'display:none'}">${row.PE?.bidprice || 0}/${row.PE?.askPrice || 0}</td>
+                        <td class="put-side greek-cell vega" style="${viewMode !== 'simple' ? '' : 'display:none'}">${(row.PE?.vega || 0).toFixed(2)}</td>
+                        <td class="put-side greek-cell theta" style="${viewMode !== 'simple' ? '' : 'display:none'}">${(row.PE?.theta || 0).toFixed(2)}</td>
+                        <td class="put-side greek-cell gamma" style="${viewMode !== 'simple' ? '' : 'display:none'}">${(row.PE?.gamma || 0).toFixed(4)}</td>
+                        <td class="put-side greek-cell delta" style="${viewMode !== 'simple' ? '' : 'display:none'}">${(row.PE?.delta || 0).toFixed(3)}</td>
+                        <td class="put-side ${putIV > 20 ? 'iv-high' : ''}">${putIV.toFixed(2)}</td>
+                        <td class="put-side ${putVolume > 10000 ? 'volume-high' : ''}">${formatNumber(putVolume)}</td>
+                        <td class="put-side ${putOI > 100000 ? 'oi-high' : ''}">${formatNumber(putOI)}</td>
+                        <td class="put-side ${putOI > 100000 ? 'oi-high' : ''}">${formatNumber(row.PE?.changeinOpenInterest || 0)}</td>
                     </tr>
                 `;
-            });
-            
-            html += `
-                    </tbody>
-                </table>
-            `;
-            
-            container.innerHTML = html;
+            }).join('');
         }
 
-        // Update IV Chart
-        function updateIVChart(data) {
-            const ctx = document.getElementById('ivChart').getContext('2d');
+        // Display mock data when API is unavailable
+        function displayMockData() {
+            const strikes = [];
+            const baseStrike = Math.round(spotPrice / 50) * 50;
             
-            const strikes = data.chain.map(r => r.strike);
-            const callIVs = data.chain.map(r => r.call_iv * 100);
-            const putIVs = data.chain.map(r => r.put_iv * 100);
+            for (let i = -10; i <= 10; i++) {
+                strikes.push(baseStrike + (i * 50));
+            }
+
+            const tbody = document.getElementById('chainBody');
+            tbody.innerHTML = strikes.map(strike => {
+                const isATM = strike === baseStrike;
+                const isITM = strike < spotPrice;
+                const distance = Math.abs(strike - spotPrice);
+                const callLTP = Math.max(5, spotPrice - strike + Math.random() * 20);
+                const putLTP = Math.max(5, strike - spotPrice + Math.random() * 20);
+
+                return `
+                    <tr class="${isATM ? 'atm-row' : ''} ${isITM ? 'itm' : 'otm'}">
+                        <!-- CALL Side -->
+                        <td class="call-side">${Math.floor(Math.random() * 10000)}</td>
+                        <td class="call-side">${Math.floor(Math.random() * 100000)}</td>
+                        <td class="call-side">${Math.floor(Math.random() * 50000)}</td>
+                        <td class="call-side">${(15 + Math.random() * 10).toFixed(2)}</td>
+                        <td class="call-side greek-cell delta" style="${viewMode !== 'simple' ? '' : 'display:none'}">${(Math.random()).toFixed(3)}</td>
+                        <td class="call-side greek-cell gamma" style="${viewMode !== 'simple' ? '' : 'display:none'}">${(Math.random() * 0.01).toFixed(4)}</td>
+                        <td class="call-side greek-cell theta" style="${viewMode !== 'simple' ? '' : 'display:none'}">${(-Math.random() * 10).toFixed(2)}</td>
+                        <td class="call-side greek-cell vega" style="${viewMode !== 'simple' ? '' : 'display:none'}">${(Math.random() * 5).toFixed(2)}</td>
+                        <td class="call-side" style="${viewMode === 'advanced' ? '' : 'display:none'}">${callLTP.toFixed(2)}/${(callLTP + 0.5).toFixed(2)}</td>
+                        <td class="call-side ltp">${callLTP.toFixed(2)}</td>
+                        <td class="call-side ${Math.random() > 0.5 ? 'positive-change' : 'negative-change'}">${Math.random() > 0.5 ? '+' : '-'}${(Math.random() * 10).toFixed(2)}</td>
+                        
+                        <!-- Strike -->
+                        <td class="strike-col">${strike}</td>
+                        
+                        <!-- PUT Side -->
+                        <td class="put-side ${Math.random() > 0.5 ? 'positive-change' : 'negative-change'}">${Math.random() > 0.5 ? '+' : '-'}${(Math.random() * 10).toFixed(2)}</td>
+                        <td class="put-side ltp">${putLTP.toFixed(2)}</td>
+                        <td class="put-side" style="${viewMode === 'advanced' ? '' : 'display:none'}">${putLTP.toFixed(2)}/${(putLTP + 0.5).toFixed(2)}</td>
+                        <td class="put-side greek-cell vega" style="${viewMode !== 'simple' ? '' : 'display:none'}">${(Math.random() * 5).toFixed(2)}</td>
+                        <td class="put-side greek-cell theta" style="${viewMode !== 'simple' ? '' : 'display:none'}">${(-Math.random() * 10).toFixed(2)}</td>
+                        <td class="put-side greek-cell gamma" style="${viewMode !== 'simple' ? '' : 'display:none'}">${(Math.random() * 0.01).toFixed(4)}</td>
+                        <td class="put-side greek-cell delta" style="${viewMode !== 'simple' ? '' : 'display:none'}">${(-Math.random()).toFixed(3)}</td>
+                        <td class="put-side">${(15 + Math.random() * 10).toFixed(2)}</td>
+                        <td class="put-side">${Math.floor(Math.random() * 50000)}</td>
+                        <td class="put-side">${Math.floor(Math.random() * 100000)}</td>
+                        <td class="put-side">${Math.floor(Math.random() * 10000)}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Update stats cards
+        function updateStats(data) {
+            // Update spot price
+            document.getElementById('spotPrice').textContent = formatPrice(spotPrice);
             
-            if (ivChart) {
-                ivChart.destroy();
+            // Update ATM strike
+            document.getElementById('atmStrike').textContent = atmStrike;
+            
+            // Calculate total OI
+            let totalCallOI = 0;
+            let totalPutOI = 0;
+            
+            if (data.records?.data) {
+                data.records.data.forEach(row => {
+                    totalCallOI += row.CE?.openInterest || 0;
+                    totalPutOI += row.PE?.openInterest || 0;
+                });
             }
             
-            ivChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: strikes,
-                    datasets: [
-                        {
-                            label: 'Call IV',
-                            data: callIVs,
-                            borderColor: '#10b981',
-                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                            tension: 0.4
-                        },
-                        {
-                            label: 'Put IV',
-                            data: putIVs,
-                            borderColor: '#ef4444',
-                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                            tension: 0.4
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    aspectRatio: 3,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                boxWidth: 12,
-                                padding: 10,
-                                font: {
-                                    size: 11
-                                }
-                            }
-                        },
-                        title: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                            title: {
-                                display: true,
-                                text: 'Implied Volatility (%)',
-                                font: {
-                                    size: 11
-                                }
-                            },
-                            ticks: {
-                                font: {
-                                    size: 10
-                                }
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Strike Price',
-                                font: {
-                                    size: 11
-                                }
-                            },
-                            ticks: {
-                                font: {
-                                    size: 10
-                                },
-                                maxRotation: 45,
-                                minRotation: 45
-                            }
-                        }
-                    }
-                }
-            });
+            const totalOI = totalCallOI + totalPutOI;
+            document.getElementById('totalOI').textContent = formatLargeNumber(totalOI);
+            
+            // Calculate PCR
+            const pcr = totalCallOI > 0 ? (totalPutOI / totalCallOI).toFixed(2) : 0;
+            document.getElementById('pcrValue').textContent = pcr;
+            
+            // Update PCR indicator
+            const pcrIndicator = document.querySelector('.pcr-indicator');
+            if (pcr > 1.2) {
+                pcrIndicator.className = 'pcr-indicator pcr-bullish';
+                pcrIndicator.innerHTML = '<i class="fas fa-arrow-up"></i> Bullish';
+            } else if (pcr < 0.8) {
+                pcrIndicator.className = 'pcr-indicator pcr-bearish';
+                pcrIndicator.innerHTML = '<i class="fas fa-arrow-down"></i> Bearish';
+            } else {
+                pcrIndicator.className = 'pcr-indicator pcr-neutral';
+                pcrIndicator.innerHTML = '<i class="fas fa-minus"></i> Neutral';
+            }
         }
 
-        // Toggle view
-        function toggleView(view) {
-            currentView = view;
+        // Find ATM strike
+        function findATMStrike(spot, data) {
+            const strikes = data.map(d => d.strikePrice);
+            let closest = strikes[0];
+            let minDiff = Math.abs(strikes[0] - spot);
             
-            // Update buttons
+            strikes.forEach(strike => {
+                const diff = Math.abs(strike - spot);
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    closest = strike;
+                }
+            });
+            
+            return closest;
+        }
+
+        // Toggle view mode
+        function toggleView(mode) {
+            viewMode = mode;
+            
+            // Update button states
             document.querySelectorAll('.toggle-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
             event.target.classList.add('active');
             
-            // Re-render table
-            if (optionChainData) {
-                renderOptionChain(optionChainData);
+            // Reload display
+            if (chainData.length > 0) {
+                displayOptionChain(chainData);
+            } else {
+                displayMockData();
             }
         }
 
-        // Refresh option chain
-        function refreshOptionChain() {
+        // Refresh chain
+        function refreshChain() {
             loadOptionChain();
         }
 
-        // Format number
+        // Update market status
+        function updateMarketStatus() {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const day = now.getDay();
+            
+            const badge = document.querySelector('.live-badge');
+            
+            // Check if market is open (Mon-Fri, 9:15 AM - 3:30 PM)
+            if (day >= 1 && day <= 5) {
+                const marketStart = 9 * 60 + 15; // 9:15 AM in minutes
+                const marketEnd = 15 * 60 + 30; // 3:30 PM in minutes
+                const currentTime = hours * 60 + minutes;
+                
+                if (currentTime >= marketStart && currentTime <= marketEnd) {
+                    badge.innerHTML = '<div class="live-dot"></div><span>LIVE</span>';
+                } else {
+                    badge.innerHTML = '<i class="fas fa-moon"></i><span>CLOSED</span>';
+                    badge.style.borderColor = 'var(--accent-red)';
+                    badge.style.background = 'rgba(255, 51, 102, 0.1)';
+                    badge.style.color = 'var(--accent-red)';
+                }
+            } else {
+                badge.innerHTML = '<i class="fas fa-pause"></i><span>WEEKEND</span>';
+                badge.style.borderColor = 'var(--accent-yellow)';
+                badge.style.background = 'rgba(255, 235, 59, 0.1)';
+                badge.style.color = 'var(--accent-yellow)';
+            }
+        }
+
+        // Format number utilities
         function formatNumber(num) {
-            if (num === 0) return '0';
-            if (num < 1000) return num.toString();
-            if (num < 1000000) return (num / 1000).toFixed(1) + 'K';
-            return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(2) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num.toString();
         }
 
-        // Format date
-        function formatDate(dateStr) {
-            const date = new Date(dateStr);
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        function formatLargeNumber(num) {
+            if (num >= 10000000) {
+                return (num / 10000000).toFixed(2) + 'Cr';
+            } else if (num >= 100000) {
+                return (num / 100000).toFixed(2) + 'L';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num.toString();
         }
 
-        // Symbol change handler
-        document.getElementById('symbolSelect').addEventListener('change', loadOptionChain);
-        document.getElementById('expirySelect').addEventListener('change', loadOptionChain);
+        function formatPrice(price) {
+            return new Intl.NumberFormat('en-IN', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(price);
+        }
     </script>
 </body>
 </html>

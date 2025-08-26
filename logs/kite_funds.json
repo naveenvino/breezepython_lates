@@ -1,0 +1,40 @@
+{
+  "status": "success",
+  "source": "kite_direct",
+  "user_id": "JR1507",
+  "available_cash": -373.2,
+  "available_margin": -373.2,
+  "opening_balance": -373.2,
+  "used_margin": 0,
+  "total_margin": -373.2,
+  "pnl": 0,
+  "details": {
+    "equity": {
+      "enabled": true,
+      "net": -373.2,
+      "available": {
+        "adhoc_margin": 0,
+        "cash": -373.2,
+        "opening_balance": -373.2,
+        "live_balance": -373.2,
+        "collateral": 0,
+        "intraday_payin": 0
+      },
+      "utilised": {
+        "debits": 0,
+        "exposure": 0,
+        "m2m_realised": 0,
+        "m2m_unrealised": 0,
+        "option_premium": 0,
+        "payout": 0,
+        "span": 0,
+        "holding_sales": 0,
+        "turnover": 0,
+        "liquid_collateral": 0,
+        "stock_collateral": 0,
+        "equity": 0,
+        "delivery": 0
+      }
+    }
+  }
+}

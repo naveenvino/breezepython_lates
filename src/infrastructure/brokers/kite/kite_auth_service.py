@@ -18,7 +18,8 @@ class KiteAuthService:
     
     def __init__(self, kite_client):
         self.kite_client = kite_client
-        self.token_file = Path("kite_auth_token.json")
+        # Use the auto login token file in logs directory
+        self.token_file = Path("logs/kite_auth_cache.json")
         self.load_saved_token()
     
     def load_saved_token(self) -> bool:
@@ -28,11 +29,14 @@ class KiteAuthService:
                 with open(self.token_file, 'r') as f:
                     data = json.load(f)
                 
+                # Handle both formats - auto login uses 'cached_at', manual uses 'timestamp'
+                timestamp_key = 'cached_at' if 'cached_at' in data else 'timestamp'
+                
                 # Check if token is from today (tokens expire daily)
-                token_date = datetime.fromisoformat(data['timestamp']).date()
+                token_date = datetime.fromisoformat(data[timestamp_key]).date()
                 if token_date == datetime.now().date():
                     self.kite_client.set_access_token(data['access_token'])
-                    logger.info("Loaded saved access token")
+                    logger.info("Loaded saved access token from auto login")
                     return True
                 else:
                     logger.info("Saved token expired, need new authentication")

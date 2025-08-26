@@ -3,9 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auto-Login Dashboard</title>
+    <title>Trading Platform Auto-Login</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #131320;
+            --bg-card: #1a1a2e;
+            --border-color: rgba(255, 255, 255, 0.06);
+            --text-primary: #ffffff;
+            --text-secondary: #a8a8b3;
+            --text-muted: #6b6b7c;
+            --accent-blue: #3b82f6;
+            --accent-orange: #f59e0b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --gradient-blue: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-orange: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        
         * {
             margin: 0;
             padding: 0;
@@ -14,74 +31,112 @@
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: #0f0f1e;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
             min-height: 100vh;
-            color: #e0e0e0;
         }
         
-        .dashboard-container {
-            max-width: 1400px;
+        /* Container */
+        .container {
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 30px;
+            padding: 24px;
         }
         
-        /* Header Section */
-        .dashboard-header {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-            border: 1px solid rgba(102, 126, 234, 0.2);
-            border-radius: 16px;
-            padding: 30px;
-            margin-bottom: 30px;
-            backdrop-filter: blur(10px);
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            padding: 20px 24px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
         }
         
-        .dashboard-title {
-            font-size: 32px;
-            font-weight: 700;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .header-title h1 {
+            font-size: 24px;
+            font-weight: 600;
+            background: var(--gradient-blue);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 8px;
         }
         
-        .dashboard-subtitle {
-            color: #9ca3af;
-            font-size: 16px;
+        .header-time {
+            text-align: right;
         }
         
-        /* Main Grid Layout */
-        .main-grid {
+        .header-time .time {
+            font-size: 20px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        .header-time .date {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+        
+        .sync-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 6px;
+            font-size: 11px;
+            color: var(--success);
+            margin-top: 8px;
+        }
+        
+        .sync-indicator.error {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.2);
+            color: var(--error);
+        }
+        
+        /* Platform Grid */
+        .platform-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 30px;
+            gap: 24px;
+            margin-bottom: 24px;
         }
         
-        @media (max-width: 1024px) {
-            .main-grid {
+        @media (max-width: 768px) {
+            .platform-grid {
                 grid-template-columns: 1fr;
             }
         }
         
-        /* Card Styles */
+        /* Platform Card */
         .platform-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 16px;
-            padding: 0;
-            transition: all 0.3s;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
             overflow: hidden;
+            transition: all 0.3s;
         }
         
         .platform-card:hover {
-            border-color: rgba(102, 126, 234, 0.3);
-            box-shadow: 0 10px 40px rgba(102, 126, 234, 0.1);
+            border-color: rgba(102, 126, 234, 0.2);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.05);
         }
         
         .card-header {
-            background: rgba(255, 255, 255, 0.02);
-            padding: 20px 25px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -90,57 +145,55 @@
         .platform-info {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
         }
         
-        .platform-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
+        .platform-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
-        }
-        
-        .breeze-icon {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            color: white;
-        }
-        
-        .kite-icon {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            color: white;
-        }
-        
-        .platform-name {
             font-size: 20px;
-            font-weight: 600;
-            color: #fff;
         }
         
-        .platform-provider {
-            font-size: 13px;
-            color: #6b7280;
+        .platform-logo.kite {
+            background: var(--gradient-orange);
+        }
+        
+        .platform-logo.breeze {
+            background: var(--gradient-blue);
+        }
+        
+        .platform-details h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .platform-details p {
+            font-size: 12px;
+            color: var(--text-muted);
             margin-top: 2px;
         }
         
         /* Status Badge */
-        .status-indicator {
+        .status-badge {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 13px;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
         
-        .status-dot {
-            width: 8px;
-            height: 8px;
+        .status-badge .dot {
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
             animation: pulse 2s infinite;
         }
@@ -150,135 +203,240 @@
             50% { opacity: 0.5; }
         }
         
-        .status-active {
+        .status-badge.connected {
             background: rgba(16, 185, 129, 0.1);
-            color: #10b981;
+            color: var(--success);
             border: 1px solid rgba(16, 185, 129, 0.2);
         }
         
-        .status-active .status-dot {
-            background: #10b981;
+        .status-badge.connected .dot {
+            background: var(--success);
         }
         
-        .status-inactive {
-            background: rgba(239, 68, 68, 0.1);
-            color: #ef4444;
-            border: 1px solid rgba(239, 68, 68, 0.2);
-        }
-        
-        .status-inactive .status-dot {
-            background: #ef4444;
-        }
-        
-        .status-pending {
+        .status-badge.ready {
             background: rgba(245, 158, 11, 0.1);
-            color: #f59e0b;
+            color: var(--warning);
             border: 1px solid rgba(245, 158, 11, 0.2);
         }
         
-        .status-pending .status-dot {
-            background: #f59e0b;
+        .status-badge.ready .dot {
+            background: var(--warning);
+        }
+        
+        .status-badge.not-configured {
+            background: rgba(107, 107, 124, 0.1);
+            color: var(--text-muted);
+            border: 1px solid rgba(107, 107, 124, 0.2);
+        }
+        
+        .status-badge.not-configured .dot {
+            background: var(--text-muted);
+        }
+        
+        .status-badge.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+        
+        .status-badge.error .dot {
+            background: var(--danger);
+            animation: pulse 2s infinite;
         }
         
         /* Card Body */
         .card-body {
-            padding: 25px;
+            padding: 20px;
         }
         
-        .info-grid {
+        /* Credential Section */
+        .credential-section {
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .edit-btn {
+            padding: 4px 8px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .edit-btn:hover {
+            background: rgba(102, 126, 234, 0.1);
+            border-color: rgba(102, 126, 234, 0.3);
+            color: var(--accent-blue);
+        }
+        
+        .credential-fields {
             display: grid;
-            gap: 16px;
-            margin-bottom: 25px;
+            gap: 10px;
         }
         
-        .info-row {
+        .credential-field {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        
+        .credential-field:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        
+        .credential-field.editing {
+            border-color: var(--accent-blue);
+            background: rgba(102, 126, 234, 0.05);
+        }
+        
+        .field-icon {
+            width: 16px;
+            color: var(--text-muted);
+            margin-right: 10px;
+        }
+        
+        .field-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            min-width: 80px;
+        }
+        
+        .field-value {
+            flex: 1;
+            font-size: 13px;
+            color: var(--text-primary);
+            font-family: 'Monaco', 'Menlo', monospace;
+            background: transparent;
+            border: none;
+            outline: none;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        
+        .field-value[readonly] {
+            cursor: default;
+        }
+        
+        .field-value:not([readonly]) {
+            background: rgba(255, 255, 255, 0.05);
+            cursor: text;
+        }
+        
+        /* Removed .masked class CSS to allow password toggle to work properly */
+        input[type="password"].field-value {
+            font-family: caption;
+        }
+        
+        .toggle-visibility {
+            padding: 4px 8px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .toggle-visibility:hover {
+            color: var(--text-secondary);
+        }
+        
+        /* Session Info */
+        .session-info {
+            padding: 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        
+        .session-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 16px;
-            background: rgba(255, 255, 255, 0.02);
-            border-radius: 8px;
-            transition: background 0.2s;
+            padding: 6px 0;
         }
         
-        .info-row:hover {
-            background: rgba(255, 255, 255, 0.04);
+        .session-row:not(:last-child) {
+            border-bottom: 1px solid var(--border-color);
         }
         
-        .info-label {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #9ca3af;
-            font-size: 14px;
+        .session-label {
+            font-size: 12px;
+            color: var(--text-secondary);
         }
         
-        .info-label i {
-            width: 16px;
-            text-align: center;
-            color: #6b7280;
-        }
-        
-        .info-value {
-            color: #e5e7eb;
+        .session-value {
+            font-size: 12px;
+            color: var(--text-primary);
             font-weight: 500;
-            font-size: 14px;
-            font-family: 'Monaco', 'Menlo', monospace;
         }
         
-        .info-value.truncated {
-            max-width: 200px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+        .token-display {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 11px;
+            background: var(--bg-primary);
+            padding: 2px 6px;
+            border-radius: 4px;
         }
         
         /* Action Buttons */
         .action-buttons {
             display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
+            gap: 10px;
         }
         
         .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
             flex: 1;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
             justify-content: center;
-            min-width: 120px;
-        }
-        
-        .btn i {
-            font-size: 16px;
+            gap: 6px;
         }
         
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--gradient-blue);
             color: white;
         }
         
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }
         
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.05);
-            color: #e5e7eb;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
         }
         
         .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
         }
         
         .btn:disabled {
@@ -287,770 +445,1552 @@
             transform: none !important;
         }
         
-        /* Loading Spinner */
-        .spinner {
-            display: none;
-            width: 14px;
-            height: 14px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+        /* Settings Panel */
+        .settings-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-bottom: 24px;
+            overflow: hidden;
         }
         
-        .loading .spinner {
-            display: inline-block;
+        .settings-header {
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+        
+        .settings-header h3 {
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .settings-content {
+            padding: 20px;
+            display: none;
+        }
+        
+        .settings-content.active {
+            display: block;
+        }
+        
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+        }
+        
+        .setting-item:not(:last-child) {
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .setting-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .setting-label i {
+            width: 16px;
+            color: var(--text-muted);
+        }
+        
+        .setting-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        .setting-description {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .toggle-switch input {
+            display: none;
+        }
+        
+        .toggle-switch .slider {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 16px;
+            height: 16px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+        
+        .toggle-switch input:checked + .slider {
+            transform: translateX(20px);
+            background: var(--success);
+        }
+        
+        .toggle-switch input:checked ~ .toggle-bg {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+        
+        .toggle-bg {
+            position: absolute;
+            inset: 0;
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+        
+        /* TOTP Section */
+        .totp-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        
+        .totp-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .totp-header h3 {
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .totp-timer {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 12px;
+        }
+        
+        .totp-timer .timer-value {
+            font-weight: 600;
+            color: var(--text-primary);
+            min-width: 20px;
+            text-align: center;
+        }
+        
+        .totp-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        
+        .totp-card {
+            padding: 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+        
+        .totp-card-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .totp-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        
+        .totp-icon.kite {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--accent-orange);
+        }
+        
+        .totp-icon.breeze {
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--accent-blue);
+        }
+        
+        .totp-platform {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .totp-code {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .totp-value {
+            font-size: 24px;
+            font-weight: 700;
+            font-family: 'Monaco', 'Menlo', monospace;
+            letter-spacing: 3px;
+            color: var(--text-primary);
+        }
+        
+        .copy-btn {
+            padding: 6px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+        }
+        
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateX(400px);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        
+        .toast.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        
+        .toast.success {
+            border-color: rgba(16, 185, 129, 0.3);
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+        
+        .toast.error {
+            border-color: rgba(239, 68, 68, 0.3);
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+        }
+        
+        .toast.info {
+            border-color: rgba(59, 130, 246, 0.3);
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--accent-blue);
+        }
+        
+        /* Loading Spinner */
+        .spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
         }
         
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
         
-        /* Instructions Card */
-        .instructions-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 16px;
-            padding: 30px;
-        }
-        
-        .instructions-title {
-            font-size: 24px;
-            font-weight: 600;
-            color: #fff;
-            margin-bottom: 20px;
+        /* Scheduler Widget */
+        .scheduler-widget {
             display: flex;
             align-items: center;
             gap: 12px;
-        }
-        
-        .instructions-title i {
-            color: #667eea;
-        }
-        
-        .instructions-content {
-            color: #d1d5db;
-            line-height: 1.8;
-        }
-        
-        .setup-steps {
-            margin-top: 20px;
-        }
-        
-        .setup-step {
-            margin-bottom: 20px;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.02);
-            border-radius: 12px;
-            border-left: 3px solid #667eea;
-        }
-        
-        .step-number {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 28px;
-            height: 28px;
-            background: #667eea;
-            color: white;
-            border-radius: 50%;
-            font-size: 14px;
-            font-weight: 600;
-            margin-right: 12px;
-        }
-        
-        .step-title {
-            font-weight: 600;
-            color: #fff;
-            margin-bottom: 8px;
-        }
-        
-        .step-details {
-            margin-left: 40px;
-            color: #9ca3af;
-            font-size: 14px;
-        }
-        
-        .step-details ul {
-            margin: 8px 0;
-            padding-left: 20px;
-        }
-        
-        .step-details li {
-            margin: 4px 0;
-        }
-        
-        /* Command Box */
-        .command-box {
-            background: #1a1a2e;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
             border-radius: 8px;
-            padding: 16px;
-            margin-top: 20px;
         }
         
-        .command-box code {
-            color: #10b981;
-            font-family: 'Monaco', 'Menlo', monospace;
-            font-size: 13px;
-        }
-        
-        /* Alert Messages */
-        .alert {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 16px 20px;
-            border-radius: 12px;
-            display: none;
-            align-items: center;
-            gap: 12px;
-            max-width: 400px;
-            z-index: 1000;
-            animation: slideIn 0.3s ease;
-        }
-        
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        
-        .alert.show {
+        .scheduler-status {
             display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
         }
         
-        .alert-success {
+        .scheduler-status i {
+            color: var(--text-muted);
+        }
+        
+        .scheduler-info {
+            flex: 1;
+        }
+        
+        .scheduler-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .scheduler-value {
+            font-size: 12px;
+            color: var(--text-primary);
+            font-weight: 500;
+            margin-top: 2px;
+        }
+        
+        .scheduler-toggle {
+            padding: 6px 12px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .scheduler-toggle:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .scheduler-toggle.active {
             background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            color: #10b981;
-        }
-        
-        .alert-error {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #ef4444;
-        }
-        
-        .alert-info {
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            color: #3b82f6;
-        }
-        
-        .alert-warning {
-            background: rgba(245, 158, 11, 0.1);
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            color: #f59e0b;
+            border-color: rgba(16, 185, 129, 0.2);
+            color: var(--success);
         }
     </style>
 </head>
 <body>
-    <div class="dashboard-container">
+    <div class="container">
         <!-- Header -->
-        <div class="dashboard-header">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <h1 class="dashboard-title">Auto-Login Management</h1>
-                    <p class="dashboard-subtitle">Configure and manage automatic daily login for your trading APIs</p>
-                </div>
-                <div style="text-align: right;">
-                    <div id="currentTime" style="font-size: 24px; color: #667eea; font-weight: 600;"></div>
-                    <div id="currentDate" style="font-size: 14px; color: #9ca3af; margin-top: 4px;"></div>
-                    <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">
-                        Auto-refresh: <span id="refreshCountdown">30</span>s
-                    </div>
+        <header class="header">
+            <div class="header-title">
+                <i class="fas fa-robot" style="color: var(--accent-blue);"></i>
+                <h1>Trading Platform Auto-Login</h1>
+                <button onclick="loginBothPlatforms()" style="margin-left: auto; padding: 10px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 8px; color: white; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                    <i class="fas fa-sync-alt"></i> Login Both Platforms
+                </button>
+                <button onclick="refreshAllStatus()" style="margin-left: 10px; padding: 8px 16px; background: rgba(102, 126, 234, 0.1); border: 1px solid rgba(102, 126, 234, 0.3); border-radius: 6px; color: var(--accent-blue); cursor: pointer; font-size: 12px; transition: all 0.2s;">
+                    <i class="fas fa-sync-alt"></i> Refresh Status
+                </button>
+            </div>
+            <div class="header-time">
+                <div class="time" id="currentTime">00:00:00</div>
+                <div class="date" id="currentDate">Loading...</div>
+                <div class="sync-indicator" id="syncIndicator">
+                    <i class="fas fa-satellite"></i>
+                    <span id="syncStatus">Checking...</span>
                 </div>
             </div>
-        </div>
+        </header>
         
-        <!-- Alert Box -->
-        <div id="alertBox" class="alert">
-            <i class="fas fa-info-circle"></i>
-            <span id="alertMessage"></span>
-        </div>
-        
-        <!-- Main Grid -->
-        <div class="main-grid">
-            <!-- Breeze Card -->
-            <div class="platform-card">
-                <div class="card-header">
-                    <div class="platform-info">
-                        <div class="platform-icon breeze-icon">
-                            <i class="fas fa-chart-line"></i>
-                        </div>
-                        <div>
-                            <div class="platform-name">Breeze API</div>
-                            <div class="platform-provider">ICICI Direct</div>
-                        </div>
-                    </div>
-                    <div id="breezeStatus" class="status-indicator status-inactive">
-                        <span class="status-dot"></span>
-                        <span>Checking...</span>
-                    </div>
-                </div>
-                
-                <div class="card-body">
-                    <div class="info-grid">
-                        <div class="info-row">
-                            <span class="info-label">
-                                <i class="fas fa-save"></i>
-                                Credentials Saved
-                            </span>
-                            <span id="breezeCredentials" class="info-value">-</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">
-                                <i class="fas fa-user"></i>
-                                User ID
-                            </span>
-                            <span id="breezeUserId" class="info-value">-</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">
-                                <i class="fas fa-link"></i>
-                                Session Status
-                            </span>
-                            <span id="breezeSession" class="info-value">-</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">
-                                <i class="fas fa-key"></i>
-                                Session Token
-                            </span>
-                            <span id="breezeToken" class="info-value truncated">-</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">
-                                <i class="fas fa-shield-alt"></i>
-                                OTP Method
-                            </span>
-                            <span id="breezeOtp" class="info-value">-</span>
-                        </div>
-                    </div>
-                    
-                    <div class="action-buttons">
-                        <button class="btn btn-primary" onclick="loginBreeze()" id="breezeLoginBtn">
-                            <i class="fas fa-sign-in-alt"></i>
-                            Manual Login
-                            <span class="spinner"></span>
-                        </button>
-                        <button class="btn btn-secondary" onclick="refreshStatus()">
-                            <i class="fas fa-sync-alt"></i>
-                            Refresh Status
-                        </button>
-                    </div>
-                </div>
-            </div>
-            
+        <!-- Platform Grid -->
+        <div class="platform-grid">
             <!-- Kite Card -->
             <div class="platform-card">
                 <div class="card-header">
                     <div class="platform-info">
-                        <div class="platform-icon kite-icon">
+                        <div class="platform-logo kite">
                             <i class="fas fa-kiwi-bird"></i>
                         </div>
-                        <div>
-                            <div class="platform-name">Kite Connect</div>
-                            <div class="platform-provider">Zerodha</div>
+                        <div class="platform-details">
+                            <h3>Kite Connect</h3>
+                            <p>Zerodha Trading Platform</p>
                         </div>
                     </div>
-                    <div id="kiteStatus" class="status-indicator status-inactive">
-                        <span class="status-dot"></span>
+                    <div class="status-badge not-configured" id="kiteStatus">
+                        <span class="dot"></span>
                         <span>Checking...</span>
                     </div>
                 </div>
                 
                 <div class="card-body">
-                    <div class="info-grid">
-                        <div class="info-row">
-                            <span class="info-label">
-                                <i class="fas fa-cog"></i>
-                                Configuration
-                            </span>
-                            <span id="kiteConfigured" class="info-value">-</span>
+                    <!-- Credentials Section -->
+                    <div class="credential-section">
+                        <div class="section-title">
+                            Credentials
+                            <button class="edit-btn" onclick="toggleEdit('kite')" id="kiteEditBtn">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
                         </div>
-                        <div class="info-row">
-                            <span class="info-label">
-                                <i class="fas fa-link"></i>
-                                Connection Status
-                            </span>
-                            <span id="kiteConnected" class="info-value">-</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">
-                                <i class="fas fa-code"></i>
-                                API Key
-                            </span>
-                            <span id="kiteApiKey" class="info-value truncated">-</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">
-                                <i class="fas fa-key"></i>
-                                Access Token
-                            </span>
-                            <span id="kiteToken" class="info-value truncated">-</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">
-                                <i class="fas fa-user"></i>
-                                User ID
-                            </span>
-                            <span id="kiteUserId" class="info-value">-</span>
+                        <div class="credential-fields">
+                            <div class="credential-field">
+                                <i class="fas fa-user field-icon"></i>
+                                <span class="field-label">User ID:</span>
+                                <input type="text" class="field-value" id="kiteUserId" readonly placeholder="Not set">
+                            </div>
+                            <div class="credential-field">
+                                <i class="fas fa-key field-icon"></i>
+                                <span class="field-label">Password:</span>
+                                <input type="password" class="field-value masked" id="kitePassword" readonly placeholder="Not set">
+                                <button class="toggle-visibility" onclick="togglePassword('kitePassword')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="credential-field">
+                                <i class="fas fa-code field-icon"></i>
+                                <span class="field-label">API Key:</span>
+                                <input type="text" class="field-value" id="kiteApiKey" readonly placeholder="Not set">
+                            </div>
+                            <div class="credential-field">
+                                <i class="fas fa-lock field-icon"></i>
+                                <span class="field-label">API Secret:</span>
+                                <input type="text" class="field-value" id="kiteApiSecret" readonly placeholder="Not set">
+                            </div>
+                            <div class="credential-field">
+                                <i class="fas fa-shield-alt field-icon"></i>
+                                <span class="field-label">TOTP:</span>
+                                <input type="text" class="field-value" id="kiteTotpStatus" readonly placeholder="Not configured">
+                            </div>
                         </div>
                     </div>
                     
+                    <!-- Session Info -->
+                    <div class="session-info">
+                        <div class="session-row">
+                            <span class="session-label">Session Status:</span>
+                            <span class="session-value" id="kiteSessionStatus">Disconnected</span>
+                        </div>
+                        <div class="session-row">
+                            <span class="session-label">Access Token:</span>
+                            <span class="session-value token-display" id="kiteToken">-</span>
+                        </div>
+                        <div class="session-row">
+                            <span class="session-label">Last Login:</span>
+                            <span class="session-value" id="kiteLastLogin">Never</span>
+                        </div>
+                        <div class="session-row" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.05);">
+                            <span class="session-label"><i class="fas fa-hourglass-half" style="margin-right: 4px;"></i>Token Expiry:</span>
+                            <span class="session-value" id="kiteExpiryTime" style="font-weight: 600;">--:--:--</span>
+                        </div>
+                        <div class="session-row">
+                            <div style="width: 100%;">
+                                <div style="background: rgba(255,255,255,0.05); border-radius: 4px; height: 8px; overflow: hidden; margin-top: 8px;">
+                                    <div id="kiteExpiryProgress" style="background: linear-gradient(90deg, #10b981, #f59e0b); height: 100%; width: 0%; transition: width 1s linear;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
                     <div class="action-buttons">
-                        <button class="btn btn-primary" onclick="loginKite()" id="kiteLoginBtn">
+                        <button class="btn btn-primary" onclick="loginPlatform('kite')" id="kiteLoginBtn">
                             <i class="fas fa-sign-in-alt"></i>
-                            Manual Login
-                            <span class="spinner"></span>
+                            Login Now
                         </button>
-                        <button class="btn btn-secondary" onclick="refreshStatus()">
-                            <i class="fas fa-sync-alt"></i>
-                            Refresh Status
+                        <button class="btn btn-secondary" onclick="validateSession('kite')">
+                            <i class="fas fa-check-circle"></i>
+                            Validate
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Breeze Card -->
+            <div class="platform-card">
+                <div class="card-header">
+                    <div class="platform-info">
+                        <div class="platform-logo breeze">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="platform-details">
+                            <h3>Breeze API</h3>
+                            <p>ICICI Direct Trading</p>
+                        </div>
+                    </div>
+                    <div class="status-badge not-configured" id="breezeStatus">
+                        <span class="dot"></span>
+                        <span>Checking...</span>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Credentials Section -->
+                    <div class="credential-section">
+                        <div class="section-title">
+                            Credentials
+                            <button class="edit-btn" onclick="toggleEdit('breeze')" id="breezeEditBtn">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                        </div>
+                        <div class="credential-fields">
+                            <div class="credential-field">
+                                <i class="fas fa-user field-icon"></i>
+                                <span class="field-label">User ID:</span>
+                                <input type="text" class="field-value" id="breezeUserId" readonly placeholder="Not set">
+                            </div>
+                            <div class="credential-field">
+                                <i class="fas fa-key field-icon"></i>
+                                <span class="field-label">Password:</span>
+                                <input type="password" class="field-value masked" id="breezePassword" readonly placeholder="Not set">
+                                <button class="toggle-visibility" onclick="togglePassword('breezePassword')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="credential-field">
+                                <i class="fas fa-code field-icon"></i>
+                                <span class="field-label">API Key:</span>
+                                <input type="text" class="field-value" id="breezeApiKey" readonly placeholder="Not set">
+                            </div>
+                            <div class="credential-field">
+                                <i class="fas fa-lock field-icon"></i>
+                                <span class="field-label">API Secret:</span>
+                                <input type="text" class="field-value" id="breezeApiSecret" readonly placeholder="Not set">
+                            </div>
+                            <div class="credential-field">
+                                <i class="fas fa-shield-alt field-icon"></i>
+                                <span class="field-label">TOTP:</span>
+                                <input type="text" class="field-value" id="breezeTotpStatus" readonly placeholder="Not configured">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Session Info -->
+                    <div class="session-info">
+                        <div class="session-row">
+                            <span class="session-label">Session Status:</span>
+                            <span class="session-value" id="breezeSessionStatus">Disconnected</span>
+                        </div>
+                        <div class="session-row">
+                            <span class="session-label">Session Token:</span>
+                            <span class="session-value token-display" id="breezeToken">-</span>
+                        </div>
+                        <div class="session-row">
+                            <span class="session-label">Last Login:</span>
+                            <span class="session-value" id="breezeLastLogin">Never</span>
+                        </div>
+                        <div class="session-row" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.05);">
+                            <span class="session-label"><i class="fas fa-hourglass-half" style="margin-right: 4px;"></i>Token Expiry:</span>
+                            <span class="session-value" id="breezeExpiryTime" style="font-weight: 600;">--:--:--</span>
+                        </div>
+                        <div class="session-row">
+                            <div style="width: 100%;">
+                                <div style="background: rgba(255,255,255,0.05); border-radius: 4px; height: 8px; overflow: hidden; margin-top: 8px;">
+                                    <div id="breezeExpiryProgress" style="background: linear-gradient(90deg, #10b981, #f59e0b); height: 100%; width: 0%; transition: width 1s linear;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" onclick="loginPlatform('breeze')" id="breezeLoginBtn">
+                            <i class="fas fa-sign-in-alt"></i>
+                            Login Now
+                        </button>
+                        <button class="btn btn-secondary" onclick="validateSession('breeze')">
+                            <i class="fas fa-check-circle"></i>
+                            Validate
                         </button>
                     </div>
                 </div>
             </div>
         </div>
         
-        <!-- Scheduler Status Card -->
-        <div class="instructions-card" style="margin-bottom: 20px;">
-            <h2 class="instructions-title">
-                <i class="fas fa-clock"></i>
-                Scheduler Status
-            </h2>
-            <div id="schedulerStatus" style="padding: 20px; background: rgba(255, 255, 255, 0.02); border-radius: 12px;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-                    <div>
-                        <span style="color: #9ca3af;">Status:</span>
-                        <span id="schedStatus" style="margin-left: 10px; font-weight: 600; color: #e5e7eb;">Loading...</span>
+        <!-- Settings Panel -->
+        <div class="settings-panel">
+            <div class="settings-header" onclick="toggleSettings()">
+                <h3>
+                    <i class="fas fa-cog"></i>
+                    Settings & Configuration
+                </h3>
+                <i class="fas fa-chevron-down" id="settingsToggle"></i>
+            </div>
+            <div class="settings-content" id="settingsContent">
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <i class="fas fa-eye-slash"></i>
+                        <div>
+                            <div class="setting-text">Headless Mode</div>
+                            <div class="setting-description">Run browser in background without UI</div>
+                        </div>
                     </div>
-                    <button class="btn btn-secondary" onclick="toggleScheduler()" id="schedToggleBtn" style="padding: 6px 12px; font-size: 12px;">
-                        <i class="fas fa-power-off"></i>
-                        Toggle Scheduler
-                    </button>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="headlessMode" onchange="updateSetting('headless')">
+                        <span class="slider"></span>
+                        <span class="toggle-bg"></span>
+                    </label>
                 </div>
-                <div id="nextRuns" style="margin-top: 15px;">
-                    <div style="color: #9ca3af; margin-bottom: 10px;">Next Scheduled Logins:</div>
-                    <div id="nextRunsList" style="color: #e5e7eb; font-size: 14px;">Loading...</div>
+                
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <i class="fas fa-clock"></i>
+                        <div>
+                            <div class="setting-text">Auto-Login Scheduler</div>
+                            <div class="setting-description">Daily automatic login at configured times</div>
+                        </div>
+                    </div>
+                    <div class="scheduler-widget">
+                        <div class="scheduler-info">
+                            <div class="scheduler-label">Next Run</div>
+                            <div class="scheduler-value" id="nextSchedule">Not scheduled</div>
+                        </div>
+                        <button class="scheduler-toggle" id="schedulerBtn" onclick="toggleScheduler()">
+                            <i class="fas fa-play"></i> Start
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <i class="fas fa-sync-alt"></i>
+                        <div>
+                            <div class="setting-text">Auto-Refresh Dashboard</div>
+                            <div class="setting-description">Automatically refresh status every 30 seconds</div>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="autoRefresh" checked onchange="updateSetting('autoRefresh')">
+                        <span class="slider"></span>
+                        <span class="toggle-bg"></span>
+                    </label>
                 </div>
             </div>
         </div>
         
-        <!-- Instructions Card -->
-        <div class="instructions-card">
-            <h2 class="instructions-title">
-                <i class="fas fa-info-circle"></i>
-                Setup Instructions
-            </h2>
-            
-            <div class="setup-steps">
-                <div class="setup-step">
-                    <div>
-                        <span class="step-number">1</span>
-                        <span class="step-title">Configure Breeze API</span>
-                    </div>
-                    <div class="step-details">
-                        <ul>
-                            <li>Run setup script: <code>python scripts/setup_auto_login.py</code></li>
-                            <li>Enter your ICICI Direct User ID and Password when prompted</li>
-                            <li>Optionally add TOTP secret for automatic OTP generation</li>
-                            <li>Click "Manual Login" button above to test the connection</li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <div class="setup-step">
-                    <div>
-                        <span class="step-number">2</span>
-                        <span class="step-title">Configure Kite Connect</span>
-                    </div>
-                    <div class="step-details">
-                        <ul>
-                            <li>Ensure API key and secret are configured in <code>.env</code> file</li>
-                            <li>Run setup script for Kite credentials</li>
-                            <li>Enter your Zerodha User ID, Password, and PIN</li>
-                            <li>Test connection using the button above</li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <div class="setup-step">
-                    <div>
-                        <span class="step-number">3</span>
-                        <span class="step-title">Schedule Automatic Login</span>
-                    </div>
-                    <div class="step-details">
-                        <ul>
-                            <li>Go to the <a href="#" onclick="window.location.href='scheduler_dashboard.html'" style="color: #667eea;">Scheduler Dashboard</a></li>
-                            <li>Configure login times (recommended: 5:30 AM and 8:30 AM)</li>
-                            <li>Enable weekdays-only option for trading days</li>
-                            <li>Start the scheduler to enable automatic daily login</li>
-                        </ul>
-                    </div>
+        <!-- TOTP Section -->
+        <div class="totp-section">
+            <div class="totp-header">
+                <h3>
+                    <i class="fas fa-shield-alt"></i>
+                    Two-Factor Authentication Codes (+60s Offset)
+                </h3>
+                <div class="totp-timer">
+                    <i class="fas fa-clock"></i>
+                    <span class="timer-value" id="totpTimer">30</span>
+                    <span>seconds</span>
                 </div>
             </div>
             
-            <div class="command-box">
-                <strong style="color: #e5e7eb;">Manual Login Commands:</strong><br><br>
-                <code>• Breeze: python scripts/auth/breeze_auto_login.py</code><br>
-                <code>• Kite: python scripts/auth/kite_auto_login.py</code><br>
-                <code>• Setup: python scripts/setup_auto_login.py</code>
+            <div class="totp-grid">
+                <!-- Kite TOTP -->
+                <div class="totp-card">
+                    <div class="totp-card-header">
+                        <div class="totp-icon kite">
+                            <i class="fas fa-kiwi-bird"></i>
+                        </div>
+                        <span class="totp-platform">Kite TOTP</span>
+                    </div>
+                    <div class="totp-code">
+                        <span class="totp-value" id="kiteTotpCode">------</span>
+                        <button class="copy-btn" onclick="copyCode('kiteTotpCode')" title="Copy code">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                    <div style="margin-top: 10px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 6px;">
+                        <div style="font-size: 11px; color: #6b6b7c; margin-bottom: 4px;">TOTP Secret:</div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span id="kiteTotpSecret" style="font-family: monospace; font-size: 10px; color: #f59e0b; word-break: break-all;">Loading...</span>
+                            <button class="copy-btn" onclick="copyCode('kiteTotpSecret')" title="Copy secret" style="font-size: 10px; padding: 2px 6px;">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Breeze TOTP -->
+                <div class="totp-card">
+                    <div class="totp-card-header">
+                        <div class="totp-icon breeze">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <span class="totp-platform">Breeze TOTP</span>
+                    </div>
+                    <div class="totp-code">
+                        <span class="totp-value" id="breezeTotpCode">------</span>
+                        <button class="copy-btn" onclick="copyCode('breezeTotpCode')" title="Copy code">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                    <div style="margin-top: 10px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 6px;">
+                        <div style="font-size: 11px; color: #6b6b7c; margin-bottom: 4px;">TOTP Secret:</div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span id="breezeTotpSecret" style="font-family: monospace; font-size: 10px; color: #3b82f6; word-break: break-all;">Loading...</span>
+                            <button class="copy-btn" onclick="copyCode('breezeTotpSecret')" title="Copy secret" style="font-size: 10px; padding: 2px 6px;">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
     
+    <!-- Toast Container -->
+    <div class="toast" id="toast">
+        <i class="fas fa-info-circle"></i>
+        <span id="toastMessage">Message</span>
+    </div>
+    
     <script>
         const API_BASE = 'http://localhost:8000';
-        let refreshInterval;
-        let refreshCountdown = 30;
+        let autoRefreshInterval;
+        let totpInterval;
+        let editMode = { kite: false, breeze: false };
         
-        // Load status on page load
+        // Initialize
         window.onload = () => {
+            loadSettings();
             loadStatus();
             startClock();
+            startTOTPTimer();
+            loadTOTPCodes();
             
-            // Auto-refresh every 30 seconds
-            refreshInterval = setInterval(() => {
-                loadStatus();
-                refreshCountdown = 30;
-            }, 30000);
-            
-            // Update countdown every second
-            setInterval(() => {
-                refreshCountdown--;
-                if (refreshCountdown < 0) refreshCountdown = 30;
-                document.getElementById('refreshCountdown').textContent = refreshCountdown;
-            }, 1000);
+            // Auto-refresh if enabled
+            const autoRefresh = localStorage.getItem('autoRefresh') !== 'false';
+            if (autoRefresh) {
+                autoRefreshInterval = setInterval(loadStatus, 30000);
+            }
         };
         
+        // Clock
         function startClock() {
             function updateClock() {
                 const now = new Date();
+                const time = now.toLocaleTimeString('en-US', { hour12: false });
+                const date = now.toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
                 
-                // Format time
-                const hours = now.getHours().toString().padStart(2, '0');
-                const minutes = now.getMinutes().toString().padStart(2, '0');
-                const seconds = now.getSeconds().toString().padStart(2, '0');
-                document.getElementById('currentTime').textContent = `${hours}:${minutes}:${seconds}`;
-                
-                // Format date
-                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-                document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', options);
+                document.getElementById('currentTime').textContent = time;
+                document.getElementById('currentDate').textContent = date;
             }
             
             updateClock();
             setInterval(updateClock, 1000);
         }
         
+        // Load Status
+        // Refresh all platform statuses
+        async function refreshAllStatus() {
+            showToast('Refreshing status...', 'info');
+            
+            // Force validation from server for both platforms
+            await Promise.all([
+                validateSessionQuietly('kite'),
+                validateSessionQuietly('breeze')
+            ]);
+            
+            // Also reload stored status
+            await loadStatus();
+            
+            showToast('Status refreshed', 'success');
+        }
+        
         async function loadStatus() {
             try {
+                // Instead of relying on stored status, validate both platforms directly
+                await Promise.all([
+                    validateSessionQuietly('kite'),
+                    validateSessionQuietly('breeze')
+                ]);
+                
+                // Still fetch stored data for credential info
                 const response = await fetch(`${API_BASE}/auth/auto-login/status`);
                 const data = await response.json();
                 
-                updateBreezeStatus(data.breeze);
-                updateKiteStatus(data.kite);
+                // Update platform displays with the fetched data
+                if (data.kite) {
+                    updatePlatformStatus('kite', data.kite);
+                }
+                if (data.breeze) {
+                    updatePlatformStatus('breeze', data.breeze);
+                }
                 
-                // Also load scheduler status
+                // Update sync indicator
+                updateSyncStatus(data.time_sync);
+                
+                // Load scheduler status
                 loadSchedulerStatus();
+                
             } catch (error) {
                 console.error('Error loading status:', error);
-                // Show disconnected status when API is not available
-                updateBreezeStatus(null);
-                updateKiteStatus(null);
+                showToast('Failed to load status', 'error');
             }
         }
         
+        // Validate session without showing toast
+        async function validateSessionQuietly(platform) {
+            try {
+                // Add cache-busting parameter to force fresh validation
+                const response = await fetch(`${API_BASE}/session/validate?api_type=${platform}&t=${Date.now()}`, {
+                    method: 'GET',
+                    cache: 'no-cache',
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
+                const data = await response.json();
+                const statusBadge = document.getElementById(`${platform}Status`);
+                const sessionStatus = document.getElementById(`${platform}SessionStatus`);
+                
+                if (data.is_valid) {
+                    statusBadge.innerHTML = '<span class="dot"></span> Connected';
+                    statusBadge.className = 'status-badge connected';
+                    if (sessionStatus) sessionStatus.textContent = 'Active';
+                } else {
+                    // Always show expired when validation fails, regardless of stored status
+                    statusBadge.innerHTML = '<span class="dot"></span> Expired';
+                    statusBadge.className = 'status-badge error';
+                    if (sessionStatus) sessionStatus.textContent = 'Session Expired - Login Required';
+                }
+            } catch (error) {
+                console.error(`Error validating ${platform} session:`, error);
+                // On error, also mark as expired to be safe
+                const statusBadge = document.getElementById(`${platform}Status`);
+                const sessionStatus = document.getElementById(`${platform}SessionStatus`);
+                if (statusBadge) {
+                    statusBadge.innerHTML = '<span class="dot"></span> Error';
+                    statusBadge.className = 'status-badge error';
+                }
+                if (sessionStatus) sessionStatus.textContent = 'Connection Error';
+            }
+        }
+        
+        // Store actual passwords for display
+        let actualPasswords = { kite: null, breeze: null };
+        
+        // Update Platform Status
+        function updatePlatformStatus(platform, data) {
+            const token = document.getElementById(`${platform}Token`);
+            const lastLogin = document.getElementById(`${platform}LastLogin`);
+            const userId = document.getElementById(`${platform}UserId`);
+            const passwordField = document.getElementById(`${platform}Password`);
+            const totpStatus = document.getElementById(`${platform}TotpStatus`);
+            
+            if (!data) {
+                token.textContent = '-';
+                lastLogin.textContent = 'Never';
+                return;
+            }
+            
+            if (platform === 'kite') {
+                const hasValidToken = data.access_token && data.access_token.length > 20;
+                
+                // Update fields
+                if (data.user_id && !editMode.kite) {
+                    userId.value = data.user_id;
+                }
+                
+                // Update API Key for Kite
+                const kiteApiKeyField = document.getElementById('kiteApiKey');
+                const kiteApiSecretField = document.getElementById('kiteApiSecret');
+                
+                if (data.api_key && !editMode.kite) {
+                    kiteApiKeyField.value = data.api_key;
+                }
+                
+                // Note: API secret is never sent from server for security
+                if (data.api_secret && !editMode.kite) {
+                    kiteApiSecretField.value = data.api_secret;
+                } else if (data.configured && !editMode.kite) {
+                    kiteApiSecretField.placeholder = 'Configured (hidden)';
+                }
+                // Store actual password and show as dots
+                if (data.password) {
+                    console.log('Kite password received:', data.password);
+                    actualPasswords.kite = data.password;
+                    if (!editMode.kite) {
+                        passwordField.value = '••••••••';
+                        passwordField.type = 'password';  // Ensure field type is password
+                        passwordField.dataset.isSaved = 'true';
+                        passwordField.dataset.hasPassword = 'true';
+                    }
+                } else if (data.configured && !editMode.kite) {
+                    console.log('Kite configured but no password');
+                    passwordField.value = '••••••••';
+                    passwordField.type = 'password';  // Ensure field type is password
+                    passwordField.dataset.isSaved = 'true';
+                    passwordField.dataset.hasPassword = 'false';
+                }
+                if (token) {
+                    token.textContent = hasValidToken ? 
+                        data.access_token.substring(0, 12) + '...' : '-';
+                }
+                    
+            } else { // breeze
+                const hasValidToken = data.session_token && data.session_token.length > 10;
+                
+                // Update fields
+                if (data.user_id && !editMode.breeze) {
+                    userId.value = data.user_id;
+                }
+                
+                // Update API Key and Secret for Breeze
+                const apiKeyField = document.getElementById('breezeApiKey');
+                const apiSecretField = document.getElementById('breezeApiSecret');
+                
+                if (data.api_key && !editMode.breeze) {
+                    apiKeyField.value = data.api_key;
+                }
+                
+                // Show actual API secret for Breeze
+                if (data.api_secret && !editMode.breeze) {
+                    apiSecretField.value = data.api_secret;
+                } else if (data.credentials_saved && !editMode.breeze) {
+                    apiSecretField.placeholder = 'Configured (hidden)';
+                }
+                
+                // Store actual password and show as dots
+                if (data.password) {
+                    console.log('Breeze password received:', data.password);
+                    actualPasswords.breeze = data.password;
+                    if (!editMode.breeze) {
+                        passwordField.value = '••••••••';
+                        passwordField.type = 'password';  // Ensure field type is password
+                        passwordField.dataset.isSaved = 'true';
+                        passwordField.dataset.hasPassword = 'true';
+                    }
+                } else if (data.credentials_saved && !editMode.breeze) {
+                    console.log('Breeze configured but no password');
+                    passwordField.value = '••••••••';
+                    passwordField.type = 'password';  // Ensure field type is password
+                    passwordField.dataset.isSaved = 'true';
+                    passwordField.dataset.hasPassword = 'false';
+                }
+                if (token) {
+                    token.textContent = hasValidToken ? 
+                        data.session_token.substring(0, 12) + '...' : '-';
+                }
+            }
+            
+            
+            // Update TOTP status
+            if (totpStatus) {
+                if (data.otp_method === 'TOTP') {
+                    totpStatus.innerHTML = '<i class="fas fa-key"></i> TOTP';
+                } else {
+                    totpStatus.innerHTML = '<i class="fas fa-mobile-alt"></i> SMS';
+                }
+            }
+            
+            // Update TOTP status
+            totpStatus.value = data.otp_method === 'TOTP' ? 'Configured' : 'Not configured';
+            
+            // Update last login
+            if (data.last_login) {
+                const loginTime = new Date(data.last_login);
+                lastLogin.textContent = loginTime.toLocaleString();
+            } else {
+                lastLogin.textContent = 'Never';
+            }
+        }
+        
+        // Update Sync Status
+        function updateSyncStatus(syncData) {
+            const indicator = document.getElementById('syncIndicator');
+            const status = document.getElementById('syncStatus');
+            
+            if (!syncData) {
+                indicator.className = 'sync-indicator error';
+                status.textContent = 'No sync data';
+                return;
+            }
+            
+            const offset = Math.abs(syncData.offset_seconds);
+            
+            if (syncData.is_synced) {
+                indicator.className = 'sync-indicator';
+                if (offset > 1) {
+                    status.textContent = `Synced (${offset.toFixed(1)}s offset)`;
+                } else {
+                    status.textContent = 'Synced';
+                }
+            } else {
+                indicator.className = 'sync-indicator error';
+                // Show the actual offset when not synced
+                if (offset > 0) {
+                    const sign = syncData.offset_seconds > 0 ? 'behind' : 'ahead';
+                    status.textContent = `${offset.toFixed(1)}s ${sign}`;
+                } else {
+                    status.textContent = 'Not synced';
+                }
+            }
+        }
+        
+        // TOTP Timer
+        function startTOTPTimer() {
+            function updateTimer() {
+                const currentTime = Math.floor(Date.now() / 1000);
+                const timeRemaining = 30 - (currentTime % 30);
+                
+                document.getElementById('totpTimer').textContent = timeRemaining;
+                
+                if (timeRemaining === 30) {
+                    // Reload TOTP codes when timer resets
+                    loadTOTPCodes();
+                }
+            }
+            
+            updateTimer();
+            setInterval(updateTimer, 1000);
+        }
+        
+        // Load TOTP Codes
+        async function loadTOTPCodes() {
+            try {
+                const response = await fetch(`${API_BASE}/totp/all`);
+                const data = await response.json();
+                
+                // Update Kite TOTP - Use offset code (+60s to compensate for system clock)
+                if (data.kite && data.kite.codes) {
+                    document.getElementById('kiteTotpCode').textContent = 
+                        data.kite.codes.offset || '------';
+                    // Update Kite TOTP Secret
+                    if (data.kite.secret) {
+                        document.getElementById('kiteTotpSecret').textContent = data.kite.secret;
+                    }
+                }
+                
+                // Update Breeze TOTP - Use offset code (+60s to compensate for system clock)
+                if (data.breeze && data.breeze.codes) {
+                    document.getElementById('breezeTotpCode').textContent = 
+                        data.breeze.codes.offset || '------';
+                    // Update Breeze TOTP Secret
+                    if (data.breeze.secret) {
+                        document.getElementById('breezeTotpSecret').textContent = data.breeze.secret;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading TOTP codes:', error);
+                document.getElementById('kiteTotpCode').textContent = '------';
+                document.getElementById('breezeTotpCode').textContent = '------';
+                document.getElementById('kiteTotpSecret').textContent = 'Error loading';
+                document.getElementById('breezeTotpSecret').textContent = 'Error loading';
+            }
+        }
+        
+        // Toggle Edit Mode
+        function toggleEdit(platform) {
+            editMode[platform] = !editMode[platform];
+            const editBtn = document.getElementById(`${platform}EditBtn`);
+            const userIdField = document.getElementById(`${platform}UserId`);
+            const passwordField = document.getElementById(`${platform}Password`);
+            
+            // Handle API fields for both platforms
+            const apiKeyField = document.getElementById(`${platform}ApiKey`);
+            const apiSecretField = document.getElementById(`${platform}ApiSecret`);
+            
+            if (editMode[platform]) {
+                editBtn.innerHTML = '<i class="fas fa-save"></i> Save';
+                userIdField.removeAttribute('readonly');
+                passwordField.removeAttribute('readonly');
+                userIdField.parentElement.classList.add('editing');
+                passwordField.parentElement.classList.add('editing');
+                
+                // Handle API fields for both platforms
+                if (apiKeyField && apiSecretField) {
+                    apiKeyField.removeAttribute('readonly');
+                    apiSecretField.removeAttribute('readonly');
+                    apiKeyField.parentElement.classList.add('editing');
+                    apiSecretField.parentElement.classList.add('editing');
+                }
+                
+                // Clear password placeholder when editing
+                if (passwordField.value === '••••••••') {
+                    passwordField.value = '';
+                    passwordField.dataset.isSaved = 'false';
+                }
+            } else {
+                editBtn.innerHTML = '<i class="fas fa-edit"></i> Edit';
+                userIdField.setAttribute('readonly', true);
+                passwordField.setAttribute('readonly', true);
+                userIdField.parentElement.classList.remove('editing');
+                passwordField.parentElement.classList.remove('editing');
+                
+                // Handle API fields for both platforms
+                if (apiKeyField && apiSecretField) {
+                    apiKeyField.setAttribute('readonly', true);
+                    apiSecretField.setAttribute('readonly', true);
+                    apiKeyField.parentElement.classList.remove('editing');
+                    apiSecretField.parentElement.classList.remove('editing');
+                }
+                
+                // Save credentials only if password was entered
+                if (passwordField.value && passwordField.value !== '••••••••') {
+                    saveCredentials(platform);
+                } else {
+                    // Restore placeholder if no new password entered
+                    passwordField.value = '••••••••';
+                }
+            }
+        }
+        
+        // Save Credentials
+        async function saveCredentials(platform) {
+            const userId = document.getElementById(`${platform}UserId`).value;
+            const password = document.getElementById(`${platform}Password`).value;
+            
+            if (!userId || !password) {
+                showToast('Please enter both User ID and Password', 'error');
+                return;
+            }
+            
+            const credentials = {
+                platform: platform,
+                user_id: userId,
+                password: password
+            };
+            
+            // Add API credentials for both platforms
+            const apiKey = document.getElementById(`${platform}ApiKey`).value;
+            const apiSecret = document.getElementById(`${platform}ApiSecret`).value;
+            
+            if (!apiKey || !apiSecret) {
+                showToast(`Please enter API Key and API Secret for ${platform}`, 'error');
+                return;
+            }
+            
+            credentials.api_key = apiKey;
+            credentials.api_secret = apiSecret;
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/auto-login/credentials/update`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(credentials)
+                });
+                
+                const data = await response.json();
+                if (data.status === 'success') {
+                    showToast(`${platform} credentials updated successfully`, 'success');
+                    loadStatus();
+                } else {
+                    showToast(data.message || 'Failed to update credentials', 'error');
+                }
+            } catch (error) {
+                showToast('Error updating credentials', 'error');
+            }
+        }
+        
+        // Toggle Password Visibility
+        function togglePassword(fieldId) {
+            const field = document.getElementById(fieldId);
+            const button = field.nextElementSibling;
+            const platform = fieldId.toLowerCase().includes('kite') ? 'kite' : 'breeze';
+            
+            console.log('Toggle password for:', platform);
+            console.log('Current value:', field.value);
+            console.log('Current type:', field.type);
+            console.log('Stored password:', actualPasswords[platform]);
+            
+            // Handle saved passwords (readonly mode)
+            if (field.hasAttribute('readonly')) {
+                // If we have the actual password stored
+                if (actualPasswords[platform]) {
+                    // Check current state and toggle
+                    const isCurrentlyHidden = (field.type === 'password' || field.value === '••••••••');
+                    
+                    if (isCurrentlyHidden) {
+                        // Show actual password
+                        console.log('Showing actual password:', actualPasswords[platform]);
+                        field.type = 'text';
+                        field.value = actualPasswords[platform];
+                        field.classList.remove('masked');  // Remove masked class
+                        button.innerHTML = '<i class="fas fa-eye-slash"></i>';
+                    } else {
+                        // Hide password (show dots)
+                        console.log('Hiding password');
+                        field.type = 'password';
+                        field.value = '••••••••';
+                        field.classList.add('masked');  // Add masked class
+                        button.innerHTML = '<i class="fas fa-eye"></i>';
+                    }
+                } else {
+                    console.log('No password stored for', platform);
+                    showToast('Password not available for display', 'info');
+                }
+                return;
+            }
+            
+            // For editable fields, just toggle type
+            if (field.type === 'password') {
+                field.type = 'text';
+                field.classList.remove('masked');  // Remove masked class when showing
+                button.innerHTML = '<i class="fas fa-eye-slash"></i>';
+            } else {
+                field.type = 'password';
+                field.classList.add('masked');  // Add masked class when hiding
+                button.innerHTML = '<i class="fas fa-eye"></i>';
+            }
+        }
+        
+        // Login Platform
+        async function loginPlatform(platform) {
+            const btn = document.getElementById(`${platform}LoginBtn`);
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Logging in...';
+            
+            const headless = document.getElementById('headlessMode').checked;
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/auto-login/${platform}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ headless: headless })
+                });
+                
+                const data = await response.json();
+                showToast(`${platform} login initiated. Please wait...`, 'info');
+                
+                // Check status after a delay (increased for Kite which takes longer)
+                setTimeout(() => {
+                    // Force reload from server
+                    validateSessionQuietly(platform);
+                    loadStatus();
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login Now';
+                }, 10000);
+                
+                // Also check after 30 seconds for slower logins
+                setTimeout(() => {
+                    validateSessionQuietly(platform);
+                }, 30000);
+                
+            } catch (error) {
+                showToast(`Error during ${platform} login`, 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login Now';
+            }
+        }
+        
+        // Validate Session
+        async function validateSession(platform) {
+            try {
+                // Add cache-busting parameter to force fresh validation
+                const response = await fetch(`${API_BASE}/session/validate?api_type=${platform}&t=${Date.now()}`, {
+                    method: 'GET',
+                    cache: 'no-cache',
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
+                const data = await response.json();
+                if (data.is_valid) {
+                    showToast(`${platform.charAt(0).toUpperCase() + platform.slice(1)} session is valid and active`, 'success');
+                    // Update status display
+                    if (platform === 'breeze') {
+                        document.getElementById('breezeStatus').innerHTML = '<span class="dot"></span> Connected';
+                        document.getElementById('breezeStatus').className = 'status-badge connected';
+                    } else if (platform === 'kite') {
+                        document.getElementById('kiteStatus').innerHTML = '<span class="dot"></span> Connected';
+                        document.getElementById('kiteStatus').className = 'status-badge connected';
+                    }
+                } else {
+                    showToast(`${platform.charAt(0).toUpperCase() + platform.slice(1)} session is invalid or expired: ${data.message}`, 'error');
+                    // Update status display
+                    if (platform === 'breeze') {
+                        document.getElementById('breezeStatus').innerHTML = '<span class="dot"></span> Expired';
+                        document.getElementById('breezeStatus').className = 'status-badge error';
+                    } else if (platform === 'kite') {
+                        document.getElementById('kiteStatus').innerHTML = '<span class="dot"></span> Expired';
+                        document.getElementById('kiteStatus').className = 'status-badge error';
+                    }
+                }
+                
+                // Don't reload status to avoid overwriting the correct status
+            } catch (error) {
+                showToast(`Error validating ${platform} session: ${error.message}`, 'error');
+            }
+        }
+        
+        // Copy TOTP Code
+        function copyCode(elementId) {
+            const code = document.getElementById(elementId).textContent;
+            if (code && code !== '------') {
+                navigator.clipboard.writeText(code).then(() => {
+                    showToast('Code copied to clipboard', 'success');
+                });
+            }
+        }
+        
+        // Toggle Settings Panel
+        function toggleSettings() {
+            const content = document.getElementById('settingsContent');
+            const toggle = document.getElementById('settingsToggle');
+            
+            content.classList.toggle('active');
+            toggle.style.transform = content.classList.contains('active') ? 
+                'rotate(180deg)' : 'rotate(0)';
+        }
+        
+        // Update Setting
+        function updateSetting(setting) {
+            if (setting === 'headless') {
+                const value = document.getElementById('headlessMode').checked;
+                localStorage.setItem('headlessMode', value);
+                showToast('Headless mode ' + (value ? 'enabled' : 'disabled'), 'info');
+                
+            } else if (setting === 'autoRefresh') {
+                const value = document.getElementById('autoRefresh').checked;
+                localStorage.setItem('autoRefresh', value);
+                
+                if (value) {
+                    autoRefreshInterval = setInterval(loadStatus, 30000);
+                    showToast('Auto-refresh enabled', 'info');
+                } else {
+                    clearInterval(autoRefreshInterval);
+                    showToast('Auto-refresh disabled', 'info');
+                }
+            }
+        }
+        
+        // Load Settings
+        function loadSettings() {
+            // Headless mode - default to true if not set
+            const headlessStored = localStorage.getItem('headlessMode');
+            const headless = headlessStored === null ? true : headlessStored === 'true';
+            document.getElementById('headlessMode').checked = headless;
+            if (headlessStored === null) {
+                localStorage.setItem('headlessMode', 'true');
+            }
+            
+            // Auto-refresh
+            const autoRefresh = localStorage.getItem('autoRefresh') !== 'false';
+            document.getElementById('autoRefresh').checked = autoRefresh;
+        }
+        
+        // Load Scheduler Status
         async function loadSchedulerStatus() {
             try {
                 const response = await fetch(`${API_BASE}/auth/auto-login/schedule/status`);
                 const data = await response.json();
                 
-                // Update scheduler status
-                const statusEl = document.getElementById('schedStatus');
-                const toggleBtn = document.getElementById('schedToggleBtn');
+                const btn = document.getElementById('schedulerBtn');
+                const nextSchedule = document.getElementById('nextSchedule');
                 
                 if (data.is_running) {
-                    statusEl.textContent = 'Running';
-                    statusEl.style.color = '#10b981';
-                    toggleBtn.innerHTML = '<i class="fas fa-stop"></i> Stop Scheduler';
+                    btn.className = 'scheduler-toggle active';
+                    btn.innerHTML = '<i class="fas fa-stop"></i> Stop';
+                    
+                    if (data.next_runs && data.next_runs.length > 0) {
+                        const next = new Date(data.next_runs[0].next_run);
+                        nextSchedule.textContent = next.toLocaleString();
+                    } else {
+                        nextSchedule.textContent = 'No scheduled runs';
+                    }
                 } else {
-                    statusEl.textContent = 'Stopped';
-                    statusEl.style.color = '#ef4444';
-                    toggleBtn.innerHTML = '<i class="fas fa-play"></i> Start Scheduler';
-                }
-                
-                // Update next runs
-                const nextRunsEl = document.getElementById('nextRunsList');
-                if (data.next_runs && data.next_runs.length > 0) {
-                    let html = '<ul style="list-style: none; padding: 0;">';
-                    data.next_runs.forEach(run => {
-                        const nextTime = new Date(run.next_run);
-                        const platform = run.platform.charAt(0).toUpperCase() + run.platform.slice(1);
-                        const timeStr = nextTime.toLocaleTimeString('en-US', { 
-                            hour: '2-digit', 
-                            minute: '2-digit',
-                            hour12: true 
-                        });
-                        const dateStr = nextTime.toLocaleDateString('en-US', { 
-                            month: 'short', 
-                            day: 'numeric' 
-                        });
-                        
-                        html += `<li style="margin-bottom: 8px;">
-                            <span class="platform-badge ${run.platform}" style="margin-right: 10px;">${platform}</span>
-                            <span>${dateStr} at ${timeStr}</span>
-                        </li>`;
-                    });
-                    html += '</ul>';
-                    nextRunsEl.innerHTML = html;
-                } else {
-                    nextRunsEl.innerHTML = '<span style="color: #6b7280;">No scheduled logins</span>';
+                    btn.className = 'scheduler-toggle';
+                    btn.innerHTML = '<i class="fas fa-play"></i> Start';
+                    nextSchedule.textContent = 'Scheduler stopped';
                 }
             } catch (error) {
                 console.error('Error loading scheduler status:', error);
-                document.getElementById('schedStatus').textContent = 'Error';
-                document.getElementById('schedStatus').style.color = '#ef4444';
             }
         }
         
+        // Toggle Scheduler
         async function toggleScheduler() {
-            const btn = document.getElementById('schedToggleBtn');
-            btn.disabled = true;
-            
             try {
-                // Check current status first
                 const statusResponse = await fetch(`${API_BASE}/auth/auto-login/schedule/status`);
                 const statusData = await statusResponse.json();
                 
                 const endpoint = statusData.is_running ? 'stop' : 'start';
                 const response = await fetch(`${API_BASE}/auth/auto-login/schedule/${endpoint}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+                    method: 'POST'
                 });
                 
                 const data = await response.json();
+                showToast(`Scheduler ${endpoint}ed successfully`, 'success');
                 
-                if (data.status === 'started' || data.status === 'stopped') {
-                    showAlert(`Scheduler ${endpoint}ed successfully!`, 'success');
-                    setTimeout(loadSchedulerStatus, 1000);
-                } else {
-                    showAlert(`Failed to ${endpoint} scheduler: ${data.message || 'Unknown error'}`, 'error');
-                }
+                setTimeout(loadSchedulerStatus, 1000);
             } catch (error) {
-                showAlert('Error toggling scheduler: ' + error.message, 'error');
-            } finally {
-                btn.disabled = false;
+                showToast('Error toggling scheduler', 'error');
             }
         }
         
-        function updateBreezeStatus(breeze) {
-            const statusEl = document.getElementById('breezeStatus');
+        // Show Toast
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
             
-            if (!breeze) {
-                // No data available
-                statusEl.className = 'status-indicator status-inactive';
-                statusEl.innerHTML = '<span class="status-dot"></span><span>Offline</span>';
-                document.getElementById('breezeCredentials').textContent = 'Unknown';
-                document.getElementById('breezeUserId').textContent = '-';
-                document.getElementById('breezeSession').textContent = 'Disconnected';
-                document.getElementById('breezeToken').textContent = '-';
-                document.getElementById('breezeOtp').textContent = '-';
-                return;
-            }
+            toast.className = `toast ${type}`;
+            toastMessage.textContent = message;
             
-            // Validate session token - if it's just "..." or very short, it's not valid
-            const hasValidToken = breeze.session_token && 
-                                 breeze.session_token.length > 10 && 
-                                 !breeze.session_token.match(/^\.+$/);
-            
-            // Update status badge based on actual status
-            if (breeze.session_active && hasValidToken) {
-                statusEl.className = 'status-indicator status-active';
-                statusEl.innerHTML = '<span class="status-dot"></span><span>Active</span>';
-            } else if (breeze.credentials_saved) {
-                statusEl.className = 'status-indicator status-pending';
-                statusEl.innerHTML = '<span class="status-dot"></span><span>Ready to Login</span>';
-            } else {
-                statusEl.className = 'status-indicator status-inactive';
-                statusEl.innerHTML = '<span class="status-dot"></span><span>Not Setup</span>';
-            }
-            
-            // Update details
-            document.getElementById('breezeCredentials').textContent = breeze.credentials_saved ? 'Yes' : 'No';
-            document.getElementById('breezeUserId').textContent = breeze.user_id || '-';
-            document.getElementById('breezeSession').textContent = (breeze.session_active && hasValidToken) ? 'Connected' : 'Disconnected';
-            document.getElementById('breezeToken').textContent = hasValidToken ? 
-                breeze.session_token.substring(0, 20) + '...' : '-';
-            document.getElementById('breezeOtp').textContent = breeze.otp_method || 'Manual';
-        }
-        
-        function updateKiteStatus(kite) {
-            const statusEl = document.getElementById('kiteStatus');
-            
-            if (!kite) {
-                // No data available
-                statusEl.className = 'status-indicator status-inactive';
-                statusEl.innerHTML = '<span class="status-dot"></span><span>Offline</span>';
-                document.getElementById('kiteConfigured').textContent = 'Unknown';
-                document.getElementById('kiteConnected').textContent = 'Disconnected';
-                document.getElementById('kiteApiKey').textContent = '-';
-                document.getElementById('kiteToken').textContent = '-';
-                document.getElementById('kiteUserId').textContent = '-';
-                return;
-            }
-            
-            // Validate access token - check if it's a real token
-            const hasValidToken = kite.access_token && 
-                                 kite.access_token.length > 20 &&
-                                 !kite.access_token.match(/^\.+$/);
-            
-            // Update status badge based on actual status  
-            if (kite.connected && hasValidToken) {
-                statusEl.className = 'status-indicator status-active';
-                statusEl.innerHTML = '<span class="status-dot"></span><span>Connected</span>';
-            } else if (kite.configured) {
-                statusEl.className = 'status-indicator status-pending';
-                statusEl.innerHTML = '<span class="status-dot"></span><span>Configured</span>';
-            } else {
-                statusEl.className = 'status-indicator status-inactive';
-                statusEl.innerHTML = '<span class="status-dot"></span><span>Not Setup</span>';
-            }
-            
-            // Update details
-            document.getElementById('kiteConfigured').textContent = kite.configured ? 'Yes' : 'No';
-            document.getElementById('kiteConnected').textContent = (kite.connected && hasValidToken) ? 'Connected' : 'Disconnected';
-            document.getElementById('kiteApiKey').textContent = kite.api_key || '-';
-            document.getElementById('kiteToken').textContent = hasValidToken ? 
-                kite.access_token.substring(0, 20) + '...' : '-';
-            document.getElementById('kiteUserId').textContent = kite.user_id || '-';
-        }
-        
-        async function loginBreeze() {
-            const btn = document.getElementById('breezeLoginBtn');
-            btn.classList.add('loading');
-            btn.disabled = true;
-            
-            try {
-                const response = await fetch(`${API_BASE}/auth/auto-login/breeze`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                const data = await response.json();
-                
-                if (data.status === 'triggered') {
-                    showAlert('Breeze login initiated. Checking status...', 'info');
-                    // Wait a bit and check status
-                    setTimeout(async () => {
-                        await loadStatus();
-                        // Check the login status file
-                        try {
-                            const statusResponse = await fetch(`${API_BASE}/auth/auto-login/status`);
-                            const statusData = await statusResponse.json();
-                            if (statusData.breeze && statusData.breeze.session_active) {
-                                showAlert('Breeze login successful!', 'success');
-                            } else {
-                                showAlert('Breeze login failed. Check logs for details.', 'error');
-                            }
-                        } catch (e) {
-                            showAlert('Could not verify login status', 'error');
-                        }
-                    }, 3000);
-                } else if (data.status === 'manual_required') {
-                    showAlert('Manual OTP required. ' + data.message, 'warning');
-                } else {
-                    showAlert('Breeze login response: ' + (data.message || 'Check status'), 'info');
-                }
-            } catch (error) {
-                showAlert('Error during Breeze login: ' + error.message, 'error');
-            } finally {
-                setTimeout(() => {
-                    btn.classList.remove('loading');
-                    btn.disabled = false;
-                }, 3000);
-            }
-        }
-        
-        async function loginKite() {
-            const btn = document.getElementById('kiteLoginBtn');
-            btn.classList.add('loading');
-            btn.disabled = true;
-            
-            try {
-                const response = await fetch(`${API_BASE}/auth/auto-login/kite`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                const data = await response.json();
-                
-                if (data.status === 'started') {
-                    showAlert('Kite login initiated. This may take a moment...', 'info');
-                    // Wait and check status
-                    setTimeout(async () => {
-                        await loadStatus();
-                        const statusResponse = await fetch(`${API_BASE}/auth/auto-login/status`);
-                        const statusData = await statusResponse.json();
-                        if (statusData.kite && statusData.kite.connected) {
-                            showAlert('Kite login successful!', 'success');
-                        } else {
-                            showAlert('Kite login may have failed. Check status.', 'warning');
-                        }
-                    }, 5000);
-                } else {
-                    showAlert('Kite login response: ' + (data.message || data.status || 'Check status'), 'info');
-                }
-            } catch (error) {
-                showAlert('Error during Kite login: ' + error.message, 'error');
-            } finally {
-                setTimeout(() => {
-                    btn.classList.remove('loading');
-                    btn.disabled = false;
-                }, 5000);
-            }
-        }
-        
-        async function refreshStatus() {
-            showAlert('Refreshing status...', 'info');
-            await loadStatus();
-            showAlert('Status refreshed successfully!', 'success');
-        }
-        
-        function showAlert(message, type) {
-            const alertBox = document.getElementById('alertBox');
-            const alertMessage = document.getElementById('alertMessage');
-            
-            alertBox.className = `alert alert-${type} show`;
-            alertMessage.textContent = message;
-            
-            // Update icon based on type
-            const icon = alertBox.querySelector('i');
+            // Update icon
+            const icon = toast.querySelector('i');
             if (type === 'success') {
                 icon.className = 'fas fa-check-circle';
             } else if (type === 'error') {
                 icon.className = 'fas fa-times-circle';
-            } else if (type === 'warning') {
-                icon.className = 'fas fa-exclamation-triangle';
             } else {
                 icon.className = 'fas fa-info-circle';
             }
             
+            toast.classList.add('show');
+            
             setTimeout(() => {
-                alertBox.classList.remove('show');
-            }, 5000);
+                toast.classList.remove('show');
+            }, 3000);
         }
+        
+        // Token expiry management
+        let tokenExpiryInterval;
+        
+        async function fetchTokenStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/token-status`);
+                const data = await response.json();
+                
+                updateTokenExpiry('kite', data.kite);
+                updateTokenExpiry('breeze', data.breeze);
+                
+            } catch (error) {
+                console.error('Error fetching token status:', error);
+            }
+        }
+        
+        function updateTokenExpiry(platform, tokenData) {
+            const expiryTimeEl = document.getElementById(`${platform}ExpiryTime`);
+            const progressEl = document.getElementById(`${platform}ExpiryProgress`);
+            
+            if (!tokenData || !tokenData.has_token) {
+                expiryTimeEl.textContent = 'No token';
+                progressEl.style.width = '0%';
+                return;
+            }
+            
+            // Update time remaining
+            expiryTimeEl.textContent = tokenData.time_remaining || '--:--:--';
+            
+            // Update progress bar
+            const percentage = tokenData.percentage_remaining || 0;
+            progressEl.style.width = `${percentage}%`;
+            
+            // Color coding based on status
+            if (tokenData.status === 'expired') {
+                expiryTimeEl.style.color = '#ef4444';
+                progressEl.style.background = '#ef4444';
+            } else if (tokenData.status === 'warning') {
+                expiryTimeEl.style.color = '#f59e0b';
+                progressEl.style.background = 'linear-gradient(90deg, #f59e0b, #ef4444)';
+            } else {
+                expiryTimeEl.style.color = '#10b981';
+                progressEl.style.background = 'linear-gradient(90deg, #10b981, #f59e0b)';
+            }
+            
+            // Auto-refresh if needed
+            if (tokenData.should_refresh) {
+                showToast(`${platform} token expiring soon, consider refreshing`, 'warning');
+            }
+        }
+        
+        // Login both platforms
+        async function loginBothPlatforms() {
+            const headless = document.getElementById('headlessMode')?.checked ?? true;
+            
+            showToast('Starting auto-login for both platforms...', 'info');
+            
+            // Disable button during login
+            const buttons = document.querySelectorAll('button');
+            buttons.forEach(btn => {
+                if (btn.textContent.includes('Login Both')) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+                }
+            });
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/auto-login/both`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ headless: headless })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'triggered') {
+                    showToast('Auto-login triggered for both platforms', 'success');
+                    
+                    // Wait a bit then refresh status
+                    setTimeout(async () => {
+                        await refreshAllStatus();
+                        await fetchTokenStatus();
+                    }, 30000); // Check after 30 seconds
+                    
+                    // Start checking more frequently
+                    for (let i = 0; i < 6; i++) {
+                        setTimeout(async () => {
+                            await refreshAllStatus();
+                            await fetchTokenStatus();
+                        }, (i + 1) * 10000); // Every 10 seconds for 1 minute
+                    }
+                } else {
+                    showToast('Failed to trigger auto-login', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Error triggering auto-login', 'error');
+            } finally {
+                // Re-enable button
+                buttons.forEach(btn => {
+                    if (btn.innerHTML.includes('Logging in')) {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-sync-alt"></i> Login Both Platforms';
+                    }
+                });
+            }
+        }
+        
+        // Start token expiry timer
+        function startTokenExpiryTimer() {
+            // Fetch immediately
+            fetchTokenStatus();
+            
+            // Then update every 30 seconds
+            if (tokenExpiryInterval) {
+                clearInterval(tokenExpiryInterval);
+            }
+            tokenExpiryInterval = setInterval(fetchTokenStatus, 30000);
+        }
+        
+        // Add to window.onload
+        const originalOnload = window.onload;
+        window.onload = () => {
+            if (originalOnload) originalOnload();
+            startTokenExpiryTimer();
+        };
     </script>
 </body>
 </html>

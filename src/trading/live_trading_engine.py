@@ -216,9 +216,20 @@ class LiveTradingEngine:
         signal_type: str,
         strike_price: int,
         option_type: str,
-        action: str = "SELL"
+        action: str = "SELL",
+        weeks_ahead: int = 0,
+        use_monthly: bool = False
     ) -> Dict[str, Any]:
-        """Place an order (real or paper)"""
+        """Place an order (real or paper)
+        
+        Args:
+            signal_type: Signal type (S1, S2, etc.)
+            strike_price: Strike price
+            option_type: CE or PE
+            action: BUY or SELL
+            weeks_ahead: 0 for current week, 1 for next week, etc.
+            use_monthly: True for monthly expiry
+        """
         
         # Check if we can place more orders
         if len(self.positions) >= self.max_positions:
@@ -266,7 +277,8 @@ class LiveTradingEngine:
         else:
             try:
                 order_response = self._place_real_order(
-                    strike_price, option_type, quantity, action, option_price
+                    strike_price, option_type, quantity, action, option_price,
+                    weeks_ahead=weeks_ahead, use_monthly=use_monthly
                 )
                 
                 if order_response['status'] == 'success':
@@ -303,12 +315,14 @@ class LiveTradingEngine:
         option_type: str,
         quantity: int,
         action: str,
-        limit_price: float
+        limit_price: float,
+        weeks_ahead: int = 0,
+        use_monthly: bool = False
     ) -> Dict[str, Any]:
         """Place real order with broker"""
         
-        # Determine expiry (current week Thursday)
-        expiry = self._get_current_expiry()
+        # Determine expiry based on parameters
+        expiry = self._get_current_expiry(weeks_ahead=weeks_ahead, use_monthly=use_monthly)
         
         # Breeze order
         if self.primary_broker == "breeze" and self.breeze:
@@ -362,7 +376,8 @@ class LiveTradingEngine:
     ) -> Dict[str, Any]:
         """Place order with Kite"""
         try:
-            # Format symbol for Kite
+            # Format symbol for Kite: NIFTY + YY + MONTH + STRIKE + TYPE
+            # expiry is already in format "25AUG" from _get_current_expiry()
             symbol = f"NIFTY{expiry}{strike_price}{option_type}"
             
             order_id = self.kite.place_order(
@@ -516,7 +531,10 @@ class LiveTradingEngine:
         market_open = now.replace(hour=9, minute=15, second=0)
         market_close = now.replace(hour=15, minute=30, second=0)
         
-        if not (market_open <= now <= market_close):
+        # Allow paper trading outside market hours for testing
+        if self.mode == TradingMode.PAPER:
+            checks.append(("market_hours", True, "Paper trading - market hours check bypassed"))
+        elif not (market_open <= now <= market_close):
             logger.warning("Market is closed")
             checks.append(("market_hours", False, "Market is closed"))
         else:
@@ -589,14 +607,55 @@ class LiveTradingEngine:
             
         return None
     
-    def _get_current_expiry(self) -> str:
-        """Get current week expiry date (Thursday)"""
+    def _get_current_expiry(self, weeks_ahead: int = 0, use_monthly: bool = False) -> str:
+        """
+        Get expiry date in Kite format
+        
+        Args:
+            weeks_ahead: 0 for current week, 1 for next week, etc.
+            use_monthly: True for monthly expiry (last Thursday of month)
+        
+        Returns:
+            Expiry in format "25AUG" for Kite
+        """
         today = datetime.now()
-        days_until_thursday = (3 - today.weekday()) % 7
-        if days_until_thursday == 0 and today.hour >= 15:  # After 3 PM on Thursday
-            days_until_thursday = 7
-        expiry = today + timedelta(days=days_until_thursday)
-        return expiry.strftime("%y%b%d").upper()  # Format: 24JAN25
+        
+        if use_monthly:
+            # Get last Thursday of current/next month
+            if today.day > 25:  # Likely past monthly expiry
+                # Move to next month
+                if today.month == 12:
+                    target_month = 1
+                    target_year = today.year + 1
+                else:
+                    target_month = today.month + 1
+                    target_year = today.year
+            else:
+                target_month = today.month
+                target_year = today.year
+            
+            # Find last Thursday of target month
+            import calendar
+            last_day = calendar.monthrange(target_year, target_month)[1]
+            last_date = datetime(target_year, target_month, last_day)
+            
+            # Find last Thursday
+            while last_date.weekday() != 3:  # 3 is Thursday
+                last_date -= timedelta(days=1)
+            
+            expiry = last_date
+        else:
+            # Weekly expiry (Thursday)
+            days_until_thursday = (3 - today.weekday()) % 7
+            if days_until_thursday == 0 and today.hour >= 15:  # After 3 PM on Thursday
+                days_until_thursday = 7
+            
+            # Add additional weeks if specified
+            days_to_add = days_until_thursday + (weeks_ahead * 7)
+            expiry = today + timedelta(days=days_to_add)
+        
+        # Format for Kite: YY + MONTH (e.g., "25AUG" for August 2025)
+        return expiry.strftime("%y%b").upper()  # Format: 25AUG
     
     def emergency_stop(self) -> Dict[str, Any]:
         """Emergency stop - close all positions immediately"""

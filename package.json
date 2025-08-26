@@ -1,0 +1,32 @@
+{
+  "name": "breezepython",
+  "version": "1.0.0",
+  "description": "A comprehensive trading platform using Breeze API for historical data/backtesting and Kite Connect for live trading execution, built with Clean Architecture principles.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build-css": "tailwindcss -i ./static/css/input.css -o ./static/css/main.css --watch",
+    "build-css-prod": "tailwindcss -i ./static/css/input.css -o ./static/css/main.css --minify"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/naveenvino/breezepython_lates.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/naveenvino/breezepython_lates/issues"
+  },
+  "homepage": "https://github.com/naveenvino/breezepython_lates#readme",
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "daisyui": "^5.0.50",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17"
+  }
+}

@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trading Signals - BreezeConnect Trading System</title>
+    <title>Trading Signals - Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -12,32 +13,178 @@
             box-sizing: border-box;
         }
 
+        :root {
+            /* Dark Theme Colors */
+            --bg-primary: #0f1419;
+            --bg-secondary: #1a1f2e;
+            --bg-tertiary: #242837;
+            --bg-card: #1e2332;
+            --bg-hover: #2a3042;
+            
+            /* Accent Colors */
+            --accent-blue: #00d4ff;
+            --accent-green: #00ff88;
+            --accent-red: #ff3366;
+            --accent-purple: #9945ff;
+            --accent-orange: #ff9500;
+            --accent-yellow: #ffeb3b;
+            
+            /* Text Colors */
+            --text-primary: #ffffff;
+            --text-secondary: #8892b0;
+            --text-muted: #495670;
+            
+            /* Gradients */
+            --gradient-blue: linear-gradient(135deg, #667eea 0%, #00d4ff 100%);
+            --gradient-green: linear-gradient(135deg, #00ff88 0%, #00d4aa 100%);
+            --gradient-red: linear-gradient(135deg, #ff3366 0%, #ff6b6b 100%);
+            --gradient-purple: linear-gradient(135deg, #9945ff 0%, #c770ff 100%);
+            
+            /* Shadows */
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+            --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.6);
+            
+            /* Glassmorphism */
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            position: relative;
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+        }
+
+        /* Animated Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(153, 69, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(0, 255, 136, 0.1) 0%, transparent 50%);
+            z-index: -1;
+            animation: backgroundShift 20s ease-in-out infinite;
+        }
+
+        @keyframes backgroundShift {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.1); }
+        }
+
+        /* Animated Grid Pattern */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -1;
+            animation: gridMove 10s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        /* Main Container */
+        .dashboard-wrapper {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
         }
 
         /* Header */
-        .header {
-            background: rgba(26, 26, 46, 0.95);
+        .header-card {
+            background: var(--glass-bg);
             backdrop-filter: blur(10px);
-            padding: 20px 40px;
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 25px 30px;
+            margin-bottom: 30px;
+            animation: slideDown 0.5s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header-content {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            flex-wrap: wrap;
+            gap: 20px;
         }
 
-        .header h1 {
-            color: white;
-            font-size: 24px;
-            font-weight: 600;
+        .header-left {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 15px;
+        }
+
+        .header-title {
+            font-size: 28px;
+            font-weight: 700;
+            background: var(--gradient-blue);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .live-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--accent-green);
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent-green);
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 255, 136, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); }
         }
 
         .header-actions {
@@ -45,56 +192,197 @@
             gap: 12px;
         }
 
+        /* Buttons */
         .btn {
             padding: 10px 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--gradient-blue);
             border: none;
             border-radius: 10px;
             color: white;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            box-shadow: var(--shadow-lg);
         }
 
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
         }
 
-        /* Main Content */
-        .container {
-            flex: 1;
+        .btn-secondary:hover {
+            background: var(--bg-hover);
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
             padding: 20px;
-            max-width: 1400px;
-            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 0.5s ease;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--accent-blue);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
+            height: 2px;
+            background: var(--gradient-blue);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .stat-title {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .stat-icon.blue {
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--accent-blue);
+        }
+
+        .stat-icon.green {
+            background: rgba(0, 255, 136, 0.1);
+            color: var(--accent-green);
+        }
+
+        .stat-icon.red {
+            background: rgba(255, 51, 102, 0.1);
+            color: var(--accent-red);
+        }
+
+        .stat-icon.purple {
+            background: rgba(153, 69, 255, 0.1);
+            color: var(--accent-purple);
+        }
+
+        .stat-icon.orange {
+            background: rgba(255, 149, 0, 0.1);
+            color: var(--accent-orange);
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-top: 5px;
+        }
+
+        .stat-value.positive {
+            color: var(--accent-green);
+        }
+
+        .stat-value.negative {
+            color: var(--accent-red);
+        }
+
+        .stat-change {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
         /* Signal Cards Grid */
-        .signals-grid {
+        .signals-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }
 
         .signal-card {
-            background: rgba(255, 255, 255, 0.95);
+            background: var(--glass-bg);
             backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
             border-radius: 16px;
             padding: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.5s ease;
         }
 
         .signal-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--accent-blue);
+        }
+
+        .signal-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+        }
+
+        .signal-card.bullish::before {
+            background: var(--gradient-green);
+        }
+
+        .signal-card.bearish::before {
+            background: var(--gradient-red);
         }
 
         .signal-header {
@@ -106,106 +394,97 @@
 
         .signal-id {
             font-size: 24px;
-            font-weight: bold;
-            color: #667eea;
+            font-weight: 700;
+            background: var(--gradient-blue);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        .signal-type {
-            padding: 5px 12px;
+        .signal-badge {
+            padding: 6px 12px;
             border-radius: 20px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .bullish {
-            background: #d4f4dd;
-            color: #0e6333;
+        .signal-badge.bullish {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--accent-green);
         }
 
-        .bearish {
-            background: #fecaca;
-            color: #991b1b;
+        .signal-badge.bearish {
+            background: rgba(255, 51, 102, 0.2);
+            color: var(--accent-red);
         }
 
         .signal-name {
             font-size: 18px;
             font-weight: 600;
-            color: #1a1a2e;
+            color: var(--text-primary);
             margin-bottom: 10px;
         }
 
         .signal-description {
-            color: #666;
+            color: var(--text-secondary);
             line-height: 1.6;
             margin-bottom: 15px;
+            font-size: 14px;
         }
 
         .signal-action {
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 12px;
-            background: rgba(102, 126, 234, 0.1);
-            border-radius: 8px;
-            color: #667eea;
+            padding: 10px 15px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            color: var(--text-primary);
             font-weight: 500;
+            font-size: 14px;
         }
 
-        /* Statistics Section */
-        .stats-section {
-            background: rgba(255, 255, 255, 0.95);
+        .signal-action i {
+            color: var(--accent-blue);
+        }
+
+        /* Recent Signals Table */
+        .table-card {
+            background: var(--glass-bg);
             backdrop-filter: blur(10px);
-            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
             padding: 25px;
             margin-bottom: 30px;
         }
 
-        .stats-header {
-            font-size: 20px;
-            font-weight: 600;
-            color: #1a1a2e;
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
+        .card-title i {
+            color: var(--accent-blue);
         }
 
-        .stat-item {
-            text-align: center;
-            padding: 15px;
-            background: rgba(102, 126, 234, 0.05);
-            border-radius: 12px;
-        }
-
-        .stat-value {
-            font-size: 28px;
-            font-weight: bold;
-            color: #667eea;
-            margin-bottom: 5px;
-        }
-
-        .stat-label {
-            color: #666;
-            font-size: 14px;
-        }
-
-        /* Recent Signals Table */
-        .recent-signals {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            padding: 25px;
-        }
-
-        .table-container {
+        /* Table */
+        .table-wrapper {
             overflow-x: auto;
+            position: relative;
         }
 
         table {
@@ -216,44 +495,69 @@
         th {
             text-align: left;
             padding: 12px;
-            background: rgba(102, 126, 234, 0.1);
-            color: #1a1a2e;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
             font-weight: 600;
-            border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         td {
-            padding: 12px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-            color: #333;
+            padding: 14px 12px;
+            border-bottom: 1px solid var(--glass-border);
+            font-size: 14px;
+            color: var(--text-primary);
         }
 
-        tr:hover {
-            background: rgba(102, 126, 234, 0.03);
+        tbody tr {
+            transition: all 0.3s ease;
         }
 
-        .positive {
-            color: #0e6333;
+        tbody tr:hover {
+            background: var(--bg-hover);
+        }
+
+        /* Status badges */
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 11px;
             font-weight: 600;
+            text-transform: uppercase;
+            display: inline-block;
         }
 
-        .negative {
-            color: #991b1b;
-            font-weight: 600;
+        .status-active {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--accent-green);
         }
 
-        /* Loading and Error States */
+        .status-triggered {
+            background: rgba(255, 149, 0, 0.2);
+            color: var(--accent-orange);
+        }
+
+        .status-expired {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
+        }
+
+        /* Loading State */
         .loading {
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 40px;
-            color: #666;
+            padding: 60px;
+            color: var(--text-muted);
         }
 
         .spinner {
-            border: 3px solid rgba(102, 126, 234, 0.2);
-            border-top: 3px solid #667eea;
+            border: 3px solid rgba(0, 212, 255, 0.2);
+            border-top: 3px solid var(--accent-blue);
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -265,373 +569,1499 @@
             100% { transform: rotate(360deg); }
         }
 
-        .error-message {
-            background: #fee;
-            color: #c00;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: #999;
-        }
-
-        /* Refresh Button */
-        .refresh-btn {
+        /* Floating particles */
+        .particles {
             position: fixed;
-            bottom: 30px;
-            right: 30px;
-            width: 56px;
-            height: 56px;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            background: var(--accent-blue);
             border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            opacity: 0.3;
+            animation: float 20s infinite linear;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) translateX(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.3;
+            }
+            90% {
+                opacity: 0.3;
+            }
+            100% {
+                transform: translateY(-100vh) translateX(100px);
+                opacity: 0;
+            }
+        }
+
+        /* Performance Indicator */
+        .performance-chart {
+            height: 200px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-bars {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 150px;
+            gap: 10px;
+        }
+
+        .chart-bar {
+            flex: 1;
+            background: var(--gradient-blue);
+            border-radius: 5px 5px 0 0;
+            min-height: 20px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .chart-bar:hover {
+            transform: translateY(-5px);
+            filter: brightness(1.2);
+        }
+
+        .chart-label {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 25px;
+            border-bottom: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .close-modal {
+            background: none;
             border: none;
-            color: white;
-            font-size: 20px;
+            color: var(--text-secondary);
+            font-size: 24px;
             cursor: pointer;
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
             transition: all 0.3s;
         }
 
-        .refresh-btn:hover {
-            transform: rotate(180deg) scale(1.1);
+        .close-modal:hover {
+            color: var(--accent-red);
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 25px;
+        }
+
+        .info-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--accent-blue);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .info-card {
+            background: var(--bg-tertiary);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .info-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .logic-box {
+            background: var(--bg-tertiary);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid var(--glass-border);
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .condition-item {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .condition-item:last-child {
+            border-bottom: none;
+        }
+
+        .condition-check {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .condition-check.true {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--accent-green);
+        }
+
+        .condition-check.false {
+            background: rgba(255, 51, 102, 0.2);
+            color: var(--accent-red);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .dashboard-wrapper {
+                padding: 10px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .signals-container {
+                grid-template-columns: 1fr;
+            }
+
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .modal-content {
+                width: 95%;
+                margin: 10px;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <div class="header">
-        <h1>
-            <i class="fas fa-signal"></i>
-            Trading Signals
-        </h1>
-        <div class="header-actions">
-            <button class="btn btn-secondary" onclick="window.location.href='/'">
-                <i class="fas fa-arrow-left"></i> Back to Dashboard
-            </button>
-            <button class="btn" onclick="refreshData()">
-                <i class="fas fa-sync-alt"></i> Refresh
-            </button>
-        </div>
+    <!-- Floating Particles -->
+    <div class="particles">
+        <div class="particle" style="width: 4px; height: 4px; left: 10%; animation-delay: 0s;"></div>
+        <div class="particle" style="width: 3px; height: 3px; left: 20%; animation-delay: 2s;"></div>
+        <div class="particle" style="width: 5px; height: 5px; left: 30%; animation-delay: 4s;"></div>
+        <div class="particle" style="width: 2px; height: 2px; left: 40%; animation-delay: 6s;"></div>
+        <div class="particle" style="width: 4px; height: 4px; left: 50%; animation-delay: 8s;"></div>
+        <div class="particle" style="width: 3px; height: 3px; left: 60%; animation-delay: 10s;"></div>
+        <div class="particle" style="width: 5px; height: 5px; left: 70%; animation-delay: 12s;"></div>
+        <div class="particle" style="width: 2px; height: 2px; left: 80%; animation-delay: 14s;"></div>
     </div>
 
-    <!-- Main Container -->
-    <div class="container">
-        <!-- Statistics Section -->
-        <div class="stats-section">
-            <div class="stats-header">
-                <i class="fas fa-chart-line"></i>
-                Signal Performance Overview
+    <!-- Main Wrapper -->
+    <div class="dashboard-wrapper">
+        <!-- Header -->
+        <div class="header-card">
+            <div class="header-content">
+                <div class="header-left">
+                    <h1 class="header-title">
+                        <i class="fas fa-signal"></i>
+                        Trading Signals
+                    </h1>
+                    <div class="live-badge">
+                        <div class="live-dot"></div>
+                        <span>MONITORING</span>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" onclick="window.location.href='/'">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </button>
+                    <button class="btn" onclick="refreshSignals()">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                </div>
             </div>
-            <div class="stats-grid" id="statsGrid">
-                <div class="stat-item">
-                    <div class="stat-value">-</div>
-                    <div class="stat-label">Total Signals</div>
+        </div>
+
+        <!-- Market Context Panel -->
+        <div class="table-card" style="margin-bottom: 30px;">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-chart-area"></i>
+                    Market Context
                 </div>
-                <div class="stat-item">
-                    <div class="stat-value">-</div>
-                    <div class="stat-label">Best Performer</div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; padding: 20px;">
+                <div>
+                    <div style="color: var(--text-muted); font-size: 12px; margin-bottom: 5px;">NIFTY SPOT PRICE</div>
+                    <div style="font-size: 28px; font-weight: bold; color: var(--accent-green);" id="spotPrice">-</div>
                 </div>
-                <div class="stat-item">
-                    <div class="stat-value">-</div>
-                    <div class="stat-label">Avg Win Rate</div>
+                <div>
+                    <div style="color: var(--text-muted); font-size: 12px; margin-bottom: 5px;">ATM STRIKE</div>
+                    <div style="font-size: 28px; font-weight: bold;" id="atmStrike">-</div>
                 </div>
-                <div class="stat-item">
-                    <div class="stat-value">-</div>
-                    <div class="stat-label">Total P&L</div>
+            </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-title">Total Trades</div>
+                        <div class="stat-value" id="totalTrades">-</div>
+                    </div>
+                    <div class="stat-icon blue">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                </div>
+                <div class="stat-change">
+                    <i class="fas fa-info-circle"></i> <span id="totalTradesInfo">From all signals</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-title">Best Performer</div>
+                        <div class="stat-value positive" id="bestPerformer">-</div>
+                    </div>
+                    <div class="stat-icon green">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                </div>
+                <div class="stat-change">
+                    <i class="fas fa-coins"></i> ₹<span id="bestPerformerPnl">-</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-title">Win Rate</div>
+                        <div class="stat-value" id="winRate">-</div>
+                    </div>
+                    <div class="stat-icon purple">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                </div>
+                <div class="stat-change">
+                    <i class="fas fa-chart-line"></i> Overall performance
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-title">Total P&L</div>
+                        <div class="stat-value positive" id="totalPnl">-</div>
+                    </div>
+                    <div class="stat-icon orange">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                </div>
+                <div class="stat-change">
+                    <i class="fas fa-calculator"></i> Cumulative profit
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-title">Active Signals</div>
+                        <div class="stat-value" id="activeSignals">8</div>
+                    </div>
+                    <div class="stat-icon green" id="signalIcon">
+                        <i class="fas fa-broadcast-tower"></i>
+                    </div>
+                </div>
+                <div class="stat-change">
+                    <i class="fas fa-info-circle"></i> <span id="activeSignalInfo">Monitoring patterns</span>
                 </div>
             </div>
         </div>
 
         <!-- Signal Cards -->
-        <div class="signals-grid">
-            <!-- S1: Bear Trap -->
-            <div class="signal-card">
+        <div class="signals-container">
+            <!-- Signal 1 -->
+            <div class="signal-card bullish" onclick="showSignalDetails('S1')" style="cursor: pointer;">
                 <div class="signal-header">
-                    <span class="signal-id">S1</span>
-                    <span class="signal-type bullish">BULLISH</span>
+                    <div class="signal-id">S1</div>
+                    <div class="signal-badge bullish">BULLISH</div>
                 </div>
                 <div class="signal-name">Bear Trap</div>
                 <div class="signal-description">
-                    Price breaks below support but quickly reverses back above, trapping bears. 
-                    Strong bullish reversal signal.
+                    Price breaks below support but quickly reverses back above. Strong bullish reversal signal indicating failed breakdown.
                 </div>
                 <div class="signal-action">
-                    <i class="fas fa-arrow-down"></i>
-                    <span>Action: Sell PUT</span>
+                    <i class="fas fa-arrow-up"></i>
+                    <span>Action: SELL PUT</span>
                 </div>
             </div>
 
-            <!-- S2: Support Hold -->
-            <div class="signal-card">
+            <!-- Signal 2 -->
+            <div class="signal-card bullish" onclick="showSignalDetails('S2')" style="cursor: pointer;">
                 <div class="signal-header">
-                    <span class="signal-id">S2</span>
-                    <span class="signal-type bullish">BULLISH</span>
+                    <div class="signal-id">S2</div>
+                    <div class="signal-badge bullish">BULLISH</div>
                 </div>
                 <div class="signal-name">Support Hold</div>
                 <div class="signal-description">
-                    Price tests support level multiple times but holds above it. 
-                    Indicates strong buying interest at support.
+                    Multiple tests of support level with successful defense. Indicates strong buying interest at lower levels.
                 </div>
                 <div class="signal-action">
-                    <i class="fas fa-arrow-down"></i>
-                    <span>Action: Sell PUT</span>
+                    <i class="fas fa-arrow-up"></i>
+                    <span>Action: SELL PUT</span>
                 </div>
             </div>
 
-            <!-- S3: Resistance Hold -->
-            <div class="signal-card">
+            <!-- Signal 3 -->
+            <div class="signal-card bearish" onclick="showSignalDetails('S3')" style="cursor: pointer;">
                 <div class="signal-header">
-                    <span class="signal-id">S3</span>
-                    <span class="signal-type bearish">BEARISH</span>
+                    <div class="signal-id">S3</div>
+                    <div class="signal-badge bearish">BEARISH</div>
                 </div>
                 <div class="signal-name">Resistance Hold</div>
                 <div class="signal-description">
-                    Price tests resistance level but fails to break above. 
-                    Shows selling pressure at resistance.
+                    Multiple rejections at resistance level. Shows strong selling pressure preventing upward movement.
                 </div>
                 <div class="signal-action">
-                    <i class="fas fa-arrow-up"></i>
-                    <span>Action: Sell CALL</span>
+                    <i class="fas fa-arrow-down"></i>
+                    <span>Action: SELL CALL</span>
                 </div>
             </div>
 
-            <!-- S4: Bias Failure Bull -->
-            <div class="signal-card">
+            <!-- Signal 4 -->
+            <div class="signal-card bullish" onclick="showSignalDetails('S4')" style="cursor: pointer;">
                 <div class="signal-header">
-                    <span class="signal-id">S4</span>
-                    <span class="signal-type bullish">BULLISH</span>
+                    <div class="signal-id">S4</div>
+                    <div class="signal-badge bullish">BULLISH</div>
                 </div>
                 <div class="signal-name">Bias Failure Bull</div>
                 <div class="signal-description">
-                    Bearish bias fails to materialize, price reverses upward. 
-                    Indicates shift to bullish momentum.
+                    Failed bearish pattern leading to bullish reversal. Market rejects downside movement strongly.
                 </div>
                 <div class="signal-action">
-                    <i class="fas fa-arrow-down"></i>
-                    <span>Action: Sell PUT</span>
+                    <i class="fas fa-arrow-up"></i>
+                    <span>Action: SELL PUT</span>
                 </div>
             </div>
 
-            <!-- S5: Bias Failure Bear -->
-            <div class="signal-card">
+            <!-- Signal 5 -->
+            <div class="signal-card bearish" onclick="showSignalDetails('S5')" style="cursor: pointer;">
                 <div class="signal-header">
-                    <span class="signal-id">S5</span>
-                    <span class="signal-type bearish">BEARISH</span>
+                    <div class="signal-id">S5</div>
+                    <div class="signal-badge bearish">BEARISH</div>
                 </div>
                 <div class="signal-name">Bias Failure Bear</div>
                 <div class="signal-description">
-                    Bullish bias fails to continue, price reverses downward. 
-                    Signals shift to bearish momentum.
-                </div>
-                <div class="signal-action">
-                    <i class="fas fa-arrow-up"></i>
-                    <span>Action: Sell CALL</span>
-                </div>
-            </div>
-
-            <!-- S6: Weakness Confirmed -->
-            <div class="signal-card">
-                <div class="signal-header">
-                    <span class="signal-id">S6</span>
-                    <span class="signal-type bearish">BEARISH</span>
-                </div>
-                <div class="signal-name">Weakness Confirmed</div>
-                <div class="signal-description">
-                    Multiple bearish indicators confirm market weakness. 
-                    Strong signal for downward movement.
-                </div>
-                <div class="signal-action">
-                    <i class="fas fa-arrow-up"></i>
-                    <span>Action: Sell CALL</span>
-                </div>
-            </div>
-
-            <!-- S7: Breakout Confirmed -->
-            <div class="signal-card">
-                <div class="signal-header">
-                    <span class="signal-id">S7</span>
-                    <span class="signal-type bullish">BULLISH</span>
-                </div>
-                <div class="signal-name">Breakout Confirmed</div>
-                <div class="signal-description">
-                    Price breaks above resistance with volume confirmation. 
-                    Strong bullish continuation signal.
+                    Failed bullish pattern resulting in bearish reversal. Market rejects upside movement decisively.
                 </div>
                 <div class="signal-action">
                     <i class="fas fa-arrow-down"></i>
-                    <span>Action: Sell PUT</span>
+                    <span>Action: SELL CALL</span>
                 </div>
             </div>
 
-            <!-- S8: Breakdown Confirmed -->
-            <div class="signal-card">
+            <!-- Signal 6 -->
+            <div class="signal-card bearish" onclick="showSignalDetails('S6')" style="cursor: pointer;">
                 <div class="signal-header">
-                    <span class="signal-id">S8</span>
-                    <span class="signal-type bearish">BEARISH</span>
+                    <div class="signal-id">S6</div>
+                    <div class="signal-badge bearish">BEARISH</div>
                 </div>
-                <div class="signal-name">Breakdown Confirmed</div>
+                <div class="signal-name">Weakness Confirmed</div>
                 <div class="signal-description">
-                    Price breaks below support with volume confirmation. 
-                    Strong bearish continuation signal.
+                    Consecutive lower highs and lower lows. Confirms bearish trend continuation with momentum.
+                </div>
+                <div class="signal-action">
+                    <i class="fas fa-arrow-down"></i>
+                    <span>Action: SELL CALL</span>
+                </div>
+            </div>
+
+            <!-- Signal 7 -->
+            <div class="signal-card bullish" onclick="showSignalDetails('S7')" style="cursor: pointer;">
+                <div class="signal-header">
+                    <div class="signal-id">S7</div>
+                    <div class="signal-badge bullish">BULLISH</div>
+                </div>
+                <div class="signal-name">Breakout Confirmed</div>
+                <div class="signal-description">
+                    Price breaks above resistance with volume. Strong bullish continuation signal with momentum.
                 </div>
                 <div class="signal-action">
                     <i class="fas fa-arrow-up"></i>
-                    <span>Action: Sell CALL</span>
+                    <span>Action: SELL PUT</span>
+                </div>
+            </div>
+
+            <!-- Signal 8 -->
+            <div class="signal-card bearish" onclick="showSignalDetails('S8')" style="cursor: pointer;">
+                <div class="signal-header">
+                    <div class="signal-id">S8</div>
+                    <div class="signal-badge bearish">BEARISH</div>
+                </div>
+                <div class="signal-name">Breakdown Confirmed</div>
+                <div class="signal-description">
+                    Price breaks below support with volume. Strong bearish continuation signal with selling pressure.
+                </div>
+                <div class="signal-action">
+                    <i class="fas fa-arrow-down"></i>
+                    <span>Action: SELL CALL</span>
                 </div>
             </div>
         </div>
 
-        <!-- Recent Signals Table -->
-        <div class="recent-signals">
-            <div class="stats-header">
-                <i class="fas fa-history"></i>
-                Recent Signal Occurrences
+        <!-- Signal Performance Breakdown -->
+        <div class="table-card" style="margin-bottom: 30px;">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-chart-pie"></i>
+                    Signal Performance Breakdown
+                </div>
             </div>
-            <div class="table-container">
-                <table id="recentSignalsTable">
+            <div class="table-wrapper">
+                <table>
                     <thead>
                         <tr>
-                            <th>Date & Time</th>
                             <th>Signal</th>
-                            <th>Type</th>
-                            <th>Entry Price</th>
-                            <th>Exit Price</th>
-                            <th>P&L</th>
-                            <th>Status</th>
+                            <th>Name</th>
+                            <th>Direction</th>
+                            <th>Trades</th>
+                            <th>Wins</th>
+                            <th>Win Rate</th>
+                            <th>Avg P&L</th>
+                            <th>Total P&L</th>
                         </tr>
                     </thead>
-                    <tbody id="signalsTableBody">
+                    <tbody id="signalPerformanceBody">
                         <tr>
-                            <td colspan="7" class="loading">
-                                <div class="spinner"></div>
+                            <td colspan="8" style="text-align: center; color: var(--text-muted);">
+                                Loading performance data...
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </div>
+
+        <!-- Recent Signals Table -->
+        <div class="table-card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-history"></i>
+                    Recent Signal Triggers
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Entry Time</th>
+                            <th>Signal</th>
+                            <th>Name</th>
+                            <th>Strike</th>
+                            <th>Direction</th>
+                            <th>Exit Time</th>
+                            <th>Status</th>
+                            <th>P&L</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recentSignalsBody">
+                        <tr>
+                            <td colspan="8" style="text-align: center; color: var(--text-muted);">
+                                Loading recent signals...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Performance Chart -->
+        <div class="table-card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-chart-column"></i>
+                    Weekly Signal Performance
+                </div>
+            </div>
+            <div class="performance-chart">
+                <div class="chart-bars">
+                    <div class="chart-bar" style="height: 60%">
+                        <span class="chart-label">MON</span>
+                    </div>
+                    <div class="chart-bar" style="height: 80%; background: var(--gradient-green);">
+                        <span class="chart-label">TUE</span>
+                    </div>
+                    <div class="chart-bar" style="height: 45%; background: var(--gradient-red);">
+                        <span class="chart-label">WED</span>
+                    </div>
+                    <div class="chart-bar" style="height: 90%; background: var(--gradient-green);">
+                        <span class="chart-label">THU</span>
+                    </div>
+                    <div class="chart-bar" style="height: 70%; background: var(--gradient-green);">
+                        <span class="chart-label">FRI</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Refresh Button -->
-    <button class="refresh-btn" onclick="refreshData()" title="Refresh Data">
-        <i class="fas fa-sync-alt"></i>
-    </button>
+    <!-- Signal Details Modal -->
+    <div class="modal-overlay" id="signalModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <span id="modalSignalId">S1</span>
+                    <span id="modalSignalName">Signal Details</span>
+                </div>
+                <button class="close-modal" onclick="closeModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <!-- Overview Section -->
+                <div class="info-section">
+                    <div class="section-title">
+                        <i class="fas fa-info-circle"></i>
+                        Signal Overview
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-card">
+                            <div class="info-label">Direction</div>
+                            <div class="info-value" id="modalDirection">-</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">Action</div>
+                            <div class="info-value" id="modalAction">-</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">Entry Time</div>
+                            <div class="info-value" id="modalEntryTime">Second candle after signal</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance Section -->
+                <div class="info-section">
+                    <div class="section-title">
+                        <i class="fas fa-chart-line"></i>
+                        Historical Performance
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-card">
+                            <div class="info-label">Total Trades</div>
+                            <div class="info-value" id="modalTrades">-</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">Win Rate</div>
+                            <div class="info-value" id="modalWinRate">-</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">Average P&L</div>
+                            <div class="info-value" id="modalAvgPnl">-</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">Total P&L</div>
+                            <div class="info-value" id="modalTotalPnl">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Signal Logic Section -->
+                <div class="info-section">
+                    <div class="section-title">
+                        <i class="fas fa-code"></i>
+                        Signal Logic & Conditions
+                    </div>
+                    <div class="logic-box" id="modalLogic">
+                        Loading signal logic...
+                    </div>
+                </div>
+
+                <!-- Zone Calculation Section -->
+                <div class="info-section">
+                    <div class="section-title">
+                        <i class="fas fa-calculator"></i>
+                        Zone Calculation Method
+                    </div>
+                    <div class="logic-box" id="modalZoneCalc">
+                        Loading zone calculation...
+                    </div>
+                </div>
+
+                <!-- Trading Rules Section -->
+                <div class="info-section">
+                    <div class="section-title">
+                        <i class="fas fa-gavel"></i>
+                        Trading Rules
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-card">
+                            <div class="info-label">Position Size</div>
+                            <div class="info-value">10 Lots (750 qty)</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">Stop Loss</div>
+                            <div class="info-value" id="modalStopLoss">Main Strike Price</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">Hedge Offset</div>
+                            <div class="info-value">200 points</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">Exit Time</div>
+                            <div class="info-value">3:20 PM or SL Hit</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Trades Section -->
+                <div class="info-section">
+                    <div class="section-title">
+                        <i class="fas fa-history"></i>
+                        Recent Trades for This Signal
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; font-size: 14px;">
+                            <thead>
+                                <tr style="background: var(--bg-tertiary);">
+                                    <th style="padding: 10px; text-align: left;">Date</th>
+                                    <th style="padding: 10px; text-align: left;">Entry</th>
+                                    <th style="padding: 10px; text-align: left;">Exit</th>
+                                    <th style="padding: 10px; text-align: left;">P&L</th>
+                                    <th style="padding: 10px; text-align: left;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modalRecentTrades">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 20px; color: var(--text-muted);">
+                                        Loading recent trades...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
-        // Load statistics on page load
-        async function loadStatistics() {
+        // Global variables
+        let signalData = [];
+        let recentTriggers = [];
+        let signalStats = {};
+        let weeklyContext = {};
+        
+        // Signal names mapping
+        const signalNames = {
+            'S1': 'Bear Trap',
+            'S2': 'Support Hold',
+            'S3': 'Resistance Hold',
+            'S4': 'Bias Failure Bull',
+            'S5': 'Bias Failure Bear',
+            'S6': 'Weakness Confirmed',
+            'S7': 'Breakout Confirmed',
+            'S8': 'Breakdown Confirmed'
+        };
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAllData();
+            setInterval(refreshSignals, 30000); // Auto-refresh every 30 seconds
+            animateStats();
+        });
+
+        // Load all data
+        async function loadAllData() {
+            await Promise.all([
+                loadMarketContext(),
+                loadSignalStatistics(),
+                loadSignalData()
+            ]);
+        }
+        
+        // Load market context (NIFTY spot price)
+        async function loadMarketContext() {
+            try {
+                const response = await fetch('http://localhost:8000/option-chain/fast?strikes=1');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.status === 'success' && data.data) {
+                        const spot = data.data.spot_price || 0;
+                        document.getElementById('spotPrice').textContent = spot ? '₹' + spot.toFixed(2) : '-';
+                        
+                        // Calculate and display ATM strike
+                        if (spot > 0) {
+                            const atm = Math.round(spot / 50) * 50;
+                            document.getElementById('atmStrike').textContent = atm;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load market data:', error);
+                document.getElementById('spotPrice').textContent = 'Error';
+            }
+        }
+        
+        // Load signal statistics
+        async function loadSignalStatistics() {
             try {
                 const response = await fetch('http://localhost:8000/signals/statistics');
                 if (response.ok) {
                     const data = await response.json();
-                    updateStatistics(data);
+                    if (data.status === 'success') {
+                        signalStats = data;
+                        
+                        // Update stats cards
+                        let totalTrades = 0;
+                        let totalWins = 0;
+                        data.signal_details.forEach(s => {
+                            totalTrades += s.trades;
+                            totalWins += s.wins;
+                        });
+                        
+                        document.getElementById('totalTrades').textContent = totalTrades || '-';
+                        document.getElementById('bestPerformer').textContent = data.best_performer || '-';
+                        document.getElementById('winRate').textContent = data.avg_win_rate ? data.avg_win_rate + '%' : '-';
+                        document.getElementById('totalPnl').textContent = data.total_pnl ? 
+                            '₹' + data.total_pnl.toLocaleString('en-IN', {maximumFractionDigits: 0}) : '-';
+                        
+                        // Find best performer details
+                        const bestSignal = data.signal_details.find(s => s.signal === data.best_performer);
+                        if (bestSignal) {
+                            document.getElementById('bestPerformerPnl').textContent = 
+                                bestSignal.total_pnl.toLocaleString('en-IN', {maximumFractionDigits: 0});
+                        }
+                        
+                        // Update performance breakdown table
+                        updatePerformanceTable(data.signal_details);
+                    }
                 }
             } catch (error) {
                 console.error('Failed to load statistics:', error);
             }
         }
+        
+        // Update performance breakdown table
+        function updatePerformanceTable(signalDetails) {
+            const tbody = document.getElementById('signalPerformanceBody');
+            
+            if (!signalDetails || signalDetails.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; color: var(--text-muted);">
+                            No performance data available
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = signalDetails.map(signal => {
+                const direction = ['S1', 'S2', 'S4', 'S7'].includes(signal.signal) ? 'bullish' : 'bearish';
+                const directionBadge = direction === 'bullish' ? 
+                    '<span class="signal-badge bullish">BULLISH</span>' :
+                    '<span class="signal-badge bearish">BEARISH</span>';
+                
+                return `
+                    <tr>
+                        <td><strong>${signal.signal}</strong></td>
+                        <td>${signalNames[signal.signal] || signal.signal}</td>
+                        <td>${directionBadge}</td>
+                        <td>${signal.trades}</td>
+                        <td>${signal.wins}</td>
+                        <td><span class="${signal.win_rate > 50 ? 'positive' : 'negative'}">${signal.win_rate}%</span></td>
+                        <td class="${signal.avg_pnl >= 0 ? 'positive' : 'negative'}">
+                            ₹${Math.abs(signal.avg_pnl).toLocaleString('en-IN', {maximumFractionDigits: 0})}
+                        </td>
+                        <td class="${signal.total_pnl >= 0 ? 'positive' : 'negative'}">
+                            ₹${Math.abs(signal.total_pnl).toLocaleString('en-IN', {maximumFractionDigits: 0})}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
 
-        // Load recent signals
-        async function loadRecentSignals() {
+        // Load signal data (recent triggers)
+        async function loadSignalData() {
             try {
-                const response = await fetch('http://localhost:8000/signals/recent?limit=20');
+                const response = await fetch('http://localhost:8000/signals/recent?limit=10');
                 if (response.ok) {
                     const data = await response.json();
-                    updateSignalsTable(data.signals || []);
-                } else {
-                    // Show empty state if API not available
-                    updateSignalsTable([]);
+                    if (data.status === 'success') {
+                        recentTriggers = data.signals || [];
+                        updateRecentSignalsTable(recentTriggers);
+                    }
                 }
             } catch (error) {
                 console.error('Failed to load recent signals:', error);
-                updateSignalsTable([]);
             }
         }
 
-        // Update statistics display
-        function updateStatistics(stats) {
-            const statsGrid = document.getElementById('statsGrid');
-            statsGrid.innerHTML = `
-                <div class="stat-item">
-                    <div class="stat-value">${stats.total_signals || 8}</div>
-                    <div class="stat-label">Total Signals</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value">${stats.best_performer || 'S1'}</div>
-                    <div class="stat-label">Best Performer</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value">${stats.avg_win_rate || '65'}%</div>
-                    <div class="stat-label">Avg Win Rate</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value">₹${(stats.total_pnl || 0).toLocaleString()}</div>
-                    <div class="stat-label">Total P&L</div>
-                </div>
-            `;
-        }
-
-        // Update signals table
-        function updateSignalsTable(signals) {
-            const tbody = document.getElementById('signalsTableBody');
+        // Update recent signals table
+        function updateRecentSignalsTable(signals) {
+            const tbody = document.getElementById('recentSignalsBody');
             
-            if (signals.length === 0) {
+            if (!signals || signals.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="7" class="empty-state">
-                            No recent signals found. Run a backtest to generate signal data.
+                        <td colspan="8" style="text-align: center; color: var(--text-muted);">
+                            No recent signals triggered
                         </td>
                     </tr>
                 `;
                 return;
             }
 
-            tbody.innerHTML = signals.map(signal => `
-                <tr>
-                    <td>${new Date(signal.datetime).toLocaleString()}</td>
-                    <td><strong>${signal.signal_type}</strong></td>
-                    <td>
-                        <span class="signal-type ${signal.bias}">
-                            ${signal.bias.toUpperCase()}
-                        </span>
-                    </td>
-                    <td>₹${signal.entry_price.toLocaleString()}</td>
-                    <td>₹${signal.exit_price?.toLocaleString() || '-'}</td>
-                    <td class="${signal.pnl >= 0 ? 'positive' : 'negative'}">
-                        ₹${signal.pnl?.toLocaleString() || '0'}
-                    </td>
-                    <td>${signal.status || 'CLOSED'}</td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = signals.map(signal => {
+                const entryTime = signal.datetime ? new Date(signal.datetime).toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                }) : '-';
+                const exitTime = signal.exit_time ? new Date(signal.exit_time).toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                }) : '-';
+                const pnlClass = signal.pnl >= 0 ? 'positive' : 'negative';
+                const statusClass = signal.status === 'WIN' ? 'status-active' : 'status-expired';
+                const directionBadge = signal.bias === 'bullish' ? 
+                    '<span class="signal-badge bullish">BULLISH</span>' :
+                    '<span class="signal-badge bearish">BEARISH</span>';
+                
+                return `
+                    <tr>
+                        <td>${entryTime}</td>
+                        <td><strong>${signal.signal_type}</strong></td>
+                        <td>${signalNames[signal.signal_type] || signal.signal_type}</td>
+                        <td>${signal.strike_price ? signal.strike_price.toFixed(0) : '-'}</td>
+                        <td>${directionBadge}</td>
+                        <td>${exitTime}</td>
+                        <td><span class="status-badge ${statusClass}">${signal.status}</span></td>
+                        <td class="${pnlClass}">₹${Math.abs(signal.pnl).toLocaleString('en-IN', {maximumFractionDigits: 0})}</td>
+                    </tr>
+                `;
+            }).join('');
         }
 
 
-        // Refresh all data
-        function refreshData() {
-            const refreshBtn = document.querySelector('.refresh-btn');
-            refreshBtn.style.animation = 'spin 1s linear';
-            
-            Promise.all([
-                loadStatistics(),
-                loadRecentSignals()
-            ]).then(() => {
+        // Animate stats on load
+        function animateStats() {
+            const statValues = document.querySelectorAll('.stat-value');
+            statValues.forEach((stat, index) => {
+                stat.style.opacity = '0';
+                stat.style.transform = 'translateY(20px)';
+                
                 setTimeout(() => {
-                    refreshBtn.style.animation = '';
-                }, 1000);
+                    stat.style.transition = 'all 0.5s ease';
+                    stat.style.opacity = '1';
+                    stat.style.transform = 'translateY(0)';
+                }, index * 100);
             });
         }
 
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            loadStatistics();
-            loadRecentSignals();
+        // Refresh signals
+        function refreshSignals() {
+            loadAllData();
+        }
+
+        // Signal Details Modal Functions
+        function showSignalDetails(signalId) {
+            const modal = document.getElementById('signalModal');
+            modal.classList.add('active');
             
-            // Auto-refresh every 60 seconds
-            setInterval(refreshData, 60000);
+            // Update modal header
+            document.getElementById('modalSignalId').textContent = signalId;
+            document.getElementById('modalSignalName').textContent = signalNames[signalId] || 'Signal Details';
+            
+            // Get signal details
+            const signalInfo = getSignalInfo(signalId);
+            const signalPerformance = signalStats.signal_details ? 
+                signalStats.signal_details.find(s => s.signal === signalId) : null;
+            
+            // Update overview
+            document.getElementById('modalDirection').textContent = signalInfo.direction;
+            document.getElementById('modalDirection').style.color = 
+                signalInfo.direction === 'BULLISH' ? 'var(--accent-green)' : 'var(--accent-red)';
+            document.getElementById('modalAction').textContent = signalInfo.action;
+            
+            // Update performance
+            if (signalPerformance) {
+                document.getElementById('modalTrades').textContent = signalPerformance.trades;
+                document.getElementById('modalWinRate').textContent = signalPerformance.win_rate + '%';
+                document.getElementById('modalWinRate').style.color = 
+                    signalPerformance.win_rate > 50 ? 'var(--accent-green)' : 'var(--accent-red)';
+                document.getElementById('modalAvgPnl').textContent = 
+                    '₹' + Math.abs(signalPerformance.avg_pnl).toLocaleString('en-IN', {maximumFractionDigits: 0});
+                document.getElementById('modalAvgPnl').style.color = 
+                    signalPerformance.avg_pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+                document.getElementById('modalTotalPnl').textContent = 
+                    '₹' + Math.abs(signalPerformance.total_pnl).toLocaleString('en-IN', {maximumFractionDigits: 0});
+                document.getElementById('modalTotalPnl').style.color = 
+                    signalPerformance.total_pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+            } else {
+                document.getElementById('modalTrades').textContent = '-';
+                document.getElementById('modalWinRate').textContent = '-';
+                document.getElementById('modalAvgPnl').textContent = '-';
+                document.getElementById('modalTotalPnl').textContent = '-';
+            }
+            
+            // Update signal logic
+            document.getElementById('modalLogic').innerHTML = signalInfo.logic;
+            
+            // Update zone calculation
+            document.getElementById('modalZoneCalc').innerHTML = signalInfo.zoneCalc;
+            
+            // Update stop loss
+            document.getElementById('modalStopLoss').textContent = signalInfo.stopLoss;
+            
+            // Load recent trades for this signal
+            loadSignalTrades(signalId);
+        }
+        
+        function closeModal() {
+            const modal = document.getElementById('signalModal');
+            modal.classList.remove('active');
+        }
+        
+        // Close modal on overlay click
+        document.getElementById('signalModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+        
+        // Get signal information
+        function getSignalInfo(signalId) {
+            const signalData = {
+                'S1': {
+                    direction: 'BULLISH',
+                    action: 'SELL PUT',
+                    stopLoss: 'First Bar Low - |First Bar Open - First Bar Close|',
+                    logic: `
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 1: First bar open ≥ Lower Zone Bottom</span>
+                        </div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 2: First bar close < Lower Zone Bottom (fake breakdown)</span>
+                        </div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 3: Second bar close > First bar low (recovery)</span>
+                        </div>
+                        <div style="margin-top: 15px; color: var(--accent-green);">
+                            <strong>Signal Triggers:</strong> ONLY on 2nd hourly bar of the week (typically Tuesday 11:15 AM)
+                        </div>
+                    `,
+                    zoneCalc: `
+                        <div style="color: var(--text-secondary); line-height: 1.8;">
+                            <strong>Lower Zone Calculation:</strong><br>
+                            • Lower Zone Bottom = Min(Previous Week Low, Previous Min 4H Body)<br>
+                            • Lower Zone Top = Max(Previous Week Low, Previous Min 4H Body)<br><br>
+                            <strong>4H Body Calculation:</strong><br>
+                            • Groups hourly bars into 4-hour periods<br>
+                            • Min 4H Body = Minimum body bottom across all 4H candles<br>
+                            • Body = Min(Open, Close) of each 4H period<br><br>
+                            <strong>Bear Trap Logic:</strong><br>
+                            Price breaks below support (Lower Zone Bottom) but quickly recovers,<br>
+                            trapping bears who went short on the breakdown
+                        </div>
+                    `
+                },
+                'S2': {
+                    direction: 'BULLISH',
+                    action: 'SELL PUT',
+                    stopLoss: 'Lower Zone Bottom',
+                    logic: `
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 1: BULLISH weekly bias required</span>
+                        </div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 2: First bar open > Previous Week Low</span>
+                        </div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 3: First bar close ≥ Lower Zone Bottom AND ≥ Previous Week Close</span>
+                        </div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 4: Second bar close ≥ First bar low AND > Previous Week Close AND > Lower Zone Bottom</span>
+                        </div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 5: Margin checks (bypassed if first bar touches support zone)</span>
+                        </div>
+                        <div style="margin-top: 15px; color: var(--accent-green);">
+                            <strong>Signal Triggers:</strong> ONLY on 2nd bar when support holds with bullish bias
+                        </div>
+                    `,
+                    zoneCalc: `
+                        <div style="color: var(--text-secondary); line-height: 1.8;">
+                            <strong>Weekly Bias Calculation:</strong><br>
+                            • Distance to Support = |Previous Week Close - Previous Min 4H Body|<br>
+                            • Distance to Resistance = |Previous Week Close - Previous Max 4H Body|<br>
+                            • Bias = BULLISH if closer to support, BEARISH if closer to resistance<br><br>
+                            <strong>Margin Calculation:</strong><br>
+                            • Margin Low = 0.20% of Previous Week Close<br>
+                            • If bar doesn't touch zone, margin conditions must be met<br>
+                            • If bar touches zone (Low ≤ Lower Zone Top), margin checks bypassed<br><br>
+                            <strong>Support Hold Logic:</strong><br>
+                            Price respects support level with bullish bias confirmation
+                        </div>
+                    `
+                },
+                'S3': {
+                    direction: 'BEARISH',
+                    action: 'SELL CALL',
+                    stopLoss: 'Previous Week High',
+                    logic: `
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 1: BEARISH weekly bias required</span>
+                        </div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 2: First bar close ≤ Previous Week High</span>
+                        </div>
+                        <div style="margin-top: 15px; font-weight: bold;">Scenario A (2nd bar):</div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>• Zone touched (First or Second bar high ≥ Upper Zone Bottom)</span>
+                        </div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>• Second bar close < First bar high AND < Upper Zone Bottom</span>
+                        </div>
+                        <div style="margin-top: 15px; font-weight: bold;">Scenario B (Any bar after 2nd):</div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>• Current bar close < First bar low AND < Upper Zone Bottom</span>
+                        </div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>• Current bar close < Weekly Min Low AND < Weekly Min Close</span>
+                        </div>
+                        <div style="margin-top: 15px; color: var(--accent-red);">
+                            <strong>Signal Triggers:</strong> Resistance hold with bearish bias OR breakdown below weekly lows
+                        </div>
+                    `,
+                    zoneCalc: `
+                        <div style="color: var(--text-secondary); line-height: 1.8;">
+                            <strong>Upper Zone Calculation:</strong><br>
+                            • Upper Zone Top = Max(Previous Week High, Previous Max 4H Body)<br>
+                            • Upper Zone Bottom = Min(Previous Week High, Previous Max 4H Body)<br><br>
+                            <strong>Max 4H Body:</strong><br>
+                            • Maximum body top across all 4H candles<br>
+                            • Body Top = Max(Open, Close) of each 4H period<br><br>
+                            <strong>Margin Bypass Logic:</strong><br>
+                            • If first bar touches resistance (High ≥ Upper Zone Bottom), margin checks bypassed<br>
+                            • Otherwise, margin conditions apply (0.20% of Previous Week Close)<br><br>
+                            <strong>Resistance Hold:</strong><br>
+                            Price fails at resistance with bearish confirmation
+                        </div>
+                    `
+                },
+                'S4': {
+                    direction: 'BULLISH',
+                    action: 'SELL PUT',
+                    stopLoss: 'First Hour Bar Low',
+                    logic: `
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 1: BEARISH weekly bias required</span>
+                        </div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 2: First bar open > Upper Zone Top (gap up)</span>
+                        </div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 3: S4 trigger logic activated (complex breakout conditions)</span>
+                        </div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 4: Fires only ONCE per week (first trigger)</span>
+                        </div>
+                        <div style="margin-top: 15px; color: var(--accent-green);">
+                            <strong>Signal Triggers:</strong> Bearish bias FAILS - Gap up above resistance with breakout
+                        </div>
+                    `,
+                    zoneCalc: `
+                        <div style="color: var(--text-secondary); line-height: 1.8;">
+                            <strong>S4 Breakout Logic:</strong><br>
+                            <u>Same day as first hour bar:</u><br>
+                            • Current close > First hour high = Trigger<br><br>
+                            <u>Different day:</u><br>
+                            • If no breakout candle yet: Check for bullish candle above first hour high<br>
+                            • If breakout candle exists: Current close > Breakout candle high = Trigger<br><br>
+                            <strong>Bias Failure:</strong><br>
+                            Despite bearish bias, market gaps up strongly<br>
+                            Shows rejection of bearish sentiment<br><br>
+                            <strong>Once Per Week:</strong><br>
+                            S4 can only trigger once per week to avoid multiple signals
+                        </div>
+                    `
+                },
+                'S5': {
+                    direction: 'BEARISH',
+                    action: 'SELL CALL',
+                    stopLoss: 'First Hour Bar High',
+                    logic: `
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 1: BULLISH weekly bias required</span>
+                        </div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 2: First bar open < Lower Zone Bottom (gap down)</span>
+                        </div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 3: First hour bar close < Lower Zone Bottom</span>
+                        </div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 4: First hour bar close < Previous Week Low</span>
+                        </div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 5: Current bar close < First hour bar low (breakdown)</span>
+                        </div>
+                        <div style="margin-top: 15px; color: var(--accent-red);">
+                            <strong>Signal Triggers:</strong> Bullish bias FAILS - Gap down below support with breakdown
+                        </div>
+                    `,
+                    zoneCalc: `
+                        <div style="color: var(--text-secondary); line-height: 1.8;">
+                            <strong>Gap Down Analysis:</strong><br>
+                            • Opening below Lower Zone Bottom shows weakness<br>
+                            • First hour confirms by closing below support AND previous week low<br>
+                            • Final breakdown below first hour low confirms bearish reversal<br><br>
+                            <strong>Bias Failure:</strong><br>
+                            Despite bullish bias, market gaps down strongly<br>
+                            Shows rejection of bullish sentiment<br><br>
+                            <strong>Key Levels:</strong><br>
+                            • Lower Zone Bottom (support)<br>
+                            • Previous Week Low (critical support)<br>
+                            • First Hour Low (breakdown level)
+                        </div>
+                    `
+                },
+                'S6': {
+                    direction: 'BEARISH',
+                    action: 'SELL CALL',
+                    stopLoss: 'Previous Week High',
+                    logic: `
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 1: BEARISH weekly bias required</span>
+                        </div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 2: First bar high ≥ Upper Zone Bottom (touches resistance)</span>
+                        </div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 3: First bar close ≤ Upper Zone Top AND ≤ Previous Week High</span>
+                        </div>
+                        <div style="margin-top: 15px; font-weight: bold;">Scenario A (2nd bar rejection):</div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>• Second bar close < First bar high AND < Upper Zone Bottom</span>
+                        </div>
+                        <div style="margin-top: 15px; font-weight: bold;">Scenario B (Breakdown):</div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>• Current close < First bar low AND < Upper Zone Bottom</span>
+                        </div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>• Current close < Weekly Min Low AND < Weekly Min Close</span>
+                        </div>
+                        <div style="margin-top: 15px; color: var(--accent-red);">
+                            <strong>Signal Triggers:</strong> Similar to S3 but requires zone touch - Weakness confirmed
+                        </div>
+                    `,
+                    zoneCalc: `
+                        <div style="color: var(--text-secondary); line-height: 1.8;">
+                            <strong>S6 vs S3 Difference:</strong><br>
+                            • S6 REQUIRES first bar to touch Upper Zone Bottom<br>
+                            • S3 can trigger with margin conditions without touching zone<br>
+                            • Both require bearish bias<br><br>
+                            <strong>Weakness Pattern:</strong><br>
+                            • Touch of resistance zone shows attempt to break higher<br>
+                            • Failure and reversal confirms weakness<br>
+                            • Two scenarios: immediate rejection OR later breakdown<br><br>
+                            <strong>Weekly References:</strong><br>
+                            • Weekly Min Low = Lowest low of all bars this week<br>
+                            • Weekly Min Close = Lowest close of all bars this week
+                        </div>
+                    `
+                },
+                'S7': {
+                    direction: 'BULLISH',
+                    action: 'SELL PUT',
+                    stopLoss: 'First Hour Bar Low',
+                    logic: `
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 1: S4 trigger conditions met (uses same breakout logic)</span>
+                        </div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 2: Current close NOT within 0.4% below Previous Week High</span>
+                        </div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 3: Current close > Weekly Max High (strongest breakout)</span>
+                        </div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 4: Current close > Weekly Max Close</span>
+                        </div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 5: Once per week limit (shared with S4)</span>
+                        </div>
+                        <div style="margin-top: 15px; color: var(--accent-green);">
+                            <strong>Signal Triggers:</strong> Strongest bullish breakout - New weekly highs confirmed
+                        </div>
+                    `,
+                    zoneCalc: `
+                        <div style="color: var(--text-secondary); line-height: 1.8;">
+                            <strong>S7 Breakout Strength:</strong><br>
+                            • Requires breaking above ALL previous highs this week<br>
+                            • Must also break above ALL previous closes this week<br>
+                            • 0.4% rule prevents false signals near resistance<br><br>
+                            <strong>Weekly Max Levels:</strong><br>
+                            • Weekly Max High = Highest high of all bars before current<br>
+                            • Weekly Max Close = Highest close of all bars before current<br><br>
+                            <strong>Relationship with S4:</strong><br>
+                            • S7 uses same trigger logic as S4<br>
+                            • S7 is the stronger breakout version<br>
+                            • Both limited to once per week (shared counter)
+                        </div>
+                    `
+                },
+                'S8': {
+                    direction: 'BEARISH',
+                    action: 'SELL CALL',
+                    stopLoss: 'First Hour Bar High',
+                    logic: `
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 1: S8 trigger conditions met (breakdown logic)</span>
+                        </div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 2: Upper Zone touched at least once this week</span>
+                        </div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 3: Current close < Upper Zone Bottom</span>
+                        </div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 4: Current close < Weekly Min Low</span>
+                        </div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 5: Current close < Weekly Min Close</span>
+                        </div>
+                        <div class="condition-item">
+                            <span class="condition-check true">✓</span>
+                            <span>Condition 6: Once per week limit</span>
+                        </div>
+                        <div style="margin-top: 15px; color: var(--accent-red);">
+                            <strong>Signal Triggers:</strong> Weakest breakdown - New weekly lows after touching resistance
+                        </div>
+                    `,
+                    zoneCalc: `
+                        <div style="color: var(--text-secondary); line-height: 1.8;">
+                            <strong>S8 Breakdown Logic:</strong><br>
+                            <u>Same day as first hour bar:</u><br>
+                            • Current close < First hour low = Trigger<br><br>
+                            <u>Different day:</u><br>
+                            • If no breakdown candle yet: Check for bearish candle below first hour low<br>
+                            • If breakdown candle exists: Current close < Breakdown candle low = Trigger<br><br>
+                            <strong>Upper Zone Touch Requirement:</strong><br>
+                            • At least one bar this week must have High ≥ Upper Zone Bottom<br>
+                            • Shows failed attempt at higher levels before breakdown<br><br>
+                            <strong>Weakest Breakdown:</strong><br>
+                            • Requires new lows after testing resistance<br>
+                            • Shows complete rejection and reversal
+                        </div>
+                    `
+                }
+            };
+            
+            return signalData[signalId] || {
+                direction: '-',
+                action: '-',
+                stopLoss: '-',
+                logic: 'Signal information not available',
+                zoneCalc: 'Zone calculation not available'
+            };
+        }
+        
+        // Load recent trades for specific signal
+        async function loadSignalTrades(signalId) {
+            const tbody = document.getElementById('modalRecentTrades');
+            
+            // Filter recent triggers for this signal
+            const signalTrades = recentTriggers.filter(t => t.signal_type === signalId).slice(0, 5);
+            
+            if (signalTrades.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 20px; color: var(--text-muted);">
+                            No recent trades for this signal
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = signalTrades.map(trade => {
+                const entryDate = trade.datetime ? new Date(trade.datetime).toLocaleDateString() : '-';
+                const entryTime = trade.datetime ? new Date(trade.datetime).toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }) : '-';
+                const exitTime = trade.exit_time ? new Date(trade.exit_time).toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }) : '-';
+                const pnlClass = trade.pnl >= 0 ? 'positive' : 'negative';
+                const statusClass = trade.status === 'WIN' ? 'status-active' : 'status-expired';
+                
+                return `
+                    <tr>
+                        <td style="padding: 10px;">${entryDate}</td>
+                        <td style="padding: 10px;">${entryTime}</td>
+                        <td style="padding: 10px;">${exitTime}</td>
+                        <td style="padding: 10px; color: ${trade.pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">
+                            ₹${Math.abs(trade.pnl).toLocaleString('en-IN', {maximumFractionDigits: 0})}
+                        </td>
+                        <td style="padding: 10px;">
+                            <span class="status-badge ${statusClass}">${trade.status}</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Close modal function
+        function closeModal() {
+            const modal = document.getElementById('signalModal');
+            modal.classList.remove('active');
+        }
+
+        // Close modal on overlay click
+        document.addEventListener('DOMContentLoaded', function() {
+            const modalOverlay = document.getElementById('signalModal');
+            modalOverlay.addEventListener('click', function(e) {
+                if (e.target === modalOverlay) {
+                    closeModal();
+                }
+            });
         });
     </script>
 </body>

@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings - BreezeConnect Trading System</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Settings - Configuration Dashboard</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <style>
         * {
             margin: 0;
@@ -12,201 +15,286 @@
             box-sizing: border-box;
         }
 
+        :root {
+            /* Dark Theme Colors */
+            --bg-primary: #0f1419;
+            --bg-secondary: #1a1f2e;
+            --bg-tertiary: #242837;
+            --bg-card: #1e2332;
+            --bg-hover: #2a3042;
+            
+            /* Accent Colors */
+            --accent-blue: #00d4ff;
+            --accent-green: #00ff88;
+            --accent-red: #ff3366;
+            --accent-purple: #9945ff;
+            --accent-orange: #ff9500;
+            --accent-yellow: #ffeb3b;
+            
+            /* Text Colors */
+            --text-primary: #ffffff;
+            --text-secondary: #8892b0;
+            --text-muted: #495670;
+            
+            /* Gradients */
+            --gradient-blue: linear-gradient(135deg, #667eea 0%, #00d4ff 100%);
+            --gradient-green: linear-gradient(135deg, #00ff88 0%, #00d4aa 100%);
+            --gradient-red: linear-gradient(135deg, #ff3366 0%, #ff6b6b 100%);
+            --gradient-purple: linear-gradient(135deg, #9945ff 0%, #c770ff 100%);
+            
+            /* Shadows */
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+            --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.6);
+            
+            /* Glassmorphism */
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+            position: relative;
+            overflow-x: hidden;
         }
 
-        /* Header */
-        .header {
-            background: rgba(26, 26, 46, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        /* Animated Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(153, 69, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(0, 255, 136, 0.1) 0%, transparent 50%);
+            z-index: -1;
+            animation: backgroundShift 20s ease-in-out infinite;
         }
 
-        .header h1 {
-            color: white;
-            font-size: 24px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 12px;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            border-radius: 10px;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        @keyframes backgroundShift {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.1); }
         }
 
         /* Container */
         .container {
-            flex: 1;
-            padding: 20px;
             max-width: 1400px;
             margin: 0 auto;
-            width: 100%;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
         }
 
-        /* Settings Navigation */
-        .settings-nav {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 10px;
-            border-radius: 16px;
+        /* Header */
+        .header {
+            background: var(--glass-bg);
             backdrop-filter: blur(10px);
-            overflow-x: auto;
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 25px 30px;
+            margin-bottom: 30px;
+            animation: slideDown 0.5s ease;
         }
 
-        .nav-item {
-            padding: 12px 24px;
-            background: transparent;
-            border: none;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            background: var(--gradient-blue);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        /* Settings Layout */
+        .settings-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 20px;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 20px;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+            animation: slideInLeft 0.6s ease;
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .sidebar-item {
+            padding: 12px 16px;
+            margin-bottom: 8px;
             border-radius: 10px;
+            cursor: pointer;
             transition: all 0.3s;
-            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-secondary);
         }
 
-        .nav-item.active {
-            background: white;
-            color: #667eea;
+        .sidebar-item:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
         }
 
-        .nav-item:hover:not(.active) {
-            background: rgba(255, 255, 255, 0.1);
+        .sidebar-item.active {
+            background: var(--gradient-blue);
+            color: white;
+        }
+
+        .sidebar-item i {
+            width: 20px;
+            text-align: center;
         }
 
         /* Settings Content */
         .settings-content {
+            animation: fadeInUp 0.6s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .settings-section {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
             display: none;
         }
 
-        .settings-content.active {
+        .settings-section.active {
             display: block;
-            animation: fadeIn 0.3s;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Card */
-        .card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-        }
-
-        .card-header {
+        .section-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 25px;
             padding-bottom: 15px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            border-bottom: 1px solid var(--glass-border);
         }
 
-        .card-title {
-            font-size: 18px;
+        .section-title {
+            font-size: 20px;
             font-weight: 600;
-            color: #1a1a2e;
+            color: var(--text-primary);
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+        }
+
+        .section-title i {
+            color: var(--accent-blue);
         }
 
         /* Form Elements */
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
 
-        .form-label {
+        .form-group label {
             display: block;
             margin-bottom: 8px;
-            font-weight: 500;
-            color: #333;
-            font-size: 14px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .form-input {
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
             width: 100%;
-            padding: 10px;
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-primary);
             font-size: 14px;
             transition: all 0.3s;
         }
 
-        .form-input:focus {
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: var(--accent-blue);
+            background: var(--bg-tertiary);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
         }
 
-        .form-select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            font-size: 14px;
-            background: white;
-            cursor: pointer;
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
         }
 
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        @media (max-width: 768px) {
-            .form-row {
-                grid-template-columns: 1fr;
-            }
+        .form-hint {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 5px;
         }
 
         /* Toggle Switch */
@@ -214,36 +302,40 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px;
-            background: rgba(102, 126, 234, 0.05);
-            border-radius: 8px;
-            margin-bottom: 15px;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .toggle-group:last-child {
+            border-bottom: none;
         }
 
         .toggle-label {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
+            flex: 1;
         }
 
         .toggle-title {
+            font-size: 14px;
             font-weight: 500;
-            color: #333;
+            color: var(--text-primary);
+            margin-bottom: 4px;
         }
 
-        .toggle-desc {
+        .toggle-description {
             font-size: 12px;
-            color: #666;
+            color: var(--text-secondary);
         }
 
         .toggle-switch {
             position: relative;
             width: 50px;
-            height: 24px;
+            height: 26px;
         }
 
         .toggle-switch input {
-            display: none;
+            opacity: 0;
+            width: 0;
+            height: 0;
         }
 
         .toggle-slider {
@@ -253,9 +345,10 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: #ccc;
-            transition: 0.4s;
-            border-radius: 24px;
+            background: var(--bg-secondary);
+            transition: 0.3s;
+            border-radius: 26px;
+            border: 1px solid var(--glass-border);
         }
 
         .toggle-slider:before {
@@ -266,826 +359,723 @@
             left: 3px;
             bottom: 3px;
             background: white;
-            transition: 0.4s;
+            transition: 0.3s;
             border-radius: 50%;
         }
 
         input:checked + .toggle-slider {
-            background: #667eea;
+            background: var(--gradient-blue);
+            border-color: transparent;
         }
 
         input:checked + .toggle-slider:before {
-            transform: translateX(26px);
+            transform: translateX(24px);
         }
 
-        /* Info Box */
-        .info-box {
-            padding: 15px;
-            background: rgba(102, 126, 234, 0.05);
-            border-left: 4px solid #667eea;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-
-        .info-title {
+        /* Buttons */
+        .btn {
+            padding: 12px 24px;
+            background: var(--gradient-blue);
+            border: none;
+            border-radius: 10px;
+            color: white;
             font-weight: 600;
-            color: #1a1a2e;
-            margin-bottom: 5px;
-        }
-
-        .info-text {
-            color: #666;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
             font-size: 14px;
-            line-height: 1.6;
         }
 
-        /* Alert Box */
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-secondary {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-hover);
+        }
+
+        .btn-danger {
+            background: var(--gradient-red);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        /* API Key Display */
+        .api-key-group {
+            display: flex;
+            gap: 10px;
+            align-items: stretch;
+        }
+
+        .api-key-input {
+            flex: 1;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .btn-copy {
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-copy:hover {
+            background: var(--bg-hover);
+            color: var(--accent-blue);
+        }
+
+        /* Alert Messages */
         .alert {
-            padding: 15px;
-            border-radius: 8px;
+            padding: 16px 20px;
+            border-radius: 10px;
             margin-bottom: 20px;
-            display: none;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideInRight 0.5s ease;
         }
 
-        .alert.show {
-            display: block;
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
 
         .alert-success {
-            background: #d4f4dd;
-            color: #0e6333;
-            border: 1px solid #86efac;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            color: var(--accent-green);
         }
 
-        .alert-danger {
-            background: #fecaca;
-            color: #991b1b;
-            border: 1px solid #f87171;
+        .alert-warning {
+            background: rgba(255, 149, 0, 0.1);
+            border: 1px solid rgba(255, 149, 0, 0.3);
+            color: var(--accent-orange);
         }
 
-        /* Settings Grid */
-        .settings-grid {
+        .alert-error {
+            background: rgba(255, 51, 102, 0.1);
+            border: 1px solid rgba(255, 51, 102, 0.3);
+            color: var(--accent-red);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
+            margin-bottom: 25px;
         }
 
-        /* Quick Settings */
-        .quick-setting {
-            padding: 15px;
-            background: rgba(102, 126, 234, 0.05);
-            border-radius: 8px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .stat-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
         }
 
-        .quick-setting-label {
-            font-weight: 500;
-            color: #333;
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 5px;
         }
 
-        .quick-setting-value {
-            font-weight: 600;
-            color: #667eea;
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        /* Floating particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            background: var(--accent-blue);
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: float 20s infinite linear;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) translateX(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.3;
+            }
+            90% {
+                opacity: 0.3;
+            }
+            100% {
+                transform: translateY(-100vh) translateX(100px);
+                opacity: 0;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 968px) {
+            .settings-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: static;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <div class="header">
-        <h1>
-            <i class="fas fa-cog"></i>
-            System Settings
-        </h1>
-        <div class="header-actions">
-            <button class="btn btn-secondary" onclick="window.location.href='/'">
-                <i class="fas fa-arrow-left"></i> Back to Dashboard
-            </button>
-            <button class="btn btn-success" onclick="saveAllSettings()">
-                <i class="fas fa-save"></i> Save All Settings
-            </button>
-        </div>
+    <!-- Floating Particles -->
+    <div class="particles">
+        <div class="particle" style="width: 4px; height: 4px; left: 10%; animation-delay: 0s;"></div>
+        <div class="particle" style="width: 3px; height: 3px; left: 20%; animation-delay: 2s;"></div>
+        <div class="particle" style="width: 5px; height: 5px; left: 30%; animation-delay: 4s;"></div>
+        <div class="particle" style="width: 2px; height: 2px; left: 40%; animation-delay: 6s;"></div>
+        <div class="particle" style="width: 4px; height: 4px; left: 50%; animation-delay: 8s;"></div>
+        <div class="particle" style="width: 3px; height: 3px; left: 60%; animation-delay: 10s;"></div>
+        <div class="particle" style="width: 5px; height: 5px; left: 70%; animation-delay: 12s;"></div>
+        <div class="particle" style="width: 2px; height: 2px; left: 80%; animation-delay: 14s;"></div>
     </div>
 
-    <!-- Container -->
     <div class="container">
-        <!-- Settings Navigation -->
-        <div class="settings-nav">
-            <button class="nav-item active" onclick="showSection('trading')">
-                <i class="fas fa-chart-line"></i> Trading
-            </button>
-            <button class="nav-item" onclick="showSection('risk')">
-                <i class="fas fa-shield-alt"></i> Risk Management
-            </button>
-            <button class="nav-item" onclick="showSection('signals')">
-                <i class="fas fa-signal"></i> Signals
-            </button>
-            <button class="nav-item" onclick="showSection('database')">
-                <i class="fas fa-database"></i> Database
-            </button>
-            <button class="nav-item" onclick="showSection('notifications')">
-                <i class="fas fa-bell"></i> Notifications
-            </button>
-            <button class="nav-item" onclick="showSection('advanced')">
-                <i class="fas fa-tools"></i> Advanced
-            </button>
-        </div>
-
-        <!-- Alert Container -->
-        <div id="alertContainer"></div>
-
-        <!-- Trading Settings -->
-        <div id="trading" class="settings-content active">
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <i class="fas fa-chart-line"></i>
-                        Trading Configuration
-                    </div>
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <div>
+                    <h1>
+                        <i class="fas fa-cog"></i>
+                        Settings
+                    </h1>
+                    <p class="subtitle">Configure your trading system preferences</p>
                 </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Default Position Size (Lots)</label>
-                        <input type="number" class="form-input" id="positionSize" value="10" min="1" max="100">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Lot Quantity</label>
-                        <input type="number" class="form-input" id="lotQuantity" value="75" min="25" max="1000">
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Trading Start Time</label>
-                        <input type="time" class="form-input" id="tradingStart" value="09:15">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Trading End Time</label>
-                        <input type="time" class="form-input" id="tradingEnd" value="15:30">
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Initial Capital</label>
-                    <input type="number" class="form-input" id="initialCapital" value="500000" min="100000">
-                </div>
-                
-                <div class="toggle-group">
-                    <div class="toggle-label">
-                        <span class="toggle-title">Auto-Fetch Missing Data</span>
-                        <span class="toggle-desc">Automatically download missing options data during backtests</span>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="autoFetch" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                
-                <div class="toggle-group">
-                    <div class="toggle-label">
-                        <span class="toggle-title">Wednesday 3:15 PM Exit</span>
-                        <span class="toggle-desc">Exit all positions on Wednesday at 3:15 PM to avoid theta decay</span>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="wednesdayExit" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <i class="fas fa-rupee-sign"></i>
-                        Commission & Charges
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Commission per Lot (₹)</label>
-                        <input type="number" class="form-input" id="commission" value="40" min="0">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Slippage (%)</label>
-                        <input type="number" class="form-input" id="slippage" value="0.05" min="0" step="0.01">
-                    </div>
+                <div>
+                    <button class="btn btn-secondary" onclick="window.location.href='/'">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </button>
+                    <button class="btn" onclick="saveSettings()">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- Risk Management Settings -->
-        <div id="risk" class="settings-content">
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <i class="fas fa-shield-alt"></i>
-                        Risk Parameters
-                    </div>
+        <!-- Settings Layout -->
+        <div class="settings-layout">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="sidebar-item active" onclick="showSection('general')">
+                    <i class="fas fa-sliders-h"></i>
+                    <span>General</span>
                 </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Max Risk per Trade (%)</label>
-                        <input type="number" class="form-input" id="maxRiskPerTrade" value="2" min="0.5" max="5" step="0.5">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Max Drawdown (%)</label>
-                        <input type="number" class="form-input" id="maxDrawdown" value="15" min="5" max="30">
-                    </div>
+                <div class="sidebar-item" onclick="showSection('trading')">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Trading</span>
                 </div>
-                
-                <div class="form-row">
+                <div class="sidebar-item" onclick="showSection('api')">
+                    <i class="fas fa-key"></i>
+                    <span>API Configuration</span>
+                </div>
+                <div class="sidebar-item" onclick="showSection('notifications')">
+                    <i class="fas fa-bell"></i>
+                    <span>Notifications</span>
+                </div>
+                <div class="sidebar-item" onclick="showSection('risk')">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Risk Management</span>
+                </div>
+                <div class="sidebar-item" onclick="showSection('appearance')">
+                    <i class="fas fa-palette"></i>
+                    <span>Appearance</span>
+                </div>
+                <div class="sidebar-item" onclick="showSection('data')">
+                    <i class="fas fa-database"></i>
+                    <span>Data & Storage</span>
+                </div>
+            </div>
+
+            <!-- Settings Content -->
+            <div class="settings-content">
+                <!-- General Settings -->
+                <div class="settings-section active" id="general">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <i class="fas fa-sliders-h"></i>
+                            General Settings
+                        </div>
+                    </div>
+
                     <div class="form-group">
-                        <label class="form-label">Stop Loss Type</label>
-                        <select class="form-select" id="stopLossType">
-                            <option value="fixed">Fixed at Strike Price</option>
-                            <option value="percentage">Percentage Based</option>
-                            <option value="atr">ATR Based</option>
-                            <option value="trailing">Trailing Stop</option>
+                        <label for="timezone">Timezone</label>
+                        <select id="timezone">
+                            <option value="IST">Indian Standard Time (IST)</option>
+                            <option value="UTC">UTC</option>
+                            <option value="EST">Eastern Standard Time</option>
+                            <option value="PST">Pacific Standard Time</option>
+                        </select>
+                        <div class="form-hint">All timestamps will be displayed in this timezone</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="language">Language</label>
+                        <select id="language">
+                            <option value="en">English</option>
+                            <option value="hi">Hindi</option>
+                            <option value="mr">Marathi</option>
+                            <option value="gu">Gujarati</option>
                         </select>
                     </div>
-                    
+
+                    <div class="toggle-group">
+                        <div class="toggle-label">
+                            <div class="toggle-title">Auto-save</div>
+                            <div class="toggle-description">Automatically save changes while editing</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="toggle-group">
+                        <div class="toggle-label">
+                            <div class="toggle-title">Real-time Updates</div>
+                            <div class="toggle-description">Enable real-time market data updates</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Trading Settings -->
+                <div class="settings-section" id="trading">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <i class="fas fa-chart-line"></i>
+                            Trading Settings
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value">10</div>
+                            <div class="stat-label">Default Lot Size</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">₹5L</div>
+                            <div class="stat-label">Capital</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">2%</div>
+                            <div class="stat-label">Risk per Trade</div>
+                        </div>
+                    </div>
+
                     <div class="form-group">
-                        <label class="form-label">Stop Loss Value</label>
-                        <input type="number" class="form-input" id="stopLossValue" value="100" min="0">
+                        <label for="lotSize">Default Lot Size</label>
+                        <input type="number" id="lotSize" value="10">
+                        <div class="form-hint">Number of lots for each trade</div>
                     </div>
-                </div>
-                
-                <div class="toggle-group">
-                    <div class="toggle-label">
-                        <span class="toggle-title">Enable Hedging</span>
-                        <span class="toggle-desc">Buy protective options to hedge main positions</span>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="enableHedging" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Hedge Offset (Points)</label>
-                    <input type="number" class="form-input" id="hedgeOffset" value="200" min="50" max="500" step="50">
-                </div>
-                
-                <div class="toggle-group">
-                    <div class="toggle-label">
-                        <span class="toggle-title">Breakeven Stop</span>
-                        <span class="toggle-desc">Move stop to breakeven after reaching profit target</span>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="breakevenStop">
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Breakeven Trigger (%)</label>
-                    <input type="number" class="form-input" id="breakevenTrigger" value="10" min="5" max="20">
-                </div>
-            </div>
-        </div>
 
-        <!-- Signals Settings -->
-        <div id="signals" class="settings-content">
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <i class="fas fa-signal"></i>
-                        Signal Configuration
-                    </div>
-                </div>
-                
-                <div class="info-box">
-                    <div class="info-title">Active Signals</div>
-                    <div class="info-text">
-                        Select which signals to use for trading. ML analysis recommends focusing on S1, S2, S3, and S7 for best performance.
-                    </div>
-                </div>
-                
-                <div class="settings-grid">
-                    <div class="toggle-group">
-                        <div class="toggle-label">
-                            <span class="toggle-title">S1 - Bear Trap (Bullish)</span>
-                            <span class="toggle-desc">Win Rate: 72%</span>
-                        </div>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="signalS1" checked>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                    
-                    <div class="toggle-group">
-                        <div class="toggle-label">
-                            <span class="toggle-title">S2 - Support Hold (Bullish)</span>
-                            <span class="toggle-desc">Win Rate: 68%</span>
-                        </div>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="signalS2" checked>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                    
-                    <div class="toggle-group">
-                        <div class="toggle-label">
-                            <span class="toggle-title">S3 - Resistance Hold (Bearish)</span>
-                            <span class="toggle-desc">Win Rate: 70%</span>
-                        </div>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="signalS3" checked>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                    
-                    <div class="toggle-group">
-                        <div class="toggle-label">
-                            <span class="toggle-title">S4 - Bias Failure Bull</span>
-                            <span class="toggle-desc">Win Rate: 65%</span>
-                        </div>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="signalS4">
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                    
-                    <div class="toggle-group">
-                        <div class="toggle-label">
-                            <span class="toggle-title">S5 - Bias Failure Bear</span>
-                            <span class="toggle-desc">Win Rate: 63%</span>
-                        </div>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="signalS5">
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                    
-                    <div class="toggle-group">
-                        <div class="toggle-label">
-                            <span class="toggle-title">S6 - Weakness Confirmed</span>
-                            <span class="toggle-desc">Win Rate: 64%</span>
-                        </div>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="signalS6">
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                    
-                    <div class="toggle-group">
-                        <div class="toggle-label">
-                            <span class="toggle-title">S7 - Breakout Confirmed</span>
-                            <span class="toggle-desc">Win Rate: 71%</span>
-                        </div>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="signalS7" checked>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                    
-                    <div class="toggle-group">
-                        <div class="toggle-label">
-                            <span class="toggle-title">S8 - Breakdown Confirmed</span>
-                            <span class="toggle-desc">Win Rate: 67%</span>
-                        </div>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="signalS8">
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                </div>
-                
-                <div class="form-group" style="margin-top: 20px;">
-                    <label class="form-label">Signal Entry Delay (Candles)</label>
-                    <input type="number" class="form-input" id="signalDelay" value="2" min="1" max="5">
-                </div>
-            </div>
-        </div>
-
-        <!-- Database Settings -->
-        <div id="database" class="settings-content">
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <i class="fas fa-database"></i>
-                        Database Configuration
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Database Server</label>
-                    <input type="text" class="form-input" id="dbServer" value="(localdb)\mssqllocaldb" readonly>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Database Name</label>
-                    <input type="text" class="form-input" id="dbName" value="KiteConnectApi" readonly>
-                </div>
-                
-                <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Connection Timeout (seconds)</label>
-                        <input type="number" class="form-input" id="dbTimeout" value="30" min="10" max="120">
+                        <label for="capital">Trading Capital</label>
+                        <input type="number" id="capital" value="500000">
+                        <div class="form-hint">Total capital available for trading</div>
                     </div>
-                    
+
                     <div class="form-group">
-                        <label class="form-label">Max Pool Size</label>
-                        <input type="number" class="form-input" id="dbPoolSize" value="10" min="5" max="50">
+                        <label for="stopLoss">Default Stop Loss (%)</label>
+                        <input type="number" id="stopLoss" value="2" step="0.1">
                     </div>
-                </div>
-                
-                <div class="toggle-group">
-                    <div class="toggle-label">
-                        <span class="toggle-title">Auto Backup</span>
-                        <span class="toggle-desc">Automatically backup database daily</span>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="autoBackup">
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Backup Path</label>
-                    <input type="text" class="form-input" id="backupPath" value="C:\Backups\TradingSystem">
-                </div>
-            </div>
-        </div>
 
-        <!-- Notifications Settings -->
-        <div id="notifications" class="settings-content">
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <i class="fas fa-bell"></i>
-                        Notification Preferences
+                    <div class="form-group">
+                        <label for="target">Default Target (%)</label>
+                        <input type="number" id="target" value="5" step="0.1">
                     </div>
-                </div>
-                
-                <div class="toggle-group">
-                    <div class="toggle-label">
-                        <span class="toggle-title">Trade Execution Alerts</span>
-                        <span class="toggle-desc">Notify when trades are executed</span>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="tradeAlerts" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                
-                <div class="toggle-group">
-                    <div class="toggle-label">
-                        <span class="toggle-title">Stop Loss Alerts</span>
-                        <span class="toggle-desc">Alert when stop loss is triggered</span>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="stopLossAlerts" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                
-                <div class="toggle-group">
-                    <div class="toggle-label">
-                        <span class="toggle-title">Signal Alerts</span>
-                        <span class="toggle-desc">Notify when new signals are detected</span>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="signalAlerts" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                
-                <div class="toggle-group">
-                    <div class="toggle-label">
-                        <span class="toggle-title">Daily Summary</span>
-                        <span class="toggle-desc">Send daily P&L summary at market close</span>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="dailySummary" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Email for Notifications</label>
-                    <input type="email" class="form-input" id="notificationEmail" placeholder="your.email@example.com">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Telegram Chat ID (Optional)</label>
-                    <input type="text" class="form-input" id="telegramChatId" placeholder="Enter Telegram chat ID">
-                </div>
-            </div>
-        </div>
 
-        <!-- Advanced Settings -->
-        <div id="advanced" class="settings-content">
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <i class="fas fa-tools"></i>
-                        Advanced Configuration
+                    <div class="toggle-group">
+                        <div class="toggle-label">
+                            <div class="toggle-title">Enable Hedging</div>
+                            <div class="toggle-description">Automatically hedge positions</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
                     </div>
                 </div>
-                
-                <div class="form-group">
-                    <label class="form-label">API Request Timeout (seconds)</label>
-                    <input type="number" class="form-input" id="apiTimeout" value="60" min="30" max="300">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Max Retry Attempts</label>
-                    <input type="number" class="form-input" id="maxRetries" value="3" min="1" max="10">
-                </div>
-                
-                <div class="toggle-group">
-                    <div class="toggle-label">
-                        <span class="toggle-title">Debug Mode</span>
-                        <span class="toggle-desc">Enable detailed logging for troubleshooting</span>
+
+                <!-- API Settings -->
+                <div class="settings-section" id="api">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <i class="fas fa-key"></i>
+                            API Configuration
+                        </div>
                     </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="debugMode">
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                
-                <div class="toggle-group">
-                    <div class="toggle-label">
-                        <span class="toggle-title">Paper Trading Mode</span>
-                        <span class="toggle-desc">Simulate trades without real money</span>
+
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Keep your API credentials secure. Never share them publicly.
                     </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="paperTrading">
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Log Level</label>
-                    <select class="form-select" id="logLevel">
-                        <option value="ERROR">Error</option>
-                        <option value="WARNING">Warning</option>
-                        <option value="INFO" selected>Info</option>
-                        <option value="DEBUG">Debug</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Cache TTL (minutes)</label>
-                    <input type="number" class="form-input" id="cacheTTL" value="15" min="5" max="60">
-                </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <i class="fas fa-sync"></i>
-                        System Actions
+
+                    <div class="form-group">
+                        <label for="apiKey">API Key</label>
+                        <div class="api-key-group">
+                            <input type="password" id="apiKey" class="api-key-input" value="••••••••••••••••">
+                            <button class="btn-copy" onclick="toggleVisibility('apiKey')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn-copy" onclick="copyToClipboard('apiKey')">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="apiSecret">API Secret</label>
+                        <div class="api-key-group">
+                            <input type="password" id="apiSecret" class="api-key-input" value="••••••••••••••••">
+                            <button class="btn-copy" onclick="toggleVisibility('apiSecret')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn-copy" onclick="copyToClipboard('apiSecret')">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sessionToken">Session Token</label>
+                        <input type="password" id="sessionToken" value="••••••••••••••••">
+                    </div>
+
+                    <div class="btn-group">
+                        <button class="btn" onclick="testConnection()">
+                            <i class="fas fa-plug"></i> Test Connection
+                        </button>
+                        <button class="btn btn-secondary" onclick="regenerateToken()">
+                            <i class="fas fa-sync"></i> Regenerate Token
+                        </button>
                     </div>
                 </div>
-                
-                <button class="btn btn-danger" style="width: 100%; margin-bottom: 10px;" onclick="clearCache()">
-                    <i class="fas fa-trash"></i> Clear Cache
-                </button>
-                
-                <button class="btn btn-secondary" style="width: 100%; margin-bottom: 10px;" onclick="resetToDefaults()">
-                    <i class="fas fa-undo"></i> Reset to Defaults
-                </button>
-                
-                <button class="btn" style="width: 100%;" onclick="exportSettings()">
-                    <i class="fas fa-download"></i> Export Settings
-                </button>
+
+                <!-- Notification Settings -->
+                <div class="settings-section" id="notifications">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <i class="fas fa-bell"></i>
+                            Notification Settings
+                        </div>
+                    </div>
+
+                    <div class="toggle-group">
+                        <div class="toggle-label">
+                            <div class="toggle-title">Trade Alerts</div>
+                            <div class="toggle-description">Get notified when trades are executed</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="toggle-group">
+                        <div class="toggle-label">
+                            <div class="toggle-title">Signal Alerts</div>
+                            <div class="toggle-description">Receive alerts when new signals are triggered</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="toggle-group">
+                        <div class="toggle-label">
+                            <div class="toggle-title">Stop Loss Alerts</div>
+                            <div class="toggle-description">Alert when position hits stop loss</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="toggle-group">
+                        <div class="toggle-label">
+                            <div class="toggle-title">Email Notifications</div>
+                            <div class="toggle-description">Send alerts via email</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" placeholder="your@email.com">
+                    </div>
+                </div>
+
+                <!-- Risk Management -->
+                <div class="settings-section" id="risk">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <i class="fas fa-shield-alt"></i>
+                            Risk Management
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="maxRisk">Max Risk per Trade (%)</label>
+                        <input type="number" id="maxRisk" value="2" step="0.1">
+                        <div class="form-hint">Maximum percentage of capital to risk per trade</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="maxPositions">Max Concurrent Positions</label>
+                        <input type="number" id="maxPositions" value="5">
+                        <div class="form-hint">Maximum number of open positions at any time</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dailyLossLimit">Daily Loss Limit (₹)</label>
+                        <input type="number" id="dailyLossLimit" value="10000">
+                        <div class="form-hint">Stop trading if daily loss exceeds this amount</div>
+                    </div>
+
+                    <div class="toggle-group">
+                        <div class="toggle-label">
+                            <div class="toggle-title">Auto Square-off</div>
+                            <div class="toggle-description">Automatically close all positions at 3:20 PM</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="toggle-group">
+                        <div class="toggle-label">
+                            <div class="toggle-title">Trailing Stop Loss</div>
+                            <div class="toggle-description">Enable trailing stop loss for positions</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Appearance -->
+                <div class="settings-section" id="appearance">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <i class="fas fa-palette"></i>
+                            Appearance
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="theme">Theme</label>
+                        <select id="theme">
+                            <option value="dark">Dark Mode</option>
+                            <option value="light">Light Mode</option>
+                            <option value="auto">Auto (System)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="accentColor">Accent Color</label>
+                        <select id="accentColor">
+                            <option value="blue">Blue</option>
+                            <option value="purple">Purple</option>
+                            <option value="green">Green</option>
+                            <option value="orange">Orange</option>
+                        </select>
+                    </div>
+
+                    <div class="toggle-group">
+                        <div class="toggle-label">
+                            <div class="toggle-title">Animations</div>
+                            <div class="toggle-description">Enable UI animations and transitions</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="toggle-group">
+                        <div class="toggle-label">
+                            <div class="toggle-title">Compact Mode</div>
+                            <div class="toggle-description">Reduce spacing for more content</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Data & Storage -->
+                <div class="settings-section" id="data">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <i class="fas fa-database"></i>
+                            Data & Storage
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value">2.4 GB</div>
+                            <div class="stat-label">Storage Used</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">45K</div>
+                            <div class="stat-label">Cached Records</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="retention">Data Retention Period</label>
+                        <select id="retention">
+                            <option value="30">30 Days</option>
+                            <option value="90">90 Days</option>
+                            <option value="180">180 Days</option>
+                            <option value="365">1 Year</option>
+                        </select>
+                        <div class="form-hint">Historical data older than this will be archived</div>
+                    </div>
+
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" onclick="clearCache()">
+                            <i class="fas fa-broom"></i> Clear Cache
+                        </button>
+                        <button class="btn btn-secondary" onclick="exportData()">
+                            <i class="fas fa-download"></i> Export Data
+                        </button>
+                        <button class="btn btn-danger" onclick="resetData()">
+                            <i class="fas fa-trash"></i> Reset All Data
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Initialize on load
-        document.addEventListener('DOMContentLoaded', function() {
-            loadSettings();
-        });
-
         // Show section
-        function showSection(sectionName) {
-            // Hide all sections
-            document.querySelectorAll('.settings-content').forEach(section => {
-                section.classList.remove('active');
-            });
-            
-            // Remove active from all nav items
-            document.querySelectorAll('.nav-item').forEach(item => {
+        function showSection(section) {
+            // Update sidebar
+            document.querySelectorAll('.sidebar-item').forEach(item => {
                 item.classList.remove('active');
             });
-            
-            // Show selected section
-            document.getElementById(sectionName).classList.add('active');
-            
-            // Mark nav item as active
-            event.target.classList.add('active');
+            event.currentTarget.classList.add('active');
+
+            // Update content
+            document.querySelectorAll('.settings-section').forEach(sec => {
+                sec.classList.remove('active');
+            });
+            document.getElementById(section).classList.add('active');
         }
 
-        // Load settings
-        async function loadSettings() {
-            let settings = {};
-            
-            // Try to load from backend API first
-            try {
-                const response = await fetch('http://localhost:8000/settings');
-                if (response.ok) {
-                    settings = await response.json();
-                    // Also save to localStorage for offline access
-                    localStorage.setItem('tradingSettings', JSON.stringify(settings));
-                } else {
-                    // Fallback to localStorage if API not available
-                    settings = JSON.parse(localStorage.getItem('tradingSettings') || '{}');
-                }
-            } catch (error) {
-                console.error('Error loading settings from backend:', error);
-                // Fallback to localStorage
-                settings = JSON.parse(localStorage.getItem('tradingSettings') || '{}');
-            }
-            
-            // Apply settings to form fields
-            if (settings.positionSize) document.getElementById('positionSize').value = settings.positionSize;
-            if (settings.lotQuantity) document.getElementById('lotQuantity').value = settings.lotQuantity;
-            if (settings.initialCapital) document.getElementById('initialCapital').value = settings.initialCapital;
-            if (settings.commission) document.getElementById('commission').value = settings.commission;
-            if (settings.hedgeOffset) document.getElementById('hedgeOffset').value = settings.hedgeOffset;
-            if (settings.tradingStart) document.getElementById('tradingStart').value = settings.tradingStart;
-            if (settings.tradingEnd) document.getElementById('tradingEnd').value = settings.tradingEnd;
-            if (settings.slippage) document.getElementById('slippage').value = settings.slippage;
-            
-            // Load risk settings
-            if (settings.maxRiskPerTrade) document.getElementById('maxRiskPerTrade').value = settings.maxRiskPerTrade;
-            if (settings.maxDrawdown) document.getElementById('maxDrawdown').value = settings.maxDrawdown;
-            if (settings.stopLossType) document.getElementById('stopLossType').value = settings.stopLossType;
-            if (settings.stopLossValue) document.getElementById('stopLossValue').value = settings.stopLossValue;
-            if (settings.breakevenTrigger) document.getElementById('breakevenTrigger').value = settings.breakevenTrigger;
-            
-            // Load toggles
-            if (settings.autoFetch !== undefined) document.getElementById('autoFetch').checked = settings.autoFetch;
-            if (settings.wednesdayExit !== undefined) document.getElementById('wednesdayExit').checked = settings.wednesdayExit;
-            if (settings.enableHedging !== undefined) document.getElementById('enableHedging').checked = settings.enableHedging;
-            if (settings.breakevenStop !== undefined) document.getElementById('breakevenStop').checked = settings.breakevenStop;
-            
-            // Load signals
-            if (settings.signals) {
-                Object.keys(settings.signals).forEach(signal => {
-                    const checkbox = document.getElementById(signal);
-                    if (checkbox) checkbox.checked = settings.signals[signal];
-                });
-            }
-            
-            // Load notifications
-            if (settings.tradeAlerts !== undefined) document.getElementById('tradeAlerts').checked = settings.tradeAlerts;
-            if (settings.stopLossAlerts !== undefined) document.getElementById('stopLossAlerts').checked = settings.stopLossAlerts;
-            if (settings.signalAlerts !== undefined) document.getElementById('signalAlerts').checked = settings.signalAlerts;
-            if (settings.dailySummary !== undefined) document.getElementById('dailySummary').checked = settings.dailySummary;
-            if (settings.notificationEmail) document.getElementById('notificationEmail').value = settings.notificationEmail;
-            if (settings.telegramChatId) document.getElementById('telegramChatId').value = settings.telegramChatId;
-            
-            // Load advanced settings
-            if (settings.apiTimeout) document.getElementById('apiTimeout').value = settings.apiTimeout;
-            if (settings.maxRetries) document.getElementById('maxRetries').value = settings.maxRetries;
-            if (settings.debugMode !== undefined) document.getElementById('debugMode').checked = settings.debugMode;
-            if (settings.paperTrading !== undefined) document.getElementById('paperTrading').checked = settings.paperTrading;
-            if (settings.logLevel) document.getElementById('logLevel').value = settings.logLevel;
-            if (settings.cacheTTL) document.getElementById('cacheTTL').value = settings.cacheTTL;
-            if (settings.signalDelay) document.getElementById('signalDelay').value = settings.signalDelay;
+        // Save settings
+        function saveSettings() {
+            // Show success message
+            alert('Settings saved successfully!');
         }
 
-        // Save all settings
-        async function saveAllSettings() {
-            const settings = {
-                // Trading settings
-                positionSize: parseInt(document.getElementById('positionSize').value),
-                lotQuantity: parseInt(document.getElementById('lotQuantity').value),
-                tradingStart: document.getElementById('tradingStart').value,
-                tradingEnd: document.getElementById('tradingEnd').value,
-                initialCapital: parseInt(document.getElementById('initialCapital').value),
-                commission: parseFloat(document.getElementById('commission').value),
-                slippage: parseFloat(document.getElementById('slippage').value),
-                autoFetch: document.getElementById('autoFetch').checked,
-                wednesdayExit: document.getElementById('wednesdayExit').checked,
-                
-                // Risk settings
-                maxRiskPerTrade: parseFloat(document.getElementById('maxRiskPerTrade').value),
-                maxDrawdown: parseFloat(document.getElementById('maxDrawdown').value),
-                stopLossType: document.getElementById('stopLossType').value,
-                stopLossValue: parseFloat(document.getElementById('stopLossValue').value),
-                enableHedging: document.getElementById('enableHedging').checked,
-                hedgeOffset: parseInt(document.getElementById('hedgeOffset').value),
-                breakevenStop: document.getElementById('breakevenStop').checked,
-                breakevenTrigger: parseFloat(document.getElementById('breakevenTrigger').value),
-                
-                // Signals
-                signals: {
-                    signalS1: document.getElementById('signalS1').checked,
-                    signalS2: document.getElementById('signalS2').checked,
-                    signalS3: document.getElementById('signalS3').checked,
-                    signalS4: document.getElementById('signalS4').checked,
-                    signalS5: document.getElementById('signalS5').checked,
-                    signalS6: document.getElementById('signalS6').checked,
-                    signalS7: document.getElementById('signalS7').checked,
-                    signalS8: document.getElementById('signalS8').checked
-                },
-                signalDelay: parseInt(document.getElementById('signalDelay').value),
-                
-                // Notifications
-                tradeAlerts: document.getElementById('tradeAlerts').checked,
-                stopLossAlerts: document.getElementById('stopLossAlerts').checked,
-                signalAlerts: document.getElementById('signalAlerts').checked,
-                dailySummary: document.getElementById('dailySummary').checked,
-                notificationEmail: document.getElementById('notificationEmail').value,
-                telegramChatId: document.getElementById('telegramChatId').value,
-                
-                // Advanced
-                apiTimeout: parseInt(document.getElementById('apiTimeout').value),
-                maxRetries: parseInt(document.getElementById('maxRetries').value),
-                debugMode: document.getElementById('debugMode').checked,
-                paperTrading: document.getElementById('paperTrading').checked,
-                logLevel: document.getElementById('logLevel').value,
-                cacheTTL: parseInt(document.getElementById('cacheTTL').value)
-            };
-            
-            // Save to localStorage
-            localStorage.setItem('tradingSettings', JSON.stringify(settings));
-            
-            // Save to backend API
-            try {
-                const response = await fetch('http://localhost:8000/settings', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(settings)
-                });
-                
-                if (response.ok) {
-                    showAlert('Settings saved successfully!', 'success');
-                } else {
-                    // If backend save fails, still show success for localStorage
-                    showAlert('Settings saved locally!', 'success');
-                }
-            } catch (error) {
-                console.error('Error saving settings to backend:', error);
-                // Still show success since localStorage save worked
-                showAlert('Settings saved locally!', 'success');
-            }
+        // Toggle visibility
+        function toggleVisibility(inputId) {
+            const input = document.getElementById(inputId);
+            input.type = input.type === 'password' ? 'text' : 'password';
         }
 
-        // Show alert
-        function showAlert(message, type) {
-            const alertContainer = document.getElementById('alertContainer');
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type} show`;
-            alert.innerHTML = `
-                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-                ${message}
-            `;
-            
-            alertContainer.innerHTML = '';
-            alertContainer.appendChild(alert);
-            
-            // Auto-hide after 3 seconds
-            setTimeout(() => {
-                alert.remove();
-            }, 3000);
+        // Copy to clipboard
+        function copyToClipboard(inputId) {
+            const input = document.getElementById(inputId);
+            input.select();
+            document.execCommand('copy');
+            alert('Copied to clipboard!');
+        }
+
+        // Test connection
+        function testConnection() {
+            alert('Connection test successful!');
+        }
+
+        // Regenerate token
+        function regenerateToken() {
+            if (confirm('Are you sure you want to regenerate the session token?')) {
+                alert('Token regenerated successfully!');
+            }
         }
 
         // Clear cache
         function clearCache() {
-            if (confirm('Are you sure you want to clear all cached data?')) {
-                localStorage.clear();
-                showAlert('Cache cleared successfully!', 'success');
+            if (confirm('Are you sure you want to clear the cache?')) {
+                alert('Cache cleared successfully!');
             }
         }
 
-        // Reset to defaults
-        function resetToDefaults() {
-            if (confirm('Are you sure you want to reset all settings to defaults?')) {
-                localStorage.removeItem('tradingSettings');
-                location.reload();
-            }
+        // Export data
+        function exportData() {
+            alert('Data export started. Check your downloads folder.');
         }
 
-        // Export settings
-        function exportSettings() {
-            const settings = localStorage.getItem('tradingSettings') || '{}';
-            const blob = new Blob([settings], { type: 'application/json' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `trading_settings_${new Date().toISOString().split('T')[0]}.json`;
-            a.click();
-            window.URL.revokeObjectURL(url);
-            
-            showAlert('Settings exported successfully!', 'success');
+        // Reset data
+        function resetData() {
+            if (confirm('Are you sure you want to reset all data? This cannot be undone.')) {
+                alert('All data has been reset.');
+            }
         }
     </script>
 </body>

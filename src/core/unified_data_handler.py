@@ -373,7 +373,7 @@ class UnifiedDataHandler:
                     interval="5minute",
                     from_date=from_date,
                     to_date=to_date,
-                    stock_code=f"{symbol}{expiry.strftime('%y%b').upper()}{strike}{option_type}",
+                    stock_code=f"{symbol}{expiry.strftime('%y%b%d').upper()}{strike}{option_type}",
                     exchange_code="NFO",
                     product_type="options",
                     expiry_date=expiry.strftime("%Y-%m-%dT07:00:00.000Z"),

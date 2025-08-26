@@ -45,38 +45,56 @@ class SessionValidator:
                 if datetime.now() - self.last_check_time < self.check_interval:
                     return True, None
             
-            # Get credentials from environment
+            # Get credentials from environment - reload to get latest
+            from dotenv import load_dotenv
+            load_dotenv(override=True)
+            
             api_key = os.getenv('BREEZE_API_KEY')
             api_secret = os.getenv('BREEZE_API_SECRET')
             session_token = os.getenv('BREEZE_API_SESSION')
             
-            if not all([api_key, api_secret, session_token]):
-                return False, "Missing Breeze API credentials in .env file"
+            # Log what we found for debugging
+            logger.info(f"Validating Breeze - API Key: {api_key[:10] if api_key else 'None'}..., Secret: {api_secret[:10] if api_secret else 'None'}..., Session: {session_token if session_token else 'None'}")
+            
+            if not api_key:
+                return False, "Missing Breeze API key in .env file"
+            if not api_secret:
+                return False, "Missing Breeze API secret in .env file"
+            if not session_token:
+                return False, "Missing Breeze API session token in .env file. Please run auto-login or update BREEZE_API_SESSION in .env"
             
             # Test connection with a simple API call
             breeze = BreezeConnect(api_key=api_key)
             breeze.generate_session(
                 api_secret=api_secret,
-                session_token=session_token
+                session_token=str(session_token)  # Ensure it's a string
             )
             
             # Try to get funds as a test (more reliable than customer_details)
             response = breeze.get_funds()
             
-            if response and (response.get('Success') is not None or response.get('Status') == 200):
-                self.session_valid = True
-                self.last_check_time = datetime.now()
-                self.last_error = None
-                logger.info("Breeze session validated successfully")
-                return True, None
-            else:
-                # Fallback to customer details if funds fails
-                response = breeze.get_customer_details()
-                if response and response.get('Success'):
+            # Check various success patterns
+            if response:
+                # Check for Success field
+                if response.get('Success'):
                     self.session_valid = True
                     self.last_check_time = datetime.now()
                     self.last_error = None
-                    logger.info("Breeze session validated successfully")
+                    logger.info(f"Breeze session validated successfully with token: {session_token[:10]}...")
+                    return True, None
+                # Check for Status field
+                elif response.get('Status') == 200:
+                    self.session_valid = True
+                    self.last_check_time = datetime.now()
+                    self.last_error = None
+                    logger.info(f"Breeze session validated successfully with token: {session_token[:10]}...")
+                    return True, None
+                # Check if we got data back (some endpoints return data directly)
+                elif 'trade_name' in response or 'pan' in response:
+                    self.session_valid = True
+                    self.last_check_time = datetime.now()
+                    self.last_error = None
+                    logger.info(f"Breeze session validated successfully with token: {session_token[:10]}...")
                     return True, None
                     
                 error_msg = response.get('Error', 'Unknown error') if response else 'No response'
@@ -110,14 +128,21 @@ class SessionValidator:
         Returns: (is_valid, error_message)
         """
         try:
+            # Reload environment to get latest
+            from dotenv import load_dotenv
+            load_dotenv(override=True)
+            
             api_key = os.getenv('KITE_API_KEY')
             access_token = os.getenv('KITE_ACCESS_TOKEN')
+            
+            # Log what we found for debugging
+            logger.info(f"Validating Kite - API Key: {api_key[:10] if api_key else 'None'}..., Access Token: {access_token[:10] if access_token else 'None'}...")
             
             if not api_key:
                 return False, "Missing Kite API key in .env file"
             
             if not access_token:
-                return False, "Missing Kite access token. Please generate a new token from https://kite.trade/connect/login"
+                return False, "Missing Kite access token. Please run auto-login or generate a new token from https://kite.trade/connect/login"
             
             # Test with a simple API call
             url = f"https://api.kite.trade/user/profile"

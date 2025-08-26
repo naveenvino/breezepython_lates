@@ -215,21 +215,26 @@ class CredentialManager:
         # If not found in secure storage, try .env as fallback
         if not creds:
             from dotenv import load_dotenv
-            load_dotenv()
+            load_dotenv(override=True)
             
             user_id = os.getenv('KITE_USER_ID')
             password = os.getenv('KITE_PASSWORD')
             pin = os.getenv('KITE_PIN')
             api_secret = os.getenv('KITE_API_SECRET')
+            totp_secret = os.getenv('KITE_TOTP_SECRET')
+            api_key = os.getenv('KITE_API_KEY')
             
             if user_id and password:
                 creds = {
                     'user_id': user_id,
                     'password': password,
-                    'api_secret': api_secret
+                    'api_secret': api_secret,
+                    'api_key': api_key
                 }
                 if pin:
                     creds['pin'] = pin
+                if totp_secret:
+                    creds['totp_secret'] = totp_secret
         
         return creds
     
@@ -295,3 +300,13 @@ class CredentialManager:
         
         if totp_secret:
             self.save_credentials('kite_totp', {'secret': totp_secret})
+    
+    def save_breeze_session(self, session_token: str):
+        """Save Breeze session token"""
+        self.save_credentials('breeze_session', {'token': session_token})
+        logger.info(f"Saved Breeze session token: {session_token[:10]}...")
+    
+    def save_kite_access_token(self, access_token: str):
+        """Save Kite access token"""
+        self.save_credentials('kite_access', {'token': access_token})
+        logger.info(f"Saved Kite access token: {access_token[:10]}...")

@@ -258,16 +258,28 @@ class KiteOrderService:
             positions = self.kite_client.get_positions()
             
             total_pnl = 0.0
+            realized_pnl = 0.0
+            unrealized_pnl = 0.0
             position_details = {}
             
+            # Calculate realized P&L from day positions (closed)
+            for position in positions.get('day', []):
+                if position['quantity'] == 0 and position.get('pnl', 0) != 0:
+                    realized_pnl += position.get('pnl', 0.0)
+            
+            # Calculate unrealized P&L from net positions (open)
             for position in positions.get('net', []):
                 if position['quantity'] != 0:
                     pnl = position.get('pnl', 0.0)
-                    total_pnl += pnl
+                    unrealized_pnl += pnl
                     position_details[position['tradingsymbol']] = pnl
+            
+            total_pnl = realized_pnl + unrealized_pnl
             
             return {
                 'total_pnl': total_pnl,
+                'realized_pnl': realized_pnl,
+                'unrealized_pnl': unrealized_pnl,
                 'positions': position_details
             }
             

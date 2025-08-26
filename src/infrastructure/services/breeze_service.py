@@ -48,7 +48,13 @@ class BreezeService:
                     if not api_key or not api_secret:
                         raise ValueError("Breeze API credentials not found in settings")
                     
-                    self._breeze = BreezeConnect(api_key=api_key)
+                    # Create original Breeze instance
+                    breeze_original = BreezeConnect(api_key=api_key)
+                    
+                    # Wrap with REAL tracking
+                    from src.infrastructure.services.breeze_tracked import wrap_breeze_with_tracking
+                    self._breeze = wrap_breeze_with_tracking(breeze_original)
+                    
                     # Generate session without checking customer details
                     try:
                         self._breeze.generate_session(
@@ -56,7 +62,7 @@ class BreezeService:
                             session_token=session_token
                         )
                         self._initialized = True
-                        logger.info("Breeze API session validated and initialized successfully")
+                        logger.info("Breeze API initialized with REAL CALL TRACKING")
                     except Exception as session_error:
                         # Log but don't fail - session might still work
                         logger.warning(f"Session generation warning: {session_error}")
@@ -142,6 +148,7 @@ class BreezeService:
                 )
             
             logger.debug(f"Breeze API response for {stock_code}: {result}")
+            # Tracking is now done in the TrackedBreezeAPI wrapper
             return result
             
         except Exception as e:

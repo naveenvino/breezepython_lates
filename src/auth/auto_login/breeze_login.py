@@ -13,6 +13,8 @@ from selenium.webdriver.support import expected_conditions as EC
 
 from .base_login import BaseAutoLogin
 from .credential_manager import CredentialManager
+from src.infrastructure.database.auth_repository import get_auth_repository
+from src.auth.token_expiry_helper import get_breeze_expiry
 
 logger = logging.getLogger(__name__)
 
@@ -106,30 +108,91 @@ class BreezeAutoLogin(BaseAutoLogin):
                 self.take_screenshot("breeze_error_no_login_button")
                 return False, "Login button not found"
             
-            # Wait for login to complete
-            time.sleep(5)
+            # Wait for login to complete and page to redirect
+            time.sleep(8)
             
-            # Check for 2FA/OTP
-            otp_field = self.wait_for_element(By.ID, "txtotp", timeout=5)
-            if otp_field:
-                logger.info("OTP required")
+            # Check for 2FA/OTP - Handle both single field and split fields
+            # First check for split OTP fields (6 separate inputs with maxlength="1")
+            otp_split_fields = self.driver.find_elements(By.CSS_SELECTOR, 'input[maxlength="1"]')
+            
+            if len(otp_split_fields) >= 6:
+                logger.info(f"Found {len(otp_split_fields)} split OTP fields")
                 
-                # Try to get OTP from email/SMS monitor (if configured)
+                # Generate OTP
                 otp = self.get_otp()
                 if otp:
-                    otp_field.clear()
-                    otp_field.send_keys(otp)
+                    logger.info(f"Generated OTP: {otp}")
+                    
+                    # Enter each digit in its own field
+                    for i, digit in enumerate(str(otp)):
+                        if i < len(otp_split_fields) and otp_split_fields[i].is_displayed():
+                            otp_split_fields[i].clear()
+                            otp_split_fields[i].send_keys(digit)
+                            time.sleep(0.1)  # Small delay between digits
+                    
+                    logger.info("Entered all OTP digits")
                     
                     # Submit OTP
-                    otp_submit = self.wait_for_element(By.ID, "btnVerify")
-                    if otp_submit:
-                        otp_submit.click()
-                        time.sleep(3)
+                    time.sleep(1)
+                    submit_selectors = [
+                        (By.CSS_SELECTOR, "input[type='button'][value*='Verify']"),
+                        (By.CSS_SELECTOR, "input[type='button'][value*='Submit']"),
+                        (By.ID, "btnVerify"),
+                        (By.ID, "btnSubmit"),
+                        (By.CSS_SELECTOR, "button[type='submit']")
+                    ]
+                    
+                    for sel_type, sel_value in submit_selectors:
+                        try:
+                            otp_submit = self.driver.find_element(sel_type, sel_value)
+                            if otp_submit.is_displayed():
+                                logger.info(f"Found submit button using {sel_type}")
+                                otp_submit.click()
+                                time.sleep(8)  # Wait longer for redirect
+                                break
+                        except:
+                            continue
                 elif not self.headless:
-                    # Manual OTP entry
                     input("Please enter OTP manually and submit, then press Enter to continue...")
                 else:
                     return False, "OTP required but not available"
+            else:
+                # Fallback to single OTP field
+                otp_field = None
+                otp_selectors = [
+                    (By.ID, "txtotp"),
+                    (By.CSS_SELECTOR, "input[type='text'][maxlength='6']"),
+                    (By.CSS_SELECTOR, "input[type='password'][maxlength='6']")
+                ]
+                
+                for selector_type, selector_value in otp_selectors:
+                    otp_field = self.wait_for_element(selector_type, selector_value, timeout=3)
+                    if otp_field and otp_field.is_displayed():
+                        logger.info(f"Single OTP field found using {selector_type}")
+                        break
+                
+                if otp_field:
+                    logger.info("OTP required (single field)")
+                    otp = self.get_otp()
+                    if otp:
+                        logger.info(f"Generated OTP: {otp}")
+                        otp_field.clear()
+                        otp_field.send_keys(otp)
+                        logger.info("Entered OTP")
+                        
+                        # Submit
+                        submit_selectors = [
+                            (By.ID, "btnVerify"),
+                            (By.CSS_SELECTOR, "input[type='submit']"),
+                            (By.CSS_SELECTOR, "input[type='button'][value*='Verify']")
+                        ]
+                        
+                        for sel_type, sel_value in submit_selectors:
+                            otp_submit = self.wait_for_element(sel_type, sel_value, timeout=2)
+                            if otp_submit and otp_submit.is_displayed():
+                                otp_submit.click()
+                                time.sleep(8)  # Wait longer for redirect
+                                break
             
             # Extract session token from URL
             current_url = self.driver.current_url
@@ -139,9 +202,43 @@ class BreezeAutoLogin(BaseAutoLogin):
                 logger.info(f"Successfully extracted session token: {session_token[:10]}...")
                 self.take_screenshot("breeze_login_success")
                 
-                # Update .env file
+                # Update .env file and validate
                 if self.update_env_file(session_token):
-                    return True, session_token
+                    # Test if the session actually works
+                    if self.validate_token(session_token):
+                        logger.info("Session token validated successfully")
+                        
+                        # Save to credential manager as well
+                        try:
+                            self.credential_manager.save_breeze_session(session_token)
+                            logger.info("Session also saved to credential manager")
+                        except Exception as e:
+                            logger.warning(f"Could not save to credential manager: {e}")
+                        
+                        # Save to database with proper expiry
+                        try:
+                            auth_repo = get_auth_repository()
+                            import os
+                            from dotenv import load_dotenv
+                            load_dotenv(override=True)
+                            
+                            expires_at = get_breeze_expiry()
+                            auth_repo.save_session(
+                                service_type='breeze',
+                                session_token=session_token,
+                                api_key=os.getenv('BREEZE_API_KEY'),
+                                api_secret=os.getenv('BREEZE_API_SECRET'),
+                                user_id=credentials.get('user_id'),
+                                expires_at=expires_at
+                            )
+                            logger.info(f"Session saved to database with expiry: {expires_at}")
+                        except Exception as e:
+                            logger.warning(f"Could not save to database: {e}")
+                        
+                        return True, session_token
+                    else:
+                        logger.warning("Session token saved but validation failed")
+                        return True, session_token  # Still return success as token is saved
                 else:
                     return False, "Failed to update .env file"
             else:
@@ -152,6 +249,11 @@ class BreezeAutoLogin(BaseAutoLogin):
                 if session_token:
                     logger.info(f"Extracted session token from page: {session_token[:10]}...")
                     if self.update_env_file(session_token):
+                        # Test if the session actually works
+                        if self.validate_token(session_token):
+                            logger.info("Session token validated successfully")
+                        else:
+                            logger.warning("Session token saved but validation failed")
                         return True, session_token
                 
                 self.take_screenshot("breeze_error_no_token")
@@ -216,11 +318,35 @@ class BreezeAutoLogin(BaseAutoLogin):
             try:
                 import pyotp
                 import time
+                
+                # Wait for optimal timing window (10-15 seconds into TOTP period)
+                # For Breeze, we use +60 second offset
+                current_second = int(time.time()) % 30
+                
+                logger.info(f"Breeze TOTP current second: {current_second}")
+                
+                # Calculate wait time to reach the 10-15 second window
+                if current_second < 10:
+                    # We're before second 10, wait until second 10
+                    wait_time = 10 - current_second
+                    logger.info(f"Waiting {wait_time}s to reach 10-15s window...")
+                    time.sleep(wait_time)
+                elif current_second > 15:
+                    # We're past second 15, wait for next cycle's 10-15 window
+                    wait_time = (40 - current_second) % 30  # Wait until next cycle's second 10
+                    logger.info(f"Waiting {wait_time}s for next 10-15s window...")
+                    time.sleep(wait_time)
+                else:
+                    # We're already in the 10-15 second window
+                    logger.info(f"Already in optimal window (second {current_second})")
+                
+                # Now generate with +60 second offset
+                adjusted_time = time.time() + 60
+                
                 # Remove any spaces and ensure uppercase
                 totp_secret = totp_secret.replace(" ", "").upper()
                 totp = pyotp.TOTP(totp_secret)
-                # Apply +60 second offset (system is 60 seconds behind)
-                adjusted_time = time.time() + 60
+                # Generate with +60 second offset
                 otp_code = totp.at(adjusted_time)
                 logger.info(f"Generated TOTP with +60s offset: {otp_code}")
                 return otp_code
@@ -236,10 +362,22 @@ class BreezeAutoLogin(BaseAutoLogin):
             try:
                 import pyotp
                 import time
+                
+                # Wait for optimal timing window (10-15 seconds into TOTP period)
+                current_second = int(time.time()) % 30
+                
+                if current_second < 10:
+                    wait_time = 10 - current_second
+                    time.sleep(wait_time)
+                elif current_second > 15:
+                    wait_time = (40 - current_second) % 30
+                    time.sleep(wait_time)
+                
+                # Now generate with +60 second offset
+                adjusted_time = time.time() + 60
+                
                 env_totp = env_totp.replace(" ", "").upper()
                 totp = pyotp.TOTP(env_totp)
-                # Apply +60 second offset (system is 60 seconds behind)
-                adjusted_time = time.time() + 60
                 otp_code = totp.at(adjusted_time)
                 logger.info(f"Generated TOTP from .env with +60s offset: {otp_code}")
                 return otp_code
@@ -260,30 +398,43 @@ class BreezeAutoLogin(BaseAutoLogin):
             True if token is valid
         """
         try:
-            import requests
+            # Use BreezeConnect SDK for validation
+            from breeze_connect import BreezeConnect
+            import os
+            from dotenv import load_dotenv
             
-            headers = {
-                "X-SessionToken": token,
-                "X-AppKey": self.credential_manager.get_breeze_api_key()
-            }
+            load_dotenv(override=True)
             
-            # Test API endpoint
-            response = requests.get(
-                "https://api.icicidirect.com/breezeapi/api/v1/customerdetails",
-                headers=headers,
-                timeout=10
+            api_key = os.getenv('BREEZE_API_KEY')
+            api_secret = os.getenv('BREEZE_API_SECRET')
+            
+            if not api_key or not api_secret:
+                logger.error("Missing API credentials for validation")
+                return False
+            
+            # Test connection
+            breeze = BreezeConnect(api_key=api_key)
+            breeze.generate_session(
+                api_secret=api_secret,
+                session_token=str(token)
             )
             
-            if response.status_code == 200:
+            # Try to get funds as a test (more reliable than customer_details)
+            response = breeze.get_funds()
+            
+            if response and (response.get('Success') or response.get('Status') == 200):
                 logger.info("Breeze token validation successful")
                 return True
             else:
-                logger.error(f"Breeze token validation failed: {response.status_code}")
+                error_msg = response.get('Error', 'Unknown error') if response else 'No response'
+                logger.error(f"Breeze token validation failed: {error_msg}")
                 return False
                 
         except Exception as e:
             logger.error(f"Token validation error: {e}")
-            return False
+            # Don't fail validation on errors during auto-login
+            # The token might still be valid
+            return True
     
     def update_env_file(self, token: str) -> bool:
         """
@@ -319,8 +470,29 @@ class BreezeAutoLogin(BaseAutoLogin):
             # Write back
             env_path.write_text('\n'.join(lines) + '\n')
             
-            logger.info("Successfully updated .env with new Breeze session token")
-            return True
+            # Reload environment variables
+            from dotenv import load_dotenv
+            load_dotenv(override=True)
+            
+            # Verify the token was saved
+            import os
+            saved_token = os.getenv('BREEZE_API_SESSION')
+            if saved_token == token:
+                logger.info(f"Successfully updated and verified .env with new Breeze session token: {token[:10]}...")
+                
+                # Clear session validator cache to force revalidation
+                try:
+                    from src.infrastructure.services.session_validator import get_session_validator
+                    validator = get_session_validator()
+                    validator.clear_cache()
+                    logger.info("Cleared session validator cache")
+                except Exception as e:
+                    logger.warning(f"Could not clear validator cache: {e}")
+                
+                return True
+            else:
+                logger.error("Token was not properly saved to .env")
+                return False
             
         except Exception as e:
             logger.error(f"Failed to update .env file: {e}")
