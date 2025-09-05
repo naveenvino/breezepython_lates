@@ -1,0 +1,19 @@
+{
+  "login": "PASSED",
+  "mode_LIVE": "FAILED",
+  "mode_PAPER": "PASSED",
+  "mode_BACKTEST": "FAILED",
+  "signal_S1_toggle": "PARTIAL",
+  "signal_S2_toggle": "PARTIAL",
+  "signal_S3_toggle": "PARTIAL",
+  "signal_S4_toggle": "PARTIAL",
+  "signal_S5_toggle": "PARTIAL",
+  "signal_S6_toggle": "PARTIAL",
+  "signal_S7_toggle": "PARTIAL",
+  "signal_S8_toggle": "PARTIAL",
+  "master_toggle_function": "FAILED",
+  "auto_trade_function": "PASSED",
+  "nifty_spot_data": "ERROR",
+  "websocket_live": "DISCONNECTED",
+  "positions_update": "ERROR"
+}

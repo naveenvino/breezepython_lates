@@ -6,6 +6,9 @@
     <title>Positions - Trading Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Authentication Scripts -->
+    <script src="/static/js/auth-check.js"></script>
+    <script src="/static/js/auth-manager.js"></script>
     <style>
         * {
             margin: 0;
@@ -1053,6 +1056,7 @@
     </div>
 
     <script>
+        const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:8000' : '';
         // Global variables
         let positions = [];
         let closedPositions = [];
@@ -1108,7 +1112,7 @@
         // Load open positions
         async function loadOpenPositions() {
             try {
-                const response = await fetch('http://localhost:8000/positions');
+                const response = await fetch(`${API_BASE}/positions`);
                 if (response.ok) {
                     const data = await response.json();
                     positions = data.net || [];
@@ -1193,7 +1197,7 @@
         // Load closed positions
         async function loadClosedPositions() {
             try {
-                const response = await fetch('http://localhost:8000/orders');
+                const response = await fetch(`${API_BASE}/orders`);
                 if (response.ok) {
                     const data = await response.json();
                     const allOrders = data.orders || [];
@@ -1253,7 +1257,7 @@
         // Load orders
         async function loadOrders() {
             try {
-                const response = await fetch('http://localhost:8000/orders');
+                const response = await fetch(`${API_BASE}/orders`);
                 if (response.ok) {
                     const data = await response.json();
                     orders = (data.orders || []).filter(order => 
@@ -1385,7 +1389,7 @@
             }
 
             try {
-                const response = await fetch('http://localhost:8000/orders', {
+                const response = await fetch(`${API_BASE}/orders`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1424,7 +1428,7 @@
             }
 
             try {
-                const response = await fetch(`http://localhost:8000/orders/${orderId}`, {
+                const response = await fetch(`${API_BASE}/orders/${orderId}`, {
                     method: 'DELETE'
                 });
 
@@ -1447,7 +1451,7 @@
             }
 
             try {
-                const response = await fetch('http://localhost:8000/positions/square-off-all', {
+                const response = await fetch(`${API_BASE}/positions/square-off-all`, {
                     method: 'POST'
                 });
 

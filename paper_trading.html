@@ -8,7 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr">
+        const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:8000' : '';</script>
     
     <style>
         * {
@@ -1460,7 +1461,7 @@
             return true;
             
             try {
-                const response = await fetch('http://localhost:8000/kite/margin');
+                const response = await fetch(`${API_BASE}/kite/margin`);
                 if (response.ok) {
                     const data = await response.json();
                     const availableMargin = data.equity?.available?.live_balance || 0;  // Virtual balance in paper mode
@@ -1547,7 +1548,7 @@
                     addBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting...';
                 }
                 
-                const response = await fetch('http://localhost:8000/live-trading/start', {  // Paper mode endpoint
+                const response = await fetch(`${API_BASE}/live-trading/start`, {  // Paper mode endpoint
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1663,7 +1664,7 @@
             
             try {
                 // Call emergency stop endpoint
-                const response = await fetch('http://localhost:8000/live-trading/emergency-stop', {  // Paper mode endpoint
+                const response = await fetch(`${API_BASE}/live-trading/emergency-stop`, {  // Paper mode endpoint
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1770,7 +1771,7 @@
             document.getElementById('backtestContent').innerHTML = '<div class="loading"></div> Running backtest...';
             
             try {
-                const response = await fetch('http://localhost:8000/backtest', {
+                const response = await fetch(`${API_BASE}/backtest`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1931,7 +1932,7 @@
         function connectNiftyWebSocket() {
             // Connect to WebSocket for real-time data (market, positions, P&L, margin)
             try {
-                niftyWebSocket = new WebSocket('ws://localhost:8000/ws/market');
+                niftyWebSocket = new WebSocket(`ws://${window.location.host}/ws/market`);
                 
                 niftyWebSocket.onopen = function() {
                     console.log('WebSocket connected for real-time data');
@@ -2037,7 +2038,7 @@
         async function fetchRealNiftyPrice() {
             try {
                 console.log('Fetching real NIFTY price from Breeze API...');
-                const response = await fetch('http://localhost:8000/option-chain/fast?symbol=NIFTY&strikes=1');
+                const response = await fetch(`${API_BASE}/option-chain/fast?symbol=NIFTY&strikes=1`);
                 if (response.ok) {
                     const data = await response.json();
                     if (data.status === 'success' && data.data?.spot_price) {
@@ -2072,7 +2073,7 @@
         // Fetch virtual positions
         async function fetchVirtualPositions() {
             try {
-                const response = await fetch('http://localhost:8000/live-trading/positions');  // Paper mode endpoint
+                const response = await fetch(`${API_BASE}/live-trading/positions`);  // Paper mode endpoint
                 if (response.ok) {
                     const data = await response.json();
                     // Handle both direct array and object with positions property
@@ -2147,7 +2148,7 @@
             if (!confirm(`Close position for ${symbol}?`)) return;
             
             try {
-                const response = await fetch('http://localhost:8000/live-trading/close-position', {  // Paper mode endpoint
+                const response = await fetch(`${API_BASE}/live-trading/close-position`, {  // Paper mode endpoint
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2177,7 +2178,7 @@
             
             if (strategy.sessionId) {
                 try {
-                    await fetch('http://localhost:8000/live-trading/stop', {  // Paper mode endpoint
+                    await fetch(`${API_BASE}/live-trading/stop`, {  // Paper mode endpoint
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -2200,7 +2201,7 @@
         async function checkAuthStatus(showLoginPrompt = false) {
             try {
                 // First try the token validation endpoint which is more reliable
-                const tokenResponse = await fetch('http://localhost:8000/auth/kite/validate-token');
+                const tokenResponse = await fetch(`${API_BASE}/auth/kite/validate-token`);
                 if (tokenResponse.ok) {
                     const tokenData = await tokenResponse.json();
                     if (tokenData.is_valid) {
@@ -2208,7 +2209,7 @@
                         updateBrokerStatus('KITE');
                         // Try to get balance from auth status
                         try {
-                            const statusResponse = await fetch('http://localhost:8000/live/auth/status');  // Paper mode endpoint
+                            const statusResponse = await fetch(`${API_BASE}/live/auth/status`);  // Paper mode endpoint
                             if (statusResponse.ok) {
                                 const statusData = await statusResponse.json();
                                 if (statusData.balance !== undefined) {
@@ -2223,7 +2224,7 @@
                 }
                 
                 // If token validation failed or returned invalid, check auth status as fallback
-                const response = await fetch('http://localhost:8000/live/auth/status');  // Paper mode endpoint
+                const response = await fetch(`${API_BASE}/live/auth/status`);  // Paper mode endpoint
                 if (response.ok) {
                     const data = await response.json();
                     // Check for authenticated field
@@ -2291,7 +2292,7 @@
         async function fetchMarginDetails() {
             try {
                 // Try the funds endpoint
-                const response = await fetch('http://localhost:8000/live/funds');  // Paper mode endpoint
+                const response = await fetch(`${API_BASE}/live/funds`);  // Paper mode endpoint
                 if (response.ok) {
                     const data = await response.json();
                     console.log('Funds data received:', data);
@@ -2318,7 +2319,7 @@
                     }
                 } else {
                     // Fallback to kite/margin endpoint
-                    const kiteResponse = await fetch('http://localhost:8000/kite/margin');
+                    const kiteResponse = await fetch(`${API_BASE}/kite/margin`);
                     if (kiteResponse.ok) {
                         const data = await kiteResponse.json();
                         updateMarginDisplay(data);
@@ -2521,7 +2522,7 @@
                 showAlert('🔄 Initiating Kite login...', 'info');
                 
                 // Call the auto login API with headless mode
-                const response = await fetch('http://localhost:8000/auth/auto-login/kite', {
+                const response = await fetch(`${API_BASE}/auth/auto-login/kite`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ headless: true })

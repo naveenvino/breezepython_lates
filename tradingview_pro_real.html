@@ -1,0 +1,1816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradingView Pro - Real-Time Trading Terminal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- TradingView Widget Script -->
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #141824;
+            --bg-tertiary: #1c2131;
+            --bg-card: #252940;
+            --accent-green: #00ff88;
+            --accent-red: #ff3366;
+            --accent-blue: #00d4ff;
+            --accent-purple: #9945ff;
+            --accent-yellow: #ffd700;
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+            --text-muted: #6b7280;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Header with Real-Time Market Stats */
+        .header {
+            background: linear-gradient(135deg, rgba(20, 24, 36, 0.95), rgba(28, 33, 49, 0.95));
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1800px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Market Stats Bar */
+        .market-stats {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            margin-top: 3px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .stat-value.positive { color: var(--accent-green); }
+        .stat-value.negative { color: var(--accent-red); }
+        .stat-value.neutral { color: var(--text-primary); }
+
+        .change-indicator {
+            font-size: 12px;
+        }
+
+        /* Connection Status */
+        .connection-status {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--accent-green);
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        .status-badge.error {
+            background: rgba(255, 51, 102, 0.1);
+            border-color: var(--accent-red);
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-badge.error .status-dot {
+            background: var(--accent-red);
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); }
+            70% { box-shadow: 0 0 0 8px rgba(0, 255, 136, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); }
+        }
+
+        /* Main Layout */
+        .main-container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+        }
+
+        /* TradingView Chart Container */
+        .chart-section {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .chart-header {
+            padding: 15px 20px;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .timeframe-btn {
+            padding: 6px 12px;
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .timeframe-btn:hover {
+            background: var(--accent-blue);
+            color: var(--text-primary);
+            border-color: var(--accent-blue);
+        }
+
+        .timeframe-btn.active {
+            background: var(--accent-blue);
+            color: var(--text-primary);
+            border-color: var(--accent-blue);
+        }
+
+        #tradingview_chart {
+            height: 600px;
+        }
+
+        /* Right Sidebar */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Technical Indicators Panel */
+        .indicators-panel {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .indicator-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .indicator-item:last-child {
+            border-bottom: none;
+        }
+
+        .indicator-name {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .indicator-value {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .indicator-value.bullish {
+            color: var(--accent-green);
+        }
+
+        .indicator-value.bearish {
+            color: var(--accent-red);
+        }
+
+        /* Market Depth */
+        .market-depth {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-top: 20px;
+        }
+
+        .depth-table {
+            width: 100%;
+            font-size: 12px;
+            margin-top: 15px;
+        }
+
+        .depth-table th {
+            padding: 8px 4px;
+            text-align: center;
+            color: var(--text-secondary);
+            font-weight: 500;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .depth-table td {
+            padding: 6px 4px;
+            text-align: center;
+        }
+
+        .bid-row td:nth-child(-n+3) {
+            background: rgba(0, 255, 136, 0.05);
+            color: var(--accent-green);
+        }
+
+        .ask-row td:nth-child(n+5) {
+            background: rgba(255, 51, 102, 0.05);
+            color: var(--accent-red);
+        }
+
+        /* Time & Sales */
+        .time-sales {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-top: 20px;
+            max-height: 300px;
+        }
+
+        .time-sales-list {
+            max-height: 250px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+
+        .trade-item {
+            display: grid;
+            grid-template-columns: 60px 80px 60px;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 12px;
+        }
+
+        .trade-time {
+            color: var(--text-muted);
+        }
+
+        .trade-price {
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .trade-price.up {
+            color: var(--accent-green);
+        }
+
+        .trade-price.down {
+            color: var(--accent-red);
+        }
+
+        .trade-qty {
+            color: var(--text-secondary);
+            text-align: right;
+        }
+
+        /* Live Positions Card */
+        .positions-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .position-item {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s;
+        }
+
+        .position-item:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-2px);
+        }
+
+        .position-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .position-symbol {
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .position-type {
+            padding: 3px 8px;
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--accent-blue);
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        .position-type.put {
+            background: rgba(255, 51, 102, 0.1);
+            color: var(--accent-red);
+        }
+
+        .position-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 12px;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .detail-label {
+            color: var(--text-muted);
+        }
+
+        .detail-value {
+            font-weight: 500;
+        }
+
+        .pnl-value {
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .pnl-value.profit { color: var(--accent-green); }
+        .pnl-value.loss { color: var(--accent-red); }
+
+        /* Option Chain Section */
+        .option-chain-section {
+            grid-column: 1 / -1;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .chain-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .strike-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .strike-input {
+            padding: 8px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: var(--text-primary);
+            width: 120px;
+        }
+
+        .refresh-btn {
+            padding: 8px 16px;
+            background: var(--accent-blue);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+
+        .refresh-btn:hover {
+            background: var(--accent-purple);
+            transform: translateY(-2px);
+        }
+
+        /* Option Chain Table */
+        .option-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .option-table th {
+            background: var(--bg-tertiary);
+            padding: 12px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .option-table td {
+            padding: 10px 12px;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .option-table tr:hover {
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .strike-price {
+            font-weight: 600;
+            color: var(--accent-yellow);
+        }
+
+        .bid-ask {
+            display: flex;
+            gap: 8px;
+            font-size: 12px;
+        }
+
+        .bid { color: var(--accent-green); }
+        .ask { color: var(--accent-red); }
+
+        .greeks {
+            display: flex;
+            gap: 10px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* WebSocket Status */
+        .ws-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+            z-index: 1000;
+        }
+
+        .ws-status.connected {
+            border-color: var(--accent-green);
+        }
+
+        .ws-status.disconnected {
+            border-color: var(--accent-red);
+        }
+
+        /* Responsive */
+        @media (max-width: 1400px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 20px;
+            }
+        }
+        /* Trading Features Styles */
+        .trading-panel, .strategy-panel, .risk-panel, .alerts-panel, .performance-panel {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .trading-mode-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--bg-tertiary);
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: var(--accent-green);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        .trade-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .buy-btn, .sell-btn {
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .buy-btn {
+            background: var(--accent-green);
+            color: var(--bg-primary);
+        }
+        
+        .sell-btn {
+            background: var(--accent-red);
+            color: white;
+        }
+        
+        .signal-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 10px;
+            min-height: 150px;
+        }
+        
+        .signal-card {
+            background: var(--bg-tertiary);
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            font-size: 10px;
+        }
+        
+        .signal-status.active {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--accent-green);
+        }
+        
+        .risk-metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .position-item {
+            background: var(--bg-tertiary);
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header with Live Market Stats -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="logo">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h1>TradingView Pro Terminal</h1>
+            </div>
+
+            <!-- Live Market Stats -->
+            <div class="market-stats">
+                <div class="stat-item">
+                    <span class="stat-label">NIFTY</span>
+                    <span class="stat-value neutral" id="niftySpot">
+                        <span id="niftyPrice">--</span>
+                        <span class="change-indicator" id="niftyChange"></span>
+                    </span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">BANK NIFTY</span>
+                    <span class="stat-value neutral" id="bankNiftySpot">
+                        <span id="bankNiftyPrice">--</span>
+                        <span class="change-indicator" id="bankNiftyChange"></span>
+                    </span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">INDIA VIX</span>
+                    <span class="stat-value neutral" id="vixValue">--</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">FII/DII</span>
+                    <span class="stat-value neutral" id="fiiDii">--</span>
+                </div>
+            </div>
+
+            <!-- Connection Status -->
+            <div class="connection-status">
+                <div class="status-badge" id="breezeStatus">
+                    <span class="status-dot"></span>
+                    <span>Breeze</span>
+                </div>
+                <div class="status-badge" id="wsStatus">
+                    <span class="status-dot"></span>
+                    <span>WebSocket</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- TradingView Chart -->
+        <div class="chart-section">
+            <div class="chart-header">
+                <div class="chart-title">NIFTY 50 - Live Chart</div>
+                <div class="chart-controls">
+                    <button class="timeframe-btn" data-interval="1">1m</button>
+                    <button class="timeframe-btn active" data-interval="5">5m</button>
+                    <button class="timeframe-btn" data-interval="15">15m</button>
+                    <button class="timeframe-btn" data-interval="60">1H</button>
+                    <button class="timeframe-btn" data-interval="D">1D</button>
+                </div>
+            </div>
+            <div id="tradingview_chart"></div>
+        </div>
+
+        <!-- Right Sidebar -->
+        <div class="sidebar">
+            <!-- Technical Indicators -->
+            <div class="indicators-panel">
+                <div class="card-header">
+                    <div class="card-title">Technical Indicators</div>
+                    <button class="refresh-btn" onclick="calculateIndicators()">
+                        <i class="fas fa-sync"></i>
+                    </button>
+                </div>
+                <div class="indicator-item">
+                    <span class="indicator-name">RSI (14)</span>
+                    <span class="indicator-value" id="rsi-value">--</span>
+                </div>
+                <div class="indicator-item">
+                    <span class="indicator-name">MACD</span>
+                    <span class="indicator-value" id="macd-value">--</span>
+                </div>
+                <div class="indicator-item">
+                    <span class="indicator-name">Signal</span>
+                    <span class="indicator-value" id="macd-signal">--</span>
+                </div>
+                <div class="indicator-item">
+                    <span class="indicator-name">MA (20)</span>
+                    <span class="indicator-value" id="ma20-value">--</span>
+                </div>
+                <div class="indicator-item">
+                    <span class="indicator-name">MA (50)</span>
+                    <span class="indicator-value" id="ma50-value">--</span>
+                </div>
+                <div class="indicator-item">
+                    <span class="indicator-name">Bollinger Upper</span>
+                    <span class="indicator-value" id="bb-upper">--</span>
+                </div>
+                <div class="indicator-item">
+                    <span class="indicator-name">Bollinger Lower</span>
+                    <span class="indicator-value" id="bb-lower">--</span>
+                </div>
+                <div class="indicator-item">
+                    <span class="indicator-name">Overall Signal</span>
+                    <span class="indicator-value" id="overall-signal">NEUTRAL</span>
+                </div>
+            </div>
+
+            <!-- Live Positions -->
+            <div class="positions-card">
+                <div class="card-header">
+                    <div class="card-title">Live Positions</div>
+                    <div class="stat-value" id="totalPnL">₹0</div>
+                </div>
+                <div id="positionsList">
+                    <!-- Positions will be populated here -->
+                </div>
+            </div>
+
+            <!-- Order Book -->
+            <div class="positions-card">
+                <div class="card-header">
+                    <div class="card-title">Order Book</div>
+                    <button class="refresh-btn" onclick="refreshOrderBook()">
+                        <i class="fas fa-sync"></i>
+                    </button>
+                </div>
+                <div id="orderBook">
+                    <!-- Orders will be populated here -->
+                </div>
+            </div>
+
+            <!-- Alerts -->
+            <div class="positions-card">
+                <div class="card-header">
+                    <div class="card-title">Active Alerts</div>
+                    <span class="stat-value" id="alertCount">0</span>
+                </div>
+                <div id="alertsList">
+                    <!-- Alerts will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Market Depth -->
+        <div class="market-depth">
+            <div class="card-header">
+                <div class="card-title">Market Depth - NIFTY</div>
+                <button class="refresh-btn" onclick="refreshMarketDepth()">
+                    <i class="fas fa-sync"></i>
+                </button>
+            </div>
+            <table class="depth-table">
+                <thead>
+                    <tr>
+                        <th colspan="3" style="color: var(--accent-green);">BID</th>
+                        <th>PRICE</th>
+                        <th colspan="3" style="color: var(--accent-red);">ASK</th>
+                    </tr>
+                </thead>
+                <tbody id="depthTableBody">
+                    <!-- Market depth will be populated here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Time & Sales -->
+        <div class="time-sales">
+            <div class="card-header">
+                <div class="card-title">Time & Sales</div>
+                <span class="stat-value" id="tradesCount">0</span>
+            </div>
+            <div class="time-sales-list" id="timeSalesList">
+                <!-- Time & sales data will be populated here -->
+            </div>
+        </div>
+
+        <!-- Option Chain Section -->
+        <div class="option-chain-section">
+            <div class="card-header">
+                <div class="card-title">Live Option Chain</div>
+                <div class="chain-controls">
+                    <div class="strike-selector">
+                        <label>Strike:</label>
+                        <input type="number" class="strike-input" id="strikeSelect" value="25000" step="50">
+                    </div>
+                    <div class="strike-selector">
+                        <label>Range:</label>
+                        <input type="number" class="strike-input" id="strikeRange" value="5" min="1" max="10">
+                    </div>
+                    <button class="refresh-btn" onclick="refreshOptionChain()">
+                        <i class="fas fa-sync"></i>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+            
+            <table class="option-table">
+                <thead>
+                    <tr>
+                        <th>OI</th>
+                        <th>Volume</th>
+                        <th>IV</th>
+                        <th>LTP</th>
+                        <th>Bid/Ask</th>
+                        <th>Greeks</th>
+                        <th>Strike</th>
+                        <th>Greeks</th>
+                        <th>Bid/Ask</th>
+                        <th>LTP</th>
+                        <th>IV</th>
+                        <th>Volume</th>
+                        <th>OI</th>
+                    </tr>
+                </thead>
+                <tbody id="optionChainBody">
+                    <!-- Option chain data will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Trading Controls Section -->
+    <div class="main-container">
+        <div class="trading-panel">
+            <div class="panel-header">
+                <h3><i class="fas fa-chart-line"></i> Live Trading</h3>
+                <div class="trading-mode-toggle">
+                    <label class="switch">
+                        <input type="checkbox" id="paperTradingToggle" onchange="togglePaperTrading()">
+                        <span class="slider"></span>
+                    </label>
+                    <span id="tradingModeLabel">Live Mode</span>
+                </div>
+            </div>
+            <div class="panel-content">
+                <div class="trade-buttons">
+                    <button class="buy-btn" onclick="executeTrade('BUY')">
+                        <i class="fas fa-arrow-up"></i> BUY
+                    </button>
+                    <button class="sell-btn" onclick="executeTrade('SELL')">
+                        <i class="fas fa-arrow-down"></i> SELL
+                    </button>
+                </div>
+                <div id="openPositions" class="positions-list"></div>
+            </div>
+        </div>
+        
+        <div class="strategy-panel">
+            <div class="panel-header">
+                <h3><i class="fas fa-robot"></i> Strategy Automation</h3>
+                <button id="automationToggle" class="automation-toggle" onclick="toggleAutomation()">
+                    <i class="fas fa-power-off"></i> OFF
+                </button>
+            </div>
+            <div class="signal-grid" id="signalGrid"></div>
+        </div>
+        
+        <div class="risk-panel">
+            <div class="panel-header">
+                <h3><i class="fas fa-shield-alt"></i> Risk Management</h3>
+            </div>
+            <div class="risk-metrics">
+                <div class="risk-metric">
+                    <span class="metric-label">Total Exposure</span>
+                    <span class="metric-value" id="totalExposure">₹0</span>
+                </div>
+                <div class="risk-metric">
+                    <span class="metric-label">Daily P&L</span>
+                    <span class="metric-value" id="dailyPnL">₹0</span>
+                </div>
+                <div class="risk-metric">
+                    <span class="metric-label">Win Rate</span>
+                    <span class="metric-value" id="winRate">0%</span>
+                </div>
+                <div class="risk-metric">
+                    <span class="metric-label">Active Alerts</span>
+                    <span class="metric-value" id="activeAlerts">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WebSocket Status Indicator -->
+    <div class="ws-status disconnected" id="wsStatusIndicator">
+        <span class="status-dot"></span>
+        <span>WebSocket: <span id="wsState">Disconnected</span></span>
+        <span id="wsLatency"></span>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE_URL = window.location.protocol === 'file:' ? 'http://localhost:8000' : '';
+        let ws = null;
+        let tradingViewWidget = null;
+        let currentInterval = '5';
+        let positions = [];
+        let optionChainData = [];
+
+        // Initialize TradingView Widget
+        function initTradingViewWidget(symbol = 'NSE:NIFTY', interval = '5') {
+            if (tradingViewWidget) {
+                tradingViewWidget.remove();
+            }
+
+            tradingViewWidget = new TradingView.widget({
+                "width": "100%",
+                "height": 600,
+                "symbol": symbol,
+                "interval": interval,
+                "timezone": "Asia/Kolkata",
+                "theme": "dark",
+                "style": "1",
+                "locale": "en",
+                "toolbar_bg": "#141824",
+                "enable_publishing": false,
+                "allow_symbol_change": true,
+                "container_id": "tradingview_chart",
+                "studies": [
+                    "MACD@tv-basicstudies",
+                    "RSI@tv-basicstudies",
+                    "BB@tv-basicstudies"
+                ],
+                "show_popup_button": true,
+                "popup_width": "1000",
+                "popup_height": "650"
+            });
+        }
+
+        // Initialize WebSocket Connection
+        function initWebSocket() {
+            const wsUrl = `ws://localhost:8000/ws/market-data`;
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                updateWSStatus('connected');
+                subscribeToMarketData();
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleMarketData(data);
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                updateWSStatus('error');
+            };
+            
+            ws.onclose = () => {
+                console.log('WebSocket disconnected');
+                updateWSStatus('disconnected');
+                // Reconnect after 5 seconds
+                setTimeout(initWebSocket, 5000);
+            };
+        }
+
+        // Subscribe to market data streams
+        function subscribeToMarketData() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    action: 'subscribe',
+                    symbols: ['NIFTY', 'BANKNIFTY'],
+                    data_types: ['quote', 'depth', 'option_chain']
+                }));
+            }
+        }
+
+        // Handle incoming market data
+        function handleMarketData(data) {
+            switch(data.type) {
+                case 'quote':
+                    updateQuotes(data.data);
+                    break;
+                case 'position':
+                    updatePositions(data.data);
+                    break;
+                case 'option_chain':
+                    updateOptionChain(data.data);
+                    break;
+                case 'alert':
+                    handleAlert(data.data);
+                    break;
+            }
+        }
+
+        // Update live quotes
+        function updateQuotes(quotes) {
+            if (quotes.NIFTY) {
+                const niftyPrice = quotes.NIFTY.ltp;
+                const niftyChange = quotes.NIFTY.change;
+                const niftyPct = quotes.NIFTY.changePct;
+                
+                document.getElementById('niftyPrice').textContent = niftyPrice.toFixed(2);
+                document.getElementById('niftyChange').textContent = 
+                    `${niftyChange > 0 ? '+' : ''}${niftyChange.toFixed(2)} (${niftyPct.toFixed(2)}%)`;
+                
+                const niftySpot = document.getElementById('niftySpot');
+                niftySpot.classList.remove('positive', 'negative', 'neutral');
+                niftySpot.classList.add(niftyChange > 0 ? 'positive' : niftyChange < 0 ? 'negative' : 'neutral');
+            }
+            
+            if (quotes.BANKNIFTY) {
+                const bnPrice = quotes.BANKNIFTY.ltp;
+                const bnChange = quotes.BANKNIFTY.change;
+                const bnPct = quotes.BANKNIFTY.changePct;
+                
+                document.getElementById('bankNiftyPrice').textContent = bnPrice.toFixed(2);
+                document.getElementById('bankNiftyChange').textContent = 
+                    `${bnChange > 0 ? '+' : ''}${bnChange.toFixed(2)} (${bnPct.toFixed(2)}%)`;
+                
+                const bankNiftySpot = document.getElementById('bankNiftySpot');
+                bankNiftySpot.classList.remove('positive', 'negative', 'neutral');
+                bankNiftySpot.classList.add(bnChange > 0 ? 'positive' : bnChange < 0 ? 'negative' : 'neutral');
+            }
+            
+            if (quotes.VIX) {
+                document.getElementById('vixValue').textContent = quotes.VIX.ltp.toFixed(2);
+            }
+        }
+
+        // Update positions
+        function updatePositions(positionsData) {
+            positions = positionsData;
+            const positionsList = document.getElementById('positionsList');
+            positionsList.innerHTML = '';
+            
+            let totalPnL = 0;
+            
+            positions.forEach(pos => {
+                const pnl = pos.unrealized_pnl || 0;
+                totalPnL += pnl;
+                
+                const positionEl = document.createElement('div');
+                positionEl.className = 'position-item';
+                positionEl.innerHTML = `
+                    <div class="position-header">
+                        <span class="position-symbol">${pos.symbol}</span>
+                        <span class="position-type ${pos.option_type.toLowerCase()}">${pos.option_type}</span>
+                    </div>
+                    <div class="position-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Qty:</span>
+                            <span class="detail-value">${pos.quantity}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Avg:</span>
+                            <span class="detail-value">₹${pos.avg_price.toFixed(2)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">LTP:</span>
+                            <span class="detail-value">₹${pos.ltp.toFixed(2)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">P&L:</span>
+                            <span class="detail-value pnl-value ${pnl >= 0 ? 'profit' : 'loss'}">
+                                ₹${pnl.toFixed(2)}
+                            </span>
+                        </div>
+                    </div>
+                `;
+                positionsList.appendChild(positionEl);
+            });
+            
+            // Update total P&L
+            const totalPnLEl = document.getElementById('totalPnL');
+            totalPnLEl.textContent = `₹${totalPnL.toFixed(2)}`;
+            totalPnLEl.classList.remove('positive', 'negative');
+            totalPnLEl.classList.add(totalPnL >= 0 ? 'positive' : 'negative');
+        }
+
+        // Update option chain
+        function updateOptionChain(chainData) {
+            optionChainData = chainData;
+            const tbody = document.getElementById('optionChainBody');
+            tbody.innerHTML = '';
+            
+            chainData.forEach(strike => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${strike.ce_oi || '--'}</td>
+                    <td>${strike.ce_volume || '--'}</td>
+                    <td>${strike.ce_iv ? strike.ce_iv.toFixed(2) : '--'}</td>
+                    <td class="bid">${strike.ce_ltp ? strike.ce_ltp.toFixed(2) : '--'}</td>
+                    <td>
+                        <div class="bid-ask">
+                            <span class="bid">${strike.ce_bid || '--'}</span>
+                            <span class="ask">${strike.ce_ask || '--'}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="greeks">
+                            <span>Δ:${strike.ce_delta ? strike.ce_delta.toFixed(3) : '--'}</span>
+                            <span>Γ:${strike.ce_gamma ? strike.ce_gamma.toFixed(3) : '--'}</span>
+                            <span>Θ:${strike.ce_theta ? strike.ce_theta.toFixed(2) : '--'}</span>
+                        </div>
+                    </td>
+                    <td class="strike-price">${strike.strike}</td>
+                    <td>
+                        <div class="greeks">
+                            <span>Δ:${strike.pe_delta ? strike.pe_delta.toFixed(3) : '--'}</span>
+                            <span>Γ:${strike.pe_gamma ? strike.pe_gamma.toFixed(3) : '--'}</span>
+                            <span>Θ:${strike.pe_theta ? strike.pe_theta.toFixed(2) : '--'}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="bid-ask">
+                            <span class="bid">${strike.pe_bid || '--'}</span>
+                            <span class="ask">${strike.pe_ask || '--'}</span>
+                        </div>
+                    </td>
+                    <td class="ask">${strike.pe_ltp ? strike.pe_ltp.toFixed(2) : '--'}</td>
+                    <td>${strike.pe_iv ? strike.pe_iv.toFixed(2) : '--'}</td>
+                    <td>${strike.pe_volume || '--'}</td>
+                    <td>${strike.pe_oi || '--'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Update WebSocket status
+        function updateWSStatus(status) {
+            const wsStatusEl = document.getElementById('wsStatus');
+            const wsIndicator = document.getElementById('wsStatusIndicator');
+            const wsState = document.getElementById('wsState');
+            
+            wsStatusEl.classList.remove('error');
+            wsIndicator.classList.remove('connected', 'disconnected');
+            
+            if (status === 'connected') {
+                wsIndicator.classList.add('connected');
+                wsState.textContent = 'Connected';
+            } else {
+                wsStatusEl.classList.add('error');
+                wsIndicator.classList.add('disconnected');
+                wsState.textContent = 'Disconnected';
+            }
+        }
+
+        // Fetch live data from API
+        async function fetchLiveData() {
+            try {
+                // Fetch spot prices
+                const spotResponse = await fetch(`${API_BASE_URL}/api/live/nifty-spot`);
+                if (spotResponse.ok) {
+                    const spotData = await spotResponse.json();
+                    if (spotData.success && spotData.data) {
+                        // Format data for updateQuotes
+                        const formattedData = {
+                            NIFTY: {
+                                ltp: spotData.data.ltp || 0,
+                                change: spotData.data.change || 0,
+                                changePct: spotData.data.change_percent || 0,
+                                open: spotData.data.open || 0,
+                                high: spotData.data.high || 0,
+                                low: spotData.data.low || 0
+                            },
+                            BANKNIFTY: {
+                                ltp: spotData.data.banknifty_ltp || 0,
+                                change: spotData.data.banknifty_change || 0,
+                                changePct: spotData.data.banknifty_change_percent || 0
+                            },
+                            VIX: {
+                                value: spotData.data.vix || 0
+                            }
+                        };
+                        updateQuotes(formattedData);
+                    }
+                }
+                
+                // Fetch positions
+                const posResponse = await fetch(`${API_BASE_URL}/live/positions`);
+                if (posResponse.ok) {
+                    const posData = await posResponse.json();
+                    updatePositions(posData.positions || []);
+                }
+                
+                // Update Breeze status
+                document.getElementById('breezeStatus').classList.remove('error');
+                
+            } catch (error) {
+                console.error('Error fetching live data:', error);
+                document.getElementById('breezeStatus').classList.add('error');
+            }
+        }
+
+        // Refresh option chain
+        async function refreshOptionChain() {
+            const strike = document.getElementById('strikeSelect').value;
+            const range = document.getElementById('strikeRange').value;
+            
+            try {
+                const response = await fetch(
+                    `${API_BASE_URL}/api/live/option-chain?strike=${strike}&range=${range}`
+                );
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    updateOptionChain(data.chain || []);
+                }
+            } catch (error) {
+                console.error('Error fetching option chain:', error);
+            }
+        }
+
+        // Refresh order book
+        async function refreshOrderBook() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/live/orders`);
+                if (response.ok) {
+                    const data = await response.json();
+                    // Update order book UI
+                }
+            } catch (error) {
+                console.error('Error fetching orders:', error);
+            }
+        }
+
+        // Calculate Technical Indicators
+        function calculateIndicators() {
+            fetch(`${API_BASE_URL}/api/live/historical-candles?symbol=NIFTY&interval=5minute&count=100`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.candles) {
+                        const candles = data.candles;
+                        const closes = candles.map(c => c.close);
+                        
+                        // Calculate RSI
+                        const rsi = calculateRSI(closes, 14);
+                        const rsiElement = document.getElementById('rsi-value');
+                        rsiElement.textContent = rsi.toFixed(2);
+                        rsiElement.className = rsi > 70 ? 'indicator-value bearish' : 
+                                              rsi < 30 ? 'indicator-value bullish' : 
+                                              'indicator-value';
+                        
+                        // Calculate Moving Averages
+                        const ma20 = calculateMA(closes, 20);
+                        const ma50 = calculateMA(closes, 50);
+                        document.getElementById('ma20-value').textContent = ma20.toFixed(2);
+                        document.getElementById('ma50-value').textContent = ma50.toFixed(2);
+                        
+                        // Calculate MACD
+                        const macd = calculateMACD(closes);
+                        document.getElementById('macd-value').textContent = macd.macd.toFixed(2);
+                        document.getElementById('macd-signal').textContent = macd.signal.toFixed(2);
+                        
+                        // Calculate Bollinger Bands
+                        const bb = calculateBollingerBands(closes, 20, 2);
+                        document.getElementById('bb-upper').textContent = bb.upper.toFixed(2);
+                        document.getElementById('bb-lower').textContent = bb.lower.toFixed(2);
+                        
+                        // Overall Signal
+                        const lastPrice = closes[closes.length - 1];
+                        let signal = 'NEUTRAL';
+                        let signalClass = 'indicator-value';
+                        
+                        if (rsi < 30 && lastPrice > ma20) {
+                            signal = 'STRONG BUY';
+                            signalClass = 'indicator-value bullish';
+                        } else if (rsi < 50 && lastPrice > ma50) {
+                            signal = 'BUY';
+                            signalClass = 'indicator-value bullish';
+                        } else if (rsi > 70 && lastPrice < ma20) {
+                            signal = 'STRONG SELL';
+                            signalClass = 'indicator-value bearish';
+                        } else if (rsi > 50 && lastPrice < ma50) {
+                            signal = 'SELL';
+                            signalClass = 'indicator-value bearish';
+                        }
+                        
+                        const signalElement = document.getElementById('overall-signal');
+                        signalElement.textContent = signal;
+                        signalElement.className = signalClass;
+                    }
+                })
+                .catch(error => console.error('Error calculating indicators:', error));
+        }
+        
+        // RSI Calculation
+        function calculateRSI(prices, period = 14) {
+            if (prices.length < period + 1) return 50;
+            
+            let gains = 0;
+            let losses = 0;
+            
+            for (let i = prices.length - period; i < prices.length; i++) {
+                const difference = prices[i] - prices[i - 1];
+                if (difference >= 0) {
+                    gains += difference;
+                } else {
+                    losses -= difference;
+                }
+            }
+            
+            const avgGain = gains / period;
+            const avgLoss = losses / period;
+            
+            if (avgLoss === 0) return 100;
+            
+            const rs = avgGain / avgLoss;
+            return 100 - (100 / (1 + rs));
+        }
+        
+        // Moving Average Calculation
+        function calculateMA(prices, period) {
+            if (prices.length < period) return prices[prices.length - 1];
+            const slice = prices.slice(-period);
+            return slice.reduce((a, b) => a + b, 0) / period;
+        }
+        
+        // MACD Calculation
+        function calculateMACD(prices) {
+            const ema12 = calculateEMA(prices, 12);
+            const ema26 = calculateEMA(prices, 26);
+            const macd = ema12 - ema26;
+            const signal = calculateEMA([macd], 9);
+            return { macd, signal };
+        }
+        
+        // EMA Calculation
+        function calculateEMA(prices, period) {
+            if (prices.length < 2) return prices[0] || 0;
+            const multiplier = 2 / (period + 1);
+            let ema = prices[0];
+            
+            for (let i = 1; i < prices.length; i++) {
+                ema = (prices[i] - ema) * multiplier + ema;
+            }
+            
+            return ema;
+        }
+        
+        // Bollinger Bands Calculation
+        function calculateBollingerBands(prices, period = 20, stdDev = 2) {
+            const ma = calculateMA(prices, period);
+            const slice = prices.slice(-period);
+            const variance = slice.reduce((sum, price) => {
+                return sum + Math.pow(price - ma, 2);
+            }, 0) / period;
+            const std = Math.sqrt(variance);
+            
+            return {
+                upper: ma + (std * stdDev),
+                middle: ma,
+                lower: ma - (std * stdDev)
+            };
+        }
+        
+        // Refresh Market Depth
+        function refreshMarketDepth() {
+            fetch(`${API_BASE_URL}/api/live/market-depth?symbol=NIFTY`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        updateMarketDepth(data.data);
+                    }
+                })
+                .catch(error => console.error('Error fetching market depth:', error));
+        }
+        
+        // Update Market Depth Display
+        function updateMarketDepth(depth) {
+            const tbody = document.getElementById('depthTableBody');
+            tbody.innerHTML = '';
+            
+            const bids = depth.bids || [];
+            const asks = depth.asks || [];
+            const maxRows = Math.max(5, Math.max(bids.length, asks.length));
+            
+            for (let i = 0; i < maxRows; i++) {
+                const bid = bids[i] || { orders: '--', quantity: '--', price: '--' };
+                const ask = asks[i] || { orders: '--', quantity: '--', price: '--' };
+                
+                const row = tbody.insertRow();
+                row.className = 'depth-row';
+                row.innerHTML = `
+                    <td class="bid-orders">${bid.orders}</td>
+                    <td class="bid-qty">${bid.quantity}</td>
+                    <td class="bid-price">${bid.price}</td>
+                    <td>---</td>
+                    <td class="ask-price">${ask.price}</td>
+                    <td class="ask-qty">${ask.quantity}</td>
+                    <td class="ask-orders">${ask.orders}</td>
+                `;
+            }
+        }
+        
+        // Update Time & Sales
+        let timeSalesData = [];
+        function updateTimeSales(trade) {
+            timeSalesData.unshift(trade);
+            if (timeSalesData.length > 50) {
+                timeSalesData = timeSalesData.slice(0, 50);
+            }
+            
+            const list = document.getElementById('timeSalesList');
+            list.innerHTML = '';
+            
+            timeSalesData.forEach((trade, index) => {
+                const prevPrice = index < timeSalesData.length - 1 ? timeSalesData[index + 1].price : trade.price;
+                const priceClass = trade.price > prevPrice ? 'up' : trade.price < prevPrice ? 'down' : '';
+                
+                const item = document.createElement('div');
+                item.className = 'trade-item';
+                item.innerHTML = `
+                    <span class="trade-time">${new Date(trade.time).toLocaleTimeString('en-IN', { hour12: false }).slice(0, 8)}</span>
+                    <span class="trade-price ${priceClass}">${trade.price.toFixed(2)}</span>
+                    <span class="trade-qty">${trade.quantity}</span>
+                `;
+                list.appendChild(item);
+            });
+            
+            document.getElementById('tradesCount').textContent = timeSalesData.length;
+        }
+        
+        // Auto-refresh mechanism
+        let autoRefreshInterval = null;
+        function startAutoRefresh() {
+            // Calculate indicators every 30 seconds
+            calculateIndicators();
+            autoRefreshInterval = setInterval(() => {
+                calculateIndicators();
+                refreshMarketDepth();
+            }, 30000);
+            
+            // Refresh market depth every 10 seconds
+            setInterval(refreshMarketDepth, 10000);
+        }
+        
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+        
+        // Handle timeframe changes
+        document.querySelectorAll('.timeframe-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentInterval = this.dataset.interval;
+                initTradingViewWidget('NSE:NIFTY', currentInterval);
+            });
+        });
+
+        // Trading Functions
+        let paperTradingMode = false;
+        let automationEnabled = false;
+        let activePositions = [];
+        let activeAlerts = [];
+        
+        function togglePaperTrading() {
+            paperTradingMode = !paperTradingMode;
+            const label = document.getElementById('tradingModeLabel');
+            label.textContent = paperTradingMode ? 'Paper Mode' : 'Live Mode';
+            
+            fetch(`${API_BASE_URL}/api/trading/toggle-paper-mode`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled: paperTradingMode })
+            });
+        }
+        
+        function toggleAutomation() {
+            automationEnabled = !automationEnabled;
+            const btn = document.getElementById('automationToggle');
+            
+            if (automationEnabled) {
+                btn.innerHTML = '<i class="fas fa-power-off"></i> ON';
+                btn.classList.add('active');
+                startStrategyAutomation();
+            } else {
+                btn.innerHTML = '<i class="fas fa-power-off"></i> OFF';
+                btn.classList.remove('active');
+                stopStrategyAutomation();
+            }
+            
+            // Update signal grid to reflect new status
+            updateSignalStatus();
+        }
+        
+        async function executeTrade(side) {
+            const spotPrice = parseFloat(document.getElementById('niftySpot').textContent.replace(/,/g, ''));
+            const strike = Math.round(spotPrice / 50) * 50;
+            const optionType = side === 'SELL' ? 'PE' : 'CE';
+            
+            const tradeData = {
+                symbol: 'NIFTY',
+                strike: strike,
+                option_type: optionType,
+                side: side,
+                quantity: 10,
+                stop_loss: 50,
+                target: 100
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/trading/place-order`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(tradeData)
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    showNotification('Order placed successfully', 'success');
+                    refreshPositions();
+                } else {
+                    showNotification('Order failed: ' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Trade execution error:', error);
+                showNotification('Trade execution failed', 'error');
+            }
+        }
+        
+        async function refreshPositions() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/trading/positions`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    activePositions = data.positions;
+                    updatePositionsDisplay();
+                }
+            } catch (error) {
+                console.error('Error fetching positions:', error);
+            }
+        }
+        
+        function updatePositionsDisplay() {
+            const container = document.getElementById('openPositions');
+            if (!activePositions || activePositions.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">No open positions</div>';
+                return;
+            }
+            
+            container.innerHTML = activePositions.map(pos => `
+                <div class="position-item">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>${pos.symbol}</span>
+                        <span class="${pos.pnl >= 0 ? 'profit' : 'loss'}">
+                            ₹${pos.pnl.toFixed(2)}
+                        </span>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 5px;">
+                        ${pos.quantity} qty @ ${pos.entry_price}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        async function startStrategyAutomation() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/strategy/start-automation`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showNotification('Strategy automation started', 'success');
+                    updateSignalStatus();
+                }
+            } catch (error) {
+                console.error('Error starting automation:', error);
+            }
+        }
+        
+        async function stopStrategyAutomation() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/strategy/stop-automation`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showNotification('Strategy automation stopped', 'info');
+                    updateSignalStatus();
+                }
+            } catch (error) {
+                console.error('Error stopping automation:', error);
+            }
+        }
+        
+        function updateSignalStatus() {
+            const signals = [
+                { id: 'S1', name: 'Bear Trap', type: 'bullish', action: 'Sell PUT' },
+                { id: 'S2', name: 'Support Hold', type: 'bullish', action: 'Sell PUT' },
+                { id: 'S3', name: 'Resistance Hold', type: 'bearish', action: 'Sell CALL' },
+                { id: 'S4', name: 'Bias Failure Bull', type: 'bullish', action: 'Sell PUT' },
+                { id: 'S5', name: 'Bias Failure Bear', type: 'bearish', action: 'Sell CALL' },
+                { id: 'S6', name: 'Weakness Confirmed', type: 'bearish', action: 'Sell CALL' },
+                { id: 'S7', name: 'Breakout Confirmed', type: 'bullish', action: 'Sell PUT' },
+                { id: 'S8', name: 'Breakdown Confirmed', type: 'bearish', action: 'Sell CALL' }
+            ];
+            
+            const grid = document.getElementById('signalGrid');
+            grid.innerHTML = signals.map(signal => `
+                <div class="signal-card" data-signal="${signal.id}">
+                    <div style="font-weight: 600; font-size: 11px;">${signal.id}</div>
+                    <div style="font-size: 9px; color: var(--text-muted); margin: 2px 0;">${signal.name}</div>
+                    <div style="font-size: 9px; color: var(--text-secondary); margin: 2px 0;">${signal.action}</div>
+                    <div class="signal-status ${automationEnabled ? 'active' : ''}" style="font-size: 9px; padding: 2px 6px; border-radius: 3px; text-align: center; margin-top: 4px; background: ${automationEnabled ? 'rgba(0, 255, 136, 0.2)' : 'var(--bg-primary)'}; color: ${automationEnabled ? 'var(--accent-green)' : 'var(--text-muted)'};">
+                        ${automationEnabled ? 'Active' : 'Inactive'}
+                    </div>
+                </div>
+            `).join('');
+            
+            // Debug: Log how many signals were rendered
+            console.log(`Rendered ${signals.length} signals (S1-S8)`);
+        }
+        
+        async function updateRiskMetrics() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/risk/metrics`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('totalExposure').textContent = `₹${(data.total_exposure || 0).toLocaleString()}`;
+                    document.getElementById('dailyPnL').textContent = `₹${(data.daily_pnl || 0).toLocaleString()}`;
+                    
+                    // Update from performance API
+                    const perfResponse = await fetch(`${API_BASE_URL}/api/performance/analytics`);
+                    const perfData = await perfResponse.json();
+                    
+                    if (perfData.success) {
+                        document.getElementById('winRate').textContent = `${(perfData.metrics?.win_rate || 0).toFixed(1)}%`;
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating risk metrics:', error);
+            }
+        }
+        
+        async function updateAlerts() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/alerts/active`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    activeAlerts = data.alerts || [];
+                    document.getElementById('activeAlerts').textContent = activeAlerts.length;
+                }
+            } catch (error) {
+                console.error('Error updating alerts:', error);
+            }
+        }
+        
+        function showNotification(message, type = 'info') {
+            console.log(`[${type.toUpperCase()}] ${message}`);
+            // You can add a toast notification here
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize TradingView widget
+            initTradingViewWidget();
+            
+            // Initialize WebSocket
+            initWebSocket();
+            
+            // Fetch initial data
+            fetchLiveData();
+            refreshOptionChain();
+            calculateIndicators();
+            refreshMarketDepth();
+            
+            // Start auto-refresh
+            startAutoRefresh();
+            
+            // Initialize trading features
+            updateSignalStatus();  // Initialize the S1-S8 signal grid
+            refreshPositions();
+            updateRiskMetrics();
+            updateAlerts();
+            
+            // Set up periodic data refresh (every 5 seconds)
+            setInterval(fetchLiveData, 5000);
+            
+            // Set up option chain refresh (every 30 seconds)
+            setInterval(refreshOptionChain, 30000);
+            
+            // Set up trading updates (every 10 seconds)
+            setInterval(() => {
+                refreshPositions();
+                updateRiskMetrics();
+                updateAlerts();
+            }, 10000);
+        });
+
+        // Handle page visibility change to pause/resume updates
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                // Page is hidden, reduce update frequency
+                console.log('Page hidden, reducing update frequency');
+            } else {
+                // Page is visible, resume normal updates
+                console.log('Page visible, resuming updates');
+                fetchLiveData();
+            }
+        });
+    </script>
+</body>
+</html>

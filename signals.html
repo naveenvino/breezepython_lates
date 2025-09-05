@@ -647,6 +647,102 @@
             text-transform: uppercase;
         }
 
+        /* Connection Status Bar */
+        .connection-status-bar {
+            background: linear-gradient(90deg, var(--card-bg) 0%, rgba(30, 41, 59, 0.95) 100%);
+            border-bottom: 1px solid var(--border-color);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-left, .status-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .connection-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .indicator-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #fbbf24;
+            animation: pulse 2s infinite;
+        }
+
+        .indicator-dot.connected {
+            background: #10b981;
+            animation: none;
+        }
+
+        .indicator-dot.disconnected {
+            background: #ef4444;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-text {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .broker-info {
+            padding: 4px 12px;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 20px;
+        }
+
+        .broker-name {
+            color: #3b82f6;
+            font-weight: 600;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .market-time {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .market-time i {
+            color: var(--accent-blue);
+        }
+
+        .market-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+
+        .market-badge.open {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #10b981;
+        }
+
         /* Modal Styles */
         .modal-overlay {
             display: none;
@@ -852,6 +948,28 @@
 
     <!-- Main Wrapper -->
     <div class="dashboard-wrapper">
+        <!-- Broker Connection Status Bar -->
+        <div class="connection-status-bar" id="connectionStatus">
+            <div class="status-left">
+                <div class="connection-indicator" id="connectionIndicator">
+                    <div class="indicator-dot"></div>
+                    <span class="status-text">Checking Connection...</span>
+                </div>
+                <div class="broker-info">
+                    <span class="broker-name" id="brokerName">BREEZE</span>
+                </div>
+            </div>
+            <div class="status-right">
+                <div class="market-time" id="marketTime">
+                    <i class="far fa-clock"></i>
+                    <span id="currentTime">--:--:--</span>
+                </div>
+                <div class="market-status" id="marketStatus">
+                    <span class="market-badge">MARKET CLOSED</span>
+                </div>
+            </div>
+        </div>
+
         <!-- Header -->
         <div class="header-card">
             <div class="header-content">
@@ -1340,6 +1458,7 @@
     </div>
 
     <script>
+        const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:8000' : '';
         // Global variables
         let signalData = [];
         let recentTriggers = [];
@@ -1363,6 +1482,11 @@
             loadAllData();
             setInterval(refreshSignals, 30000); // Auto-refresh every 30 seconds
             animateStats();
+            updateConnectionStatus();
+            updateClock();
+            setInterval(updateClock, 1000); // Update clock every second
+            checkBrokerConnection();
+            setInterval(checkBrokerConnection, 10000); // Check connection every 10 seconds
         });
 
         // Load all data
@@ -1377,7 +1501,7 @@
         // Load market context (NIFTY spot price)
         async function loadMarketContext() {
             try {
-                const response = await fetch('http://localhost:8000/option-chain/fast?strikes=1');
+                const response = await fetch(`${API_BASE}/option-chain/fast?strikes=1`);
                 if (response.ok) {
                     const data = await response.json();
                     if (data.status === 'success' && data.data) {
@@ -1400,7 +1524,7 @@
         // Load signal statistics
         async function loadSignalStatistics() {
             try {
-                const response = await fetch('http://localhost:8000/signals/statistics');
+                const response = await fetch(`${API_BASE}/signals/statistics`);
                 if (response.ok) {
                     const data = await response.json();
                     if (data.status === 'success') {
@@ -1479,7 +1603,7 @@
         // Load signal data (recent triggers)
         async function loadSignalData() {
             try {
-                const response = await fetch('http://localhost:8000/signals/recent?limit=10');
+                const response = await fetch(`${API_BASE}/signals/recent?limit=10`);
                 if (response.ok) {
                     const data = await response.json();
                     if (data.status === 'success') {
@@ -2063,6 +2187,74 @@
                 }
             });
         });
+
+        // Update clock
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-IN', { 
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('currentTime').textContent = timeString;
+            
+            // Update market status
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const day = now.getDay();
+            
+            const marketBadge = document.querySelector('.market-badge');
+            const isWeekday = day >= 1 && day <= 5;
+            const isMarketHours = isWeekday && 
+                ((hours === 9 && minutes >= 15) || (hours > 9 && hours < 15) || 
+                 (hours === 15 && minutes <= 30));
+            
+            if (isMarketHours) {
+                marketBadge.textContent = 'MARKET OPEN';
+                marketBadge.classList.add('open');
+            } else {
+                marketBadge.textContent = 'MARKET CLOSED';
+                marketBadge.classList.remove('open');
+            }
+        }
+
+        // Check broker connection
+        async function checkBrokerConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/broker/status`);
+                const indicatorDot = document.querySelector('.indicator-dot');
+                const statusText = document.querySelector('.status-text');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.is_connected) {
+                        indicatorDot.className = 'indicator-dot connected';
+                        statusText.textContent = 'Connected';
+                    } else {
+                        indicatorDot.className = 'indicator-dot disconnected';
+                        statusText.textContent = 'Disconnected';
+                    }
+                } else {
+                    indicatorDot.className = 'indicator-dot disconnected';
+                    statusText.textContent = 'API Offline';
+                }
+            } catch (error) {
+                const indicatorDot = document.querySelector('.indicator-dot');
+                const statusText = document.querySelector('.status-text');
+                indicatorDot.className = 'indicator-dot disconnected';
+                statusText.textContent = 'Connection Error';
+            }
+        }
+
+        // Update connection status initially
+        function updateConnectionStatus() {
+            // This can be expanded to check actual broker connection
+            const brokerName = document.getElementById('brokerName');
+            // Check if we have Kite or Breeze based on what's available
+            // For now, default to BREEZE
+            brokerName.textContent = 'BREEZE';
+        }
     </script>
 </body>
 </html>

@@ -1,0 +1,257 @@
+{
+  "timestamp": "2025-08-31T22:25:30.272602",
+  "categories": {
+    "API Connectivity": {
+      "tests": [
+        {
+          "test": "API Health Check",
+          "status": "PASS",
+          "message": "API is responsive",
+          "timestamp": "22:25:32"
+        },
+        {
+          "test": "Broker Status",
+          "status": "PASS",
+          "message": "Broker: breeze",
+          "timestamp": "22:25:35"
+        },
+        {
+          "test": "Kite Connection",
+          "status": "WARN",
+          "message": "Kite API not connected",
+          "timestamp": "22:25:38"
+        }
+      ],
+      "passed": 2,
+      "failed": 0
+    },
+    "Authentication": {
+      "tests": [
+        {
+          "test": "API Login",
+          "status": "PASS",
+          "message": "Authentication successful",
+          "timestamp": "22:25:40"
+        },
+        {
+          "test": "Session Validation",
+          "status": "PASS",
+          "message": "Session is valid",
+          "timestamp": "22:25:40"
+        },
+        {
+          "test": "Breeze Auth",
+          "status": "PASS",
+          "message": "Breeze API authenticated",
+          "timestamp": "22:25:40"
+        }
+      ],
+      "passed": 3,
+      "failed": 0
+    },
+    "Market Data": {
+      "tests": [
+        {
+          "test": "NIFTY Spot",
+          "status": "FAIL",
+          "message": "No spot price data",
+          "timestamp": "22:25:40"
+        },
+        {
+          "test": "Option Chain",
+          "status": "WARN",
+          "message": "Empty option chain",
+          "timestamp": "22:25:40"
+        },
+        {
+          "test": "India VIX",
+          "status": "PASS",
+          "message": "VIX: N/A",
+          "timestamp": "22:25:40"
+        }
+      ],
+      "passed": 1,
+      "failed": 1
+    },
+    "WebSocket": {
+      "tests": [
+        {
+          "test": "TradingView WS",
+          "status": "PASS",
+          "message": "WebSocket connected",
+          "timestamp": "22:25:42"
+        },
+        {
+          "test": "WS Data Stream",
+          "status": "PASS",
+          "message": "Received 1 messages",
+          "timestamp": "22:25:45"
+        }
+      ],
+      "passed": 2,
+      "failed": 0
+    },
+    "Trading Functions": {
+      "tests": [
+        {
+          "test": "Get Positions",
+          "status": "PASS",
+          "message": "Fetched 0 positions",
+          "timestamp": "22:25:47"
+        },
+        {
+          "test": "Get Orders",
+          "status": "PASS",
+          "message": "Fetched 0 orders",
+          "timestamp": "22:25:47"
+        },
+        {
+          "test": "Auto Trade Status",
+          "status": "PASS",
+          "message": "Auto-trade: False",
+          "timestamp": "22:25:47"
+        },
+        {
+          "test": "Signal Execution",
+          "status": "FAIL",
+          "message": "Signal execution failed",
+          "timestamp": "22:25:47"
+        }
+      ],
+      "passed": 3,
+      "failed": 1
+    },
+    "Risk Management": {
+      "tests": [
+        {
+          "test": "Risk Status",
+          "status": "PASS",
+          "message": "Risk monitoring: False",
+          "timestamp": "22:25:47"
+        },
+        {
+          "test": "Risk Limits",
+          "status": "PASS",
+          "message": "Max loss: N/A",
+          "timestamp": "22:25:47"
+        },
+        {
+          "test": "Stop Loss Monitor",
+          "status": "PASS",
+          "message": "SL monitoring: False",
+          "timestamp": "22:25:47"
+        },
+        {
+          "test": "Position Risk Check",
+          "status": "PASS",
+          "message": "Risk check endpoint working",
+          "timestamp": "22:25:47"
+        }
+      ],
+      "passed": 4,
+      "failed": 0
+    },
+    "Webhook Integration": {
+      "tests": [
+        {
+          "test": "Webhook Endpoint",
+          "status": "FAIL",
+          "message": "Webhook failed: 422",
+          "timestamp": "22:25:47"
+        },
+        {
+          "test": "Signal Queue",
+          "status": "PASS",
+          "message": "Pending signals: 2",
+          "timestamp": "22:25:47"
+        }
+      ],
+      "passed": 1,
+      "failed": 1
+    },
+    "Data Persistence": {
+      "tests": [
+        {
+          "test": "Database Connection",
+          "status": "PASS",
+          "message": "Tables: 0",
+          "timestamp": "22:25:47"
+        },
+        {
+          "test": "Backtest Storage",
+          "status": "PASS",
+          "message": "Backtests: 0",
+          "timestamp": "22:25:47"
+        },
+        {
+          "test": "Session Storage",
+          "status": "PASS",
+          "message": "Session history accessible",
+          "timestamp": "22:25:47"
+        }
+      ],
+      "passed": 3,
+      "failed": 0
+    },
+    "UI Integration": {
+      "tests": [
+        {
+          "test": "Page Load",
+          "status": "PASS",
+          "message": "TradingView Pro loaded",
+          "timestamp": "22:25:52"
+        },
+        {
+          "test": "UI-API Connection",
+          "status": "PASS",
+          "message": "UI can reach API",
+          "timestamp": "22:25:54"
+        },
+        {
+          "test": "UI-WebSocket",
+          "status": "PASS",
+          "message": "UI WebSocket connectivity working",
+          "timestamp": "22:25:54"
+        }
+      ],
+      "passed": 3,
+      "failed": 0
+    },
+    "Performance": {
+      "tests": [
+        {
+          "test": "API Latency",
+          "status": "FAIL",
+          "message": "Very slow: 2047.35ms",
+          "timestamp": "22:25:58"
+        },
+        {
+          "test": "System Resources",
+          "status": "PASS",
+          "message": "CPU: 0%, Memory: 0%",
+          "timestamp": "22:25:58"
+        },
+        {
+          "test": "Concurrent Requests",
+          "status": "PASS",
+          "message": "Handled 10 requests in 0.02s",
+          "timestamp": "22:25:58"
+        }
+      ],
+      "passed": 2,
+      "failed": 1
+    }
+  },
+  "total_tests": 30,
+  "passed": 24,
+  "failed": 4,
+  "critical_failures": [
+    "Webhook Integration: Webhook Endpoint - Webhook failed: 422"
+  ],
+  "warnings": [
+    "API Connectivity: Kite Connection - Kite API not connected",
+    "Market Data: Option Chain - Empty option chain"
+  ],
+  "production_ready": false,
+  "pass_rate": 80.0
+}

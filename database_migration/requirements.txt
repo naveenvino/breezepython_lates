@@ -1,0 +1,25 @@
+# Database Migration Requirements
+
+# PostgreSQL drivers
+psycopg2-binary==2.9.9
+asyncpg==0.29.0
+
+# SQL Server driver (for migration)
+pyodbc==5.1.0
+
+# SQLAlchemy with PostgreSQL support
+sqlalchemy==2.0.25
+sqlalchemy-utils==0.41.1
+
+# Data processing
+pandas==2.1.4
+numpy==1.26.3
+
+# Utilities
+python-dotenv==1.0.0
+click==8.1.7
+tqdm==4.66.1
+
+# For async operations
+aiofiles==23.2.1
+aiodns==3.1.1

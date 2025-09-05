@@ -1,0 +1,45 @@
+{
+  "environment": "production",
+  "api": {
+    "host": "0.0.0.0",
+    "port": 8000,
+    "workers": 4,
+    "timeout": 120,
+    "keep_alive": 5,
+    "access_log": true
+  },
+  "database": {
+    "pool_size": 20,
+    "max_overflow": 40,
+    "pool_timeout": 30,
+    "pool_recycle": 3600,
+    "echo": false
+  },
+  "websocket": {
+    "ping_interval": 20,
+    "ping_timeout": 10,
+    "max_connections": 1000,
+    "message_queue_size": 100
+  },
+  "trading": {
+    "auto_trade_enabled": false,
+    "paper_trading": true,
+    "max_positions": 10,
+    "max_daily_trades": 50,
+    "min_capital": 100000,
+    "position_size_lots": 10
+  },
+  "risk": {
+    "max_daily_loss": 50000,
+    "max_position_loss": 10000,
+    "stop_loss_percentage": 30,
+    "trailing_stop": true,
+    "panic_close": true
+  },
+  "monitoring": {
+    "health_check_interval": 60,
+    "metrics_interval": 300,
+    "alert_email": "admin@example.com",
+    "alert_telegram": "@tradingalerts"
+  }
+}

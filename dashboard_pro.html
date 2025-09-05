@@ -775,6 +775,7 @@
     </div>
 
     <script>
+        const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:8000' : '';
         // Update time
         function updateTime() {
             const now = new Date();
@@ -808,7 +809,7 @@
                 
                 // Try to get live funds data
                 try {
-                    const fundsResponse = await fetch('http://localhost:8000/live/funds');
+                    const fundsResponse = await fetch(`${API_BASE}/live/funds`);
                     if (fundsResponse.ok) {
                         const fundsData = await fundsResponse.json();
                         console.log('Live funds data received:', fundsData);
@@ -842,7 +843,7 @@
                     document.getElementById('available-margin').textContent = 'Not Connected';
                     
                     // Show connection status
-                    const authResponse = await fetch('http://localhost:8000/auth/real-status');
+                    const authResponse = await fetch(`${API_BASE}/auth/real-status`);
                     if (authResponse.ok) {
                         const authData = await authResponse.json();
                         if (!authData.kite || !authData.kite.connected) {
@@ -862,7 +863,7 @@
         async function loadPositions() {
             try {
                 // Try live-trading positions first
-                const response = await fetch('http://localhost:8000/live-trading/positions');
+                const response = await fetch(`${API_BASE}/live-trading/positions`);
                 if (response.ok) {
                     const data = await response.json();
                     
@@ -976,7 +977,7 @@
         // Fallback to live trading positions
         async function loadLiveTradingPositions() {
             try {
-                const response = await fetch('http://localhost:8000/live/positions');
+                const response = await fetch(`${API_BASE}/live/positions`);
                 if (response.ok) {
                     const data = await response.json();
                     
@@ -994,7 +995,7 @@
         // Load market data
         async function loadMarketData() {
             try {
-                const response = await fetch('http://localhost:8000/market/indices');
+                const response = await fetch(`${API_BASE}/market/indices`);
                 if (response.ok) {
                     const data = await response.json();
                     // Update market indicators if needed

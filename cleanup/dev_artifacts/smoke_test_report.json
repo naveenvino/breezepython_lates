@@ -1,0 +1,177 @@
+{
+  "timestamp": "2025-08-31T22:01:17.790978",
+  "total_tests": 14,
+  "passed": 13,
+  "failed": 1,
+  "warnings": 0,
+  "test_details": [
+    {
+      "test": "Login Test",
+      "status": "TEST",
+      "message": "Running: Login Test",
+      "timestamp": "22:01:20"
+    },
+    {
+      "test": "Login Test",
+      "status": "PASS",
+      "message": "PASSED: Login Test",
+      "timestamp": "22:01:33"
+    },
+    {
+      "test": "Page Sections Load",
+      "status": "TEST",
+      "message": "Running: Page Sections Load",
+      "timestamp": "22:01:33"
+    },
+    {
+      "test": "Page Sections Load",
+      "status": "PASS",
+      "message": "PASSED: Page Sections Load",
+      "timestamp": "22:01:33"
+    },
+    {
+      "test": "WebSocket Connection",
+      "status": "TEST",
+      "message": "Running: WebSocket Connection",
+      "timestamp": "22:01:33"
+    },
+    {
+      "test": "WebSocket Connection",
+      "status": "PASS",
+      "message": "PASSED: WebSocket Connection",
+      "timestamp": "22:01:36"
+    },
+    {
+      "test": "Mode Switching (LIVE/PAPER/BACKTEST)",
+      "status": "TEST",
+      "message": "Running: Mode Switching (LIVE/PAPER/BACKTEST)",
+      "timestamp": "22:01:36"
+    },
+    {
+      "test": "Mode Switching (LIVE/PAPER/BACKTEST)",
+      "status": "PASS",
+      "message": "PASSED: Mode Switching (LIVE/PAPER/BACKTEST)",
+      "timestamp": "22:01:41"
+    },
+    {
+      "test": "Master Signal Toggle",
+      "status": "TEST",
+      "message": "Running: Master Signal Toggle",
+      "timestamp": "22:01:41"
+    },
+    {
+      "test": "Master Signal Toggle",
+      "status": "PASS",
+      "message": "PASSED: Master Signal Toggle",
+      "timestamp": "22:01:43"
+    },
+    {
+      "test": "Individual Signal Toggles (S1-S8)",
+      "status": "TEST",
+      "message": "Running: Individual Signal Toggles (S1-S8)",
+      "timestamp": "22:01:43"
+    },
+    {
+      "test": "Individual Signal Toggles (S1-S8)",
+      "status": "PASS",
+      "message": "PASSED: Individual Signal Toggles (S1-S8)",
+      "timestamp": "22:01:50"
+    },
+    {
+      "test": "Auto Trade Toggle",
+      "status": "TEST",
+      "message": "Running: Auto Trade Toggle",
+      "timestamp": "22:01:50"
+    },
+    {
+      "test": "Auto Trade Toggle",
+      "status": "PASS",
+      "message": "PASSED: Auto Trade Toggle",
+      "timestamp": "22:01:53"
+    },
+    {
+      "test": "Panic Close Button",
+      "status": "TEST",
+      "message": "Running: Panic Close Button",
+      "timestamp": "22:01:53"
+    },
+    {
+      "test": "Panic Close Button",
+      "status": "PASS",
+      "message": "PASSED: Panic Close Button",
+      "timestamp": "22:01:53"
+    },
+    {
+      "test": "Live Data Loading",
+      "status": "TEST",
+      "message": "Running: Live Data Loading",
+      "timestamp": "22:01:53"
+    },
+    {
+      "test": "Live Data Loading",
+      "status": "PASS",
+      "message": "PASSED: Live Data Loading",
+      "timestamp": "22:01:55"
+    },
+    {
+      "test": "Header Statistics",
+      "status": "TEST",
+      "message": "Running: Header Statistics",
+      "timestamp": "22:01:55"
+    },
+    {
+      "test": "Header Statistics",
+      "status": "PASS",
+      "message": "PASSED: Header Statistics",
+      "timestamp": "22:01:55"
+    },
+    {
+      "test": "Webhook Buttons",
+      "status": "TEST",
+      "message": "Running: Webhook Buttons",
+      "timestamp": "22:01:55"
+    },
+    {
+      "test": "Webhook Buttons",
+      "status": "FAIL",
+      "message": "FAILED: Webhook Buttons",
+      "timestamp": "22:01:57"
+    },
+    {
+      "test": "Risk Management Controls",
+      "status": "TEST",
+      "message": "Running: Risk Management Controls",
+      "timestamp": "22:01:57"
+    },
+    {
+      "test": "Risk Management Controls",
+      "status": "PASS",
+      "message": "PASSED: Risk Management Controls",
+      "timestamp": "22:01:58"
+    },
+    {
+      "test": "UI Responsiveness",
+      "status": "TEST",
+      "message": "Running: UI Responsiveness",
+      "timestamp": "22:01:58"
+    },
+    {
+      "test": "UI Responsiveness",
+      "status": "PASS",
+      "message": "PASSED: UI Responsiveness",
+      "timestamp": "22:01:58"
+    },
+    {
+      "test": "Error Handling",
+      "status": "TEST",
+      "message": "Running: Error Handling",
+      "timestamp": "22:01:58"
+    },
+    {
+      "test": "Error Handling",
+      "status": "PASS",
+      "message": "PASSED: Error Handling",
+      "timestamp": "22:01:58"
+    }
+  ]
+}

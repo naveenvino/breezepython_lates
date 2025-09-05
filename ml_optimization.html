@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ML Optimization - BreezeConnect Trading System</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js">
+        const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:8000' : '';</script>
     <style>
         * {
             margin: 0;
@@ -801,7 +802,7 @@
                     optimization_goal: document.getElementById('optimizationGoal').value
                 };
                 
-                const response = await fetch('http://localhost:8000/ml/optimize/all', {
+                const response = await fetch(`${API_BASE}/ml/optimize/all`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(params)
@@ -821,7 +822,7 @@
         async function optimizeHedge() {
             try {
                 showLoading('hedge');
-                const response = await fetch('http://localhost:8000/ml/optimize/hedge', {
+                const response = await fetch(`${API_BASE}/ml/optimize/hedge`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -885,7 +886,7 @@
         async function applyAllOptimizations() {
             if (confirm('Apply all optimizations to your trading strategy? This will update your trading parameters.')) {
                 try {
-                    const response = await fetch('http://localhost:8000/ml/optimize/apply-all', {
+                    const response = await fetch(`${API_BASE}/ml/optimize/apply-all`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -926,7 +927,7 @@
         // Apply individual optimizations
         async function applyHedgeOptimization() {
             try {
-                const response = await fetch('http://localhost:8000/ml/optimize/hedge/apply', {
+                const response = await fetch(`${API_BASE}/ml/optimize/hedge/apply`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ offset: 225 })
@@ -945,7 +946,7 @@
 
         async function applyExitOptimization() {
             try {
-                const response = await fetch('http://localhost:8000/ml/optimize/exit/apply', {
+                const response = await fetch(`${API_BASE}/ml/optimize/exit/apply`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ exit_time: 'Wed 15:15' })
@@ -964,7 +965,7 @@
 
         async function applyStopLossOptimization() {
             try {
-                const response = await fetch('http://localhost:8000/ml/optimize/stoploss/apply', {
+                const response = await fetch(`${API_BASE}/ml/optimize/stoploss/apply`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ method: 'ATR', trailing_after: 0.15 })
@@ -983,7 +984,7 @@
 
         async function applyPositionOptimization() {
             try {
-                const response = await fetch('http://localhost:8000/ml/optimize/position/apply', {
+                const response = await fetch(`${API_BASE}/ml/optimize/position/apply`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ method: 'kelly', max_lots: 15 })
@@ -1002,7 +1003,7 @@
 
         async function applySignalOptimization() {
             try {
-                const response = await fetch('http://localhost:8000/ml/optimize/signals/apply', {
+                const response = await fetch(`${API_BASE}/ml/optimize/signals/apply`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ signals: ['S1', 'S2', 'S3', 'S7'] })
@@ -1021,7 +1022,7 @@
 
         async function applyBreakevenOptimization() {
             try {
-                const response = await fetch('http://localhost:8000/ml/optimize/breakeven/apply', {
+                const response = await fetch(`${API_BASE}/ml/optimize/breakeven/apply`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ trigger_profit: 0.10 })

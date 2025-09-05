@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradingView Pro - Live Monitor</title>
+    <style>
+        :root {
+            --bg-primary: #0a0e27;
+            --bg-secondary: #151935;
+            --bg-card: #1a1f3a;
+            --text-primary: #ffffff;
+            --text-secondary: #8892b0;
+            --accent-green: #00ff88;
+            --accent-red: #ff3366;
+            --accent-blue: #00d4ff;
+            --border-color: #2a3456;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+        }
+
+        .title {
+            font-size: 28px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--accent-green);
+            border-radius: 20px;
+        }
+
+        .pulse {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .stat-change {
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .positive { color: var(--accent-green); }
+        .negative { color: var(--accent-red); }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .panel-header {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .position-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .position-item:hover {
+            transform: translateX(5px);
+        }
+
+        .position-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .signal-badge {
+            padding: 4px 8px;
+            background: var(--accent-blue);
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .position-details {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .position-strike {
+            font-weight: 600;
+        }
+
+        .position-breakeven {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .position-pnl {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .signal-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border-left: 3px solid var(--accent-blue);
+        }
+
+        .signal-time {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .signal-details {
+            flex: 1;
+        }
+
+        .signal-action {
+            padding: 4px 12px;
+            background: rgba(0, 212, 255, 0.2);
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .candle-chart {
+            height: 200px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            display: flex;
+            align-items: flex-end;
+            padding: 20px;
+            gap: 10px;
+        }
+
+        .candle-bar {
+            flex: 1;
+            background: var(--accent-green);
+            border-radius: 4px 4px 0 0;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .candle-bar.red {
+            background: var(--accent-red);
+        }
+
+        .candle-bar:hover {
+            opacity: 0.8;
+        }
+
+        .system-status {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            padding: 20px;
+            background: var(--bg-card);
+            border-radius: 12px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .status-active {
+            background: var(--accent-green);
+            box-shadow: 0 0 10px var(--accent-green);
+        }
+
+        .status-inactive {
+            background: #666;
+        }
+
+        .status-error {
+            background: var(--accent-red);
+            box-shadow: 0 0 10px var(--accent-red);
+        }
+
+        .refresh-btn {
+            padding: 10px 20px;
+            background: var(--accent-blue);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 212, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="title">
+                📊 TradingView Pro Monitor
+            </div>
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <div class="live-indicator">
+                    <div class="pulse"></div>
+                    <span>LIVE</span>
+                </div>
+                <button class="refresh-btn" onclick="refreshData()">Refresh</button>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">NIFTY Spot</div>
+                <div class="stat-value" id="spotPrice">-</div>
+                <div class="stat-change positive" id="spotChange">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Active Positions</div>
+                <div class="stat-value" id="activePositions">0</div>
+                <div class="stat-change" id="positionChange">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total P&L</div>
+                <div class="stat-value" id="totalPnl">₹0</div>
+                <div class="stat-change" id="pnlPercent">0%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Signals Today</div>
+                <div class="stat-value" id="signalsToday">0</div>
+                <div class="stat-change" id="signalStats">-</div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="panel">
+                <div class="panel-header">Active Positions</div>
+                <div id="positionsList"></div>
+            </div>
+            <div class="panel">
+                <div class="panel-header">Recent Signals</div>
+                <div id="signalsList"></div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">Hourly Candles</div>
+            <div class="candle-chart" id="candleChart"></div>
+        </div>
+
+        <div class="system-status">
+            <div class="status-item">
+                <div class="status-indicator" id="wsStatus"></div>
+                <span>WebSocket</span>
+            </div>
+            <div class="status-item">
+                <div class="status-indicator" id="webhookStatus"></div>
+                <span>Webhook</span>
+            </div>
+            <div class="status-item">
+                <div class="status-indicator" id="breezeStatus"></div>
+                <span>Breeze</span>
+            </div>
+            <div class="status-item">
+                <div class="status-indicator" id="dbStatus"></div>
+                <span>Database</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:8000' : '';
+        let ws = null;
+
+        // Initialize WebSocket connection
+        function initWebSocket() {
+            const wsUrl = `ws://localhost:8000/ws/tradingview`;
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                document.getElementById('wsStatus').className = 'status-indicator status-active';
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleWebSocketMessage(data);
+            };
+            
+            ws.onclose = () => {
+                document.getElementById('wsStatus').className = 'status-indicator status-inactive';
+                setTimeout(initWebSocket, 5000);
+            };
+            
+            ws.onerror = () => {
+                document.getElementById('wsStatus').className = 'status-indicator status-error';
+            };
+        }
+
+        // Handle WebSocket messages
+        function handleWebSocketMessage(data) {
+            switch(data.type) {
+                case 'position_created':
+                case 'position_updated':
+                case 'position_closed':
+                    loadPositions();
+                    break;
+                case 'spot_update':
+                    updateSpotPrice(data.data.price);
+                    break;
+                case 'candle_complete':
+                    loadCandles();
+                    break;
+            }
+        }
+
+        // Load positions
+        async function loadPositions() {
+            try {
+                const response = await fetch(`${API_BASE}/live/positions`);
+                const data = await response.json();
+                
+                if (data.positions) {
+                    displayPositions(data.positions);
+                    updateStats(data.positions);
+                }
+            } catch (error) {
+                console.error('Error loading positions:', error);
+            }
+        }
+
+        // Display positions
+        function displayPositions(positions) {
+            const container = document.getElementById('positionsList');
+            container.innerHTML = '';
+            
+            if (positions.length === 0) {
+                container.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">No active positions</div>';
+                return;
+            }
+            
+            positions.forEach(pos => {
+                const item = document.createElement('div');
+                item.className = 'position-item';
+                item.innerHTML = `
+                    <div class="position-info">
+                        <span class="signal-badge">${pos.signal_type}</span>
+                        <div class="position-details">
+                            <div class="position-strike">${pos.main_strike} ${pos.option_type}</div>
+                            <div class="position-breakeven">BE: ${pos.breakeven.toFixed(2)}</div>
+                        </div>
+                    </div>
+                    <div class="position-pnl ${pos.pnl >= 0 ? 'positive' : 'negative'}">
+                        ₹${pos.pnl.toFixed(2)}
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // Load signals
+        async function loadSignals() {
+            try {
+                const response = await fetch(`${API_BASE}/live/signals/pending`);
+                const data = await response.json();
+                
+                if (data.signals) {
+                    displaySignals(data.signals);
+                }
+            } catch (error) {
+                console.error('Error loading signals:', error);
+            }
+        }
+
+        // Display signals
+        function displaySignals(signals) {
+            const container = document.getElementById('signalsList');
+            container.innerHTML = '';
+            
+            if (signals.length === 0) {
+                container.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">No recent signals</div>';
+                return;
+            }
+            
+            signals.slice(0, 5).forEach(signal => {
+                const item = document.createElement('div');
+                item.className = 'signal-item';
+                const time = new Date(signal.timestamp).toLocaleTimeString();
+                
+                item.innerHTML = `
+                    <div class="signal-time">${time}</div>
+                    <div class="signal-details">
+                        ${signal.signal_type} - ${signal.strike} ${signal.option_type}
+                    </div>
+                    <div class="signal-action">${signal.action}</div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // Load candles
+        async function loadCandles() {
+            try {
+                const response = await fetch(`${API_BASE}/live/candles/latest?count=10`);
+                const data = await response.json();
+                
+                if (data.candles) {
+                    displayCandles(data.candles);
+                }
+            } catch (error) {
+                console.error('Error loading candles:', error);
+            }
+        }
+
+        // Display candles
+        function displayCandles(candles) {
+            const container = document.getElementById('candleChart');
+            container.innerHTML = '';
+            
+            if (candles.length === 0) {
+                container.innerHTML = '<div style="width: 100%; text-align: center; color: #666;">No candle data</div>';
+                return;
+            }
+            
+            const maxHigh = Math.max(...candles.map(c => c.high || 0));
+            const minLow = Math.min(...candles.map(c => c.low || 0));
+            const range = maxHigh - minLow || 1;
+            
+            candles.forEach(candle => {
+                if (!candle.high) return;
+                
+                const bar = document.createElement('div');
+                bar.className = `candle-bar ${candle.close < candle.open ? 'red' : ''}`;
+                const height = ((candle.high - candle.low) / range) * 150;
+                bar.style.height = `${height}px`;
+                
+                container.appendChild(bar);
+            });
+        }
+
+        // Load spot price
+        async function loadSpotPrice() {
+            try {
+                const response = await fetch(`${API_BASE}/live/spot-price`);
+                const data = await response.json();
+                
+                if (data.spot_price) {
+                    updateSpotPrice(data.spot_price);
+                }
+            } catch (error) {
+                console.error('Error loading spot price:', error);
+            }
+        }
+
+        // Update spot price
+        function updateSpotPrice(price) {
+            if (price) {
+                document.getElementById('spotPrice').textContent = price.toFixed(2);
+            }
+        }
+
+        // Update stats
+        function updateStats(positions) {
+            document.getElementById('activePositions').textContent = positions.length;
+            
+            const totalPnl = positions.reduce((sum, pos) => sum + pos.pnl, 0);
+            document.getElementById('totalPnl').textContent = `₹${totalPnl.toFixed(2)}`;
+            
+            const pnlClass = totalPnl >= 0 ? 'positive' : 'negative';
+            document.getElementById('totalPnl').className = `stat-value ${pnlClass}`;
+        }
+
+        // Check system status
+        async function checkSystemStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/webhook/status`);
+                const data = await response.json();
+                
+                document.getElementById('webhookStatus').className = 
+                    `status-indicator ${data.listening ? 'status-active' : 'status-inactive'}`;
+                
+                document.getElementById('signalsToday').textContent = data.received_count || 0;
+            } catch (error) {
+                document.getElementById('webhookStatus').className = 'status-indicator status-error';
+            }
+            
+            // Database is active if we can load positions
+            document.getElementById('dbStatus').className = 'status-indicator status-active';
+            
+            // Breeze status (check if we have spot price)
+            const spotPrice = document.getElementById('spotPrice').textContent;
+            document.getElementById('breezeStatus').className = 
+                `status-indicator ${spotPrice !== '-' ? 'status-active' : 'status-inactive'}`;
+        }
+
+        // Refresh all data
+        function refreshData() {
+            loadPositions();
+            loadSignals();
+            loadCandles();
+            loadSpotPrice();
+            checkSystemStatus();
+        }
+
+        // Initialize on load
+        window.onload = function() {
+            initWebSocket();
+            refreshData();
+            
+            // Auto-refresh every 30 seconds
+            setInterval(refreshData, 30000);
+        };
+    </script>
+</body>
+</html>

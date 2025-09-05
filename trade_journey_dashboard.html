@@ -6,7 +6,8 @@
     <title>Trade Journey - Analytics Dashboard</title>
     
     <!-- Chart.js for visualization -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js">
+        const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:8000' : '';</script>
     <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
     
     <!-- Font Awesome for icons -->
@@ -1160,7 +1161,7 @@
         // Load trade journey data
         async function loadTradeJourney() {
             try {
-                const response = await fetch('http://localhost:8000/trade-journey/analysis');
+                const response = await fetch(`${API_BASE}/trade-journey/analysis`);
                 if (response.ok) {
                     const data = await response.json();
                     updateDashboard(data);

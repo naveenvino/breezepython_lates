@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="pragma" content="no-cache">
+    <meta http-equiv="expires" content="0">
     <title>Trading Platform Auto-Login</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -1156,7 +1159,8 @@
     </div>
     
     <script>
-        const API_BASE = 'http://localhost:8000';
+        // Automatically use the port the page was loaded from
+        const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:8000' : '';
         let autoRefreshInterval;
         let totpInterval;
         let editMode = { kite: false, breeze: false };
@@ -1164,10 +1168,31 @@
         // Initialize
         window.onload = () => {
             loadSettings();
-            loadStatus();
+            
+            // Force fresh status load with delay to bypass cache
+            setTimeout(() => {
+                // Clear any displayed status first
+                const kiteStatus = document.getElementById('kiteStatus');
+                const breezeStatus = document.getElementById('breezeStatus');
+                if (kiteStatus) {
+                    kiteStatus.innerHTML = '<span class="dot"></span> Checking...';
+                    kiteStatus.className = 'status-badge';
+                }
+                if (breezeStatus) {
+                    breezeStatus.innerHTML = '<span class="dot"></span> Checking...';
+                    breezeStatus.className = 'status-badge';
+                }
+                
+                // Load fresh status
+                loadStatus();
+            }, 100);
+            
             startClock();
             startTOTPTimer();
             loadTOTPCodes();
+            
+            // Refresh TOTP codes every 10 seconds
+            setInterval(loadTOTPCodes, 10000);
             
             // Auto-refresh if enabled
             const autoRefresh = localStorage.getItem('autoRefresh') !== 'false';
@@ -1222,7 +1247,13 @@
                 ]);
                 
                 // Still fetch stored data for credential info
-                const response = await fetch(`${API_BASE}/auth/auto-login/status`);
+                const response = await fetch(`${API_BASE}/auth/auto-login/status?t=${Date.now()}`, {
+                    cache: 'no-cache',
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
                 const data = await response.json();
                 
                 // Update platform displays with the fetched data
@@ -1248,8 +1279,8 @@
         // Validate session without showing toast
         async function validateSessionQuietly(platform) {
             try {
-                // Add cache-busting parameter to force fresh validation
-                const response = await fetch(`${API_BASE}/session/validate?api_type=${platform}&t=${Date.now()}`, {
+                // Use the same endpoint as header for consistency
+                const response = await fetch(`${API_BASE}/auth/auto-login/status?t=${Date.now()}`, {
                     method: 'GET',
                     cache: 'no-cache',
                     headers: {
@@ -1262,15 +1293,54 @@
                 const statusBadge = document.getElementById(`${platform}Status`);
                 const sessionStatus = document.getElementById(`${platform}SessionStatus`);
                 
-                if (data.is_valid) {
-                    statusBadge.innerHTML = '<span class="dot"></span> Connected';
-                    statusBadge.className = 'status-badge connected';
-                    if (sessionStatus) sessionStatus.textContent = 'Active';
-                } else {
-                    // Always show expired when validation fails, regardless of stored status
-                    statusBadge.innerHTML = '<span class="dot"></span> Expired';
-                    statusBadge.className = 'status-badge error';
-                    if (sessionStatus) sessionStatus.textContent = 'Session Expired - Login Required';
+                // Validate the session actually works with the broker API
+                let sessionValid = false;
+                try {
+                    const validateResponse = await fetch(`${API_BASE}/session/validate?api_type=${platform}&t=${Date.now()}`, {
+                        method: 'GET',
+                        cache: 'no-cache'
+                    });
+                    if (validateResponse.ok) {
+                        const validateData = await validateResponse.json();
+                        sessionValid = validateData.is_valid === true;
+                    }
+                } catch (e) {
+                    console.log(`${platform} session validation failed:`, e);
+                }
+                
+                // Check platform-specific status from unified response AND validate session
+                if (platform === 'kite') {
+                    if (data.kite && data.kite.connected && sessionValid) {
+                        statusBadge.innerHTML = '<span class="dot"></span> Connected';
+                        statusBadge.className = 'status-badge connected';
+                        if (sessionStatus) sessionStatus.textContent = 'Active';
+                    } else if (data.kite && data.kite.connected && !sessionValid) {
+                        statusBadge.innerHTML = '<span class="dot"></span> Session Invalid';
+                        statusBadge.className = 'status-badge error';
+                        if (sessionStatus) sessionStatus.textContent = 'Session Invalid - Re-login Required';
+                    } else {
+                        statusBadge.innerHTML = '<span class="dot"></span> Session Expired';
+                        statusBadge.className = 'status-badge error';
+                        if (sessionStatus) sessionStatus.textContent = 'Session Expired - Login Required';
+                    }
+                } else if (platform === 'breeze') {
+                    if (data.breeze && data.breeze.session_active && !data.breeze.otp_required && sessionValid) {
+                        statusBadge.innerHTML = '<span class="dot"></span> Connected';
+                        statusBadge.className = 'status-badge connected';
+                        if (sessionStatus) sessionStatus.textContent = 'Active';
+                    } else if (data.breeze && data.breeze.session_active && !sessionValid) {
+                        statusBadge.innerHTML = '<span class="dot"></span> Session Invalid';
+                        statusBadge.className = 'status-badge error';
+                        if (sessionStatus) sessionStatus.textContent = 'Session Invalid - Re-login Required';
+                    } else if (data.breeze && data.breeze.otp_required) {
+                        statusBadge.innerHTML = '<span class="dot"></span> OTP Required';
+                        statusBadge.className = 'status-badge ready';
+                        if (sessionStatus) sessionStatus.textContent = 'OTP Required';
+                    } else {
+                        statusBadge.innerHTML = '<span class="dot"></span> Session Expired';
+                        statusBadge.className = 'status-badge error';
+                        if (sessionStatus) sessionStatus.textContent = 'Session Expired - Login Required';
+                    }
                 }
             } catch (error) {
                 console.error(`Error validating ${platform} session:`, error);
@@ -1466,35 +1536,58 @@
         
         // Load TOTP Codes
         async function loadTOTPCodes() {
+            console.log('Loading TOTP codes...');
             try {
                 const response = await fetch(`${API_BASE}/totp/all`);
+                console.log('TOTP response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
+                console.log('TOTP data received:', data);
                 
-                // Update Kite TOTP - Use offset code (+60s to compensate for system clock)
-                if (data.kite && data.kite.codes) {
-                    document.getElementById('kiteTotpCode').textContent = 
-                        data.kite.codes.offset || '------';
-                    // Update Kite TOTP Secret
-                    if (data.kite.secret) {
-                        document.getElementById('kiteTotpSecret').textContent = data.kite.secret;
-                    }
+                // Update Kite TOTP
+                const kiteElement = document.getElementById('kiteTotpCode');
+                const kiteSec = document.getElementById('kiteTotpSecret');
+                
+                if (data.kite && data.kite.otp) {
+                    console.log('Setting Kite OTP:', data.kite.otp);
+                    kiteElement.textContent = data.kite.otp;
+                    kiteElement.style.color = '#4CAF50';  // Green for active
+                } else if (data.kite && data.kite.status === 'not_configured') {
+                    kiteElement.textContent = 'Not Configured';
+                    if (kiteSec) kiteSec.textContent = 'Not Configured';
+                } else {
+                    kiteElement.textContent = '------';
                 }
                 
-                // Update Breeze TOTP - Use offset code (+60s to compensate for system clock)
-                if (data.breeze && data.breeze.codes) {
-                    document.getElementById('breezeTotpCode').textContent = 
-                        data.breeze.codes.offset || '------';
-                    // Update Breeze TOTP Secret
-                    if (data.breeze.secret) {
-                        document.getElementById('breezeTotpSecret').textContent = data.breeze.secret;
-                    }
+                // Update Breeze TOTP
+                const breezeElement = document.getElementById('breezeTotpCode');
+                const breezeSec = document.getElementById('breezeTotpSecret');
+                
+                if (data.breeze && data.breeze.otp) {
+                    console.log('Setting Breeze OTP:', data.breeze.otp);
+                    breezeElement.textContent = data.breeze.otp;
+                    breezeElement.style.color = '#4CAF50';  // Green for active
+                } else if (data.breeze && data.breeze.status === 'not_configured') {
+                    breezeElement.textContent = 'Not Configured';
+                    if (breezeSec) breezeSec.textContent = 'Not Configured';
+                } else {
+                    breezeElement.textContent = '------';
                 }
+                
+                console.log('TOTP codes updated successfully');
+                
             } catch (error) {
                 console.error('Error loading TOTP codes:', error);
-                document.getElementById('kiteTotpCode').textContent = '------';
-                document.getElementById('breezeTotpCode').textContent = '------';
-                document.getElementById('kiteTotpSecret').textContent = 'Error loading';
-                document.getElementById('breezeTotpSecret').textContent = 'Error loading';
+                document.getElementById('kiteTotpCode').textContent = 'Error';
+                document.getElementById('breezeTotpCode').textContent = 'Error';
+                const kiteSec = document.getElementById('kiteTotpSecret');
+                const breezeSec = document.getElementById('breezeTotpSecret');
+                if (kiteSec) kiteSec.textContent = 'Error loading';
+                if (breezeSec) breezeSec.textContent = 'Error loading';
             }
         }
         
@@ -1672,17 +1765,62 @@
                 showToast(`${platform} login initiated. Please wait...`, 'info');
                 
                 // Check status after a delay (increased for Kite which takes longer)
-                setTimeout(() => {
+                setTimeout(async () => {
                     // Force reload from server
-                    validateSessionQuietly(platform);
-                    loadStatus();
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login Now';
+                    await validateSessionQuietly(platform);
+                    await loadStatus();
+                    
+                    // Check if login was successful
+                    const statusResponse = await fetch(`${API_BASE}/auth/auto-login/status?t=${Date.now()}`, {
+                        cache: 'no-cache',
+                        headers: {
+                            'Cache-Control': 'no-cache',
+                            'Pragma': 'no-cache'
+                        }
+                    });
+                    const statusData = await statusResponse.json();
+                    
+                    const isLoggedIn = platform === 'kite' ? 
+                        statusData.kite?.connected : 
+                        (statusData.breeze?.session_active && !statusData.breeze?.otp_required);
+                    
+                    if (isLoggedIn) {
+                        showToast(`${platform} login successful! Refreshing page...`, 'success');
+                        // Force page reload to clear all caches
+                        setTimeout(() => {
+                            window.location.reload(true);
+                        }, 1500);
+                    } else {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login Now';
+                    }
                 }, 10000);
                 
                 // Also check after 30 seconds for slower logins
-                setTimeout(() => {
-                    validateSessionQuietly(platform);
+                setTimeout(async () => {
+                    await validateSessionQuietly(platform);
+                    
+                    // Check if login was successful
+                    const statusResponse = await fetch(`${API_BASE}/auth/auto-login/status?t=${Date.now()}`, {
+                        cache: 'no-cache',
+                        headers: {
+                            'Cache-Control': 'no-cache',
+                            'Pragma': 'no-cache'
+                        }
+                    });
+                    const statusData = await statusResponse.json();
+                    
+                    const isLoggedIn = platform === 'kite' ? 
+                        statusData.kite?.connected : 
+                        (statusData.breeze?.session_active && !statusData.breeze?.otp_required);
+                    
+                    if (isLoggedIn) {
+                        showToast(`${platform} login successful! Refreshing page...`, 'success');
+                        // Force page reload to clear all caches
+                        setTimeout(() => {
+                            window.location.reload(true);
+                        }, 1500);
+                    }
                 }, 30000);
                 
             } catch (error) {

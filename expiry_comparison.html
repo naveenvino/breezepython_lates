@@ -6,7 +6,8 @@
     <title>NIFTY Expiry Analysis - Current vs Next Week</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js">
+        const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:8000' : '';</script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <style>
@@ -1204,7 +1205,7 @@
             try {
                 console.log('Sending request to API...');
                 // Call API
-                const response = await axios.post('http://localhost:8000/backtest/dual-expiry', {
+                const response = await axios.post(`${API_BASE}/backtest/dual-expiry`, {
                     from_date: fromDate,
                     to_date: toDate,
                     initial_capital: initialCapital,

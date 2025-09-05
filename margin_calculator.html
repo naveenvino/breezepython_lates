@@ -558,6 +558,7 @@
     </div>
 
     <script>
+        const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:8000' : '';
         // Strategy selection
         document.querySelectorAll('.strategy-option').forEach(option => {
             option.addEventListener('click', function() {
@@ -755,7 +756,7 @@
             liveMarginDiv.textContent = 'Fetching...';
             
             try {
-                const response = await fetch('http://localhost:8000/kite/margin');
+                const response = await fetch(`${API_BASE}/kite/margin`);
                 if (response.ok) {
                     const data = await response.json();
                     const availableMargin = data.equity?.available?.live_balance || 0;

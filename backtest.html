@@ -1089,7 +1089,8 @@
             }, 200);
 
             try {
-                const response = await fetch('http://localhost:8000/backtest', {
+                const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:8000' : '';
+                const response = await fetch(`${API_BASE}/backtest`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

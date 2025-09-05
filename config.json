@@ -1,0 +1,22 @@
+{
+    "trading": {
+        "default_lots": 10,
+        "max_lots": 30,
+        "hedge_offset": 200,
+        "hedge_percentage": 30
+    },
+    "risk_management": {
+        "max_loss_per_trade": 5000,
+        "max_daily_loss": 10000,
+        "max_positions": 3
+    },
+    "market_hours": {
+        "open": "09:15",
+        "close": "15:30"
+    },
+    "notifications": {
+        "telegram_enabled": true,
+        "email_enabled": false,
+        "sound_enabled": true
+    }
+}

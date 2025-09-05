@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Risk Management Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js">
+        const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:8000' : '';</script>
     <style>
         * {
             margin: 0;
@@ -592,9 +593,9 @@
             try {
                 // Fetch real data from multiple endpoints
                 const [positionsResponse, pnlResponse, fundsResponse] = await Promise.all([
-                    fetch('http://localhost:8000/live/positions').catch(() => null),
-                    fetch('http://localhost:8000/live/pnl').catch(() => null),
-                    fetch('http://localhost:8000/live/funds').catch(() => null)
+                    fetch(`${API_BASE}/live/positions`).catch(() => null),
+                    fetch(`${API_BASE}/live/pnl`).catch(() => null),
+                    fetch(`${API_BASE}/live/funds`).catch(() => null)
                 ]);
 
                 let positions = [];
@@ -888,7 +889,7 @@
             
             // Save to API
             try {
-                const response = await fetch('http://localhost:8000/risk/settings', {
+                const response = await fetch(`${API_BASE}/risk/settings`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -914,7 +915,7 @@
             }
             
             try {
-                const response = await fetch('http://localhost:8000/orders/emergency-close-all', {
+                const response = await fetch(`${API_BASE}/orders/emergency-close-all`, {
                     method: 'POST'
                 });
                 
@@ -936,7 +937,7 @@
             }
             
             try {
-                const response = await fetch(`http://localhost:8000/orders/close-position`, {
+                const response = await fetch(`${API_BASE}/orders/close-position`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

@@ -11,8 +11,12 @@ ENV/
 env/
 .venv
 
-# Environment variables
+# CRITICAL SECURITY - Environment variables (NEVER commit these!)
 .env
+.env.local
+.env.production
+.env.*.local
+*.env
 
 # IDE
 .vscode/
@@ -20,22 +24,42 @@ env/
 *.swp
 *.swo
 
-# Output files
+# Output files (may contain sensitive trading data)
 output/
 *.xlsx
 *.csv
+
+# Logs - may contain sensitive information
 *.log
+logs/
+log/
+*.log.*
+logs/*.json
+logs/*.txt
 
 # OS
 .DS_Store
 Thumbs.db
 
+# SECURITY - Authentication and Session Files
+kite_auth_token.json
+breeze_session.json
+breeze_login_status.json
+*_token.json
+*_auth.json
+*_credentials.json
+*_session.json
+session_*.json
+api_keys.json
+secrets.json
+credentials/
+auth/
+tokens/
+
 # Auto-login artifacts
 *.png
 logs/screenshots/*.png
-kite_auth_token.json
 time_offset.txt
-breeze_login_status.json
 
 # Jupyter Notebook
 .ipynb_checkpoints

@@ -1,0 +1,211 @@
+//@version=5
+indicator("S1-S8 Option Selling Signals", overlay=true)
+
+// ============= INPUTS =============
+signalGroup = input.string("All", "Signal Group", options=["All", "Bullish (S1,S2,S4,S7)", "Bearish (S3,S5,S6,S8)"])
+showLabels = input.bool(true, "Show Signal Labels")
+showAlerts = input.bool(true, "Enable Alerts")
+sendWebhook = input.bool(true, "Send Webhook on Signal")
+
+// Position Sizing
+lotsToTrade = input.int(10, "Lots to Trade", minval=1, maxval=20)
+webhookUrl = input.string("http://localhost:8000/api/v2/webhook/tradingview", "Webhook URL")
+
+// ============= INDICATORS =============
+// Moving Averages
+ema9 = ta.ema(close, 9)
+ema21 = ta.ema(close, 21)
+sma50 = ta.sma(close, 50)
+sma200 = ta.sma(close, 200)
+
+// Support/Resistance
+pivotHigh = ta.pivothigh(high, 10, 10)
+pivotLow = ta.pivotlow(low, 10, 10)
+resistance = ta.valuewhen(pivotHigh, high[10], 0)
+support = ta.valuewhen(pivotLow, low[10], 0)
+
+// RSI
+rsi = ta.rsi(close, 14)
+rsiOverbought = rsi > 70
+rsiOversold = rsi < 30
+
+// MACD
+[macdLine, signalLine, histLine] = ta.macd(close, 12, 26, 9)
+macdBullish = ta.crossover(macdLine, signalLine)
+macdBearish = ta.crossunder(macdLine, signalLine)
+
+// Volume
+volMA = ta.sma(volume, 20)
+highVolume = volume > volMA * 1.5
+
+// Volatility (for timing)
+atr = ta.atr(14)
+vix_proxy = (high - low) / close * 100  // Simplified volatility
+
+// ============= SIGNAL CONDITIONS =============
+
+// S1: Bear Trap (Bullish) - Sell PUT
+// Price dips below support but quickly recovers with volume
+s1_dip = low < support * 0.998  // Dip below support
+s1_recover = close > support and close > open  // Recovery
+s1_volume = volume > volMA
+s1_signal = s1_dip and s1_recover and s1_volume and not rsiOverbought
+
+// S2: Support Hold (Bullish) - Sell PUT  
+// Price tests support multiple times but holds above
+touches_support = math.abs(low - support) / support < 0.002  // Within 0.2% of support
+s2_hold = close > support and close > open
+s2_signal = touches_support and s2_hold and rsiOversold
+
+// S3: Resistance Hold (Bearish) - Sell CALL
+// Price fails at resistance level
+touches_resistance = math.abs(high - resistance) / resistance < 0.002
+s3_reject = close < resistance and close < open  
+s3_signal = touches_resistance and s3_reject and rsiOverbought
+
+// S4: Bias Failure Bull (Bullish) - Sell PUT
+// Failed bearish breakout that reverses bullish
+s4_fake_breakdown = low[1] < sma50[1] and close > sma50
+s4_reversal = close > open and volume > volMA
+s4_signal = s4_fake_breakdown and s4_reversal and macdBullish
+
+// S5: Bias Failure Bear (Bearish) - Sell CALL
+// Failed bullish breakout that reverses bearish
+s5_fake_breakout = high[1] > sma50[1] and close < sma50
+s5_reversal = close < open and volume > volMA
+s5_signal = s5_fake_breakout and s5_reversal and macdBearish
+
+// S6: Weakness Confirmed (Bearish) - Sell CALL
+// Consistent weakness with lower highs and lower lows
+s6_lower_high = high < high[1] and high[1] < high[2]
+s6_lower_low = low < low[1] and low[1] < low[2]
+s6_signal = s6_lower_high and s6_lower_low and close < ema21
+
+// S7: Breakout Confirmed (Bullish) - Sell PUT
+// Strong bullish breakout with volume
+s7_breakout = close > resistance and close[1] <= resistance[1]
+s7_strength = close > open and volume > volMA * 1.5
+s7_signal = s7_breakout and s7_strength and not rsiOverbought
+
+// S8: Breakdown Confirmed (Bearish) - Sell CALL
+// Strong bearish breakdown with volume
+s8_breakdown = close < support and close[1] >= support[1]
+s8_weakness = close < open and volume > volMA * 1.5
+s8_signal = s8_breakdown and s8_weakness and not rsiOversold
+
+// ============= SIGNAL FILTERING =============
+// Only trigger signals during market hours (9:15 AM to 3:30 PM IST)
+isMarketHours = hour >= 9 and hour <= 15
+validSignalTime = hour == 9 and minute >= 15 or hour > 9 and hour < 15 or hour == 15 and minute <= 30
+
+// Filter based on selected group
+showBullish = signalGroup == "All" or signalGroup == "Bullish (S1,S2,S4,S7)"
+showBearish = signalGroup == "All" or signalGroup == "Bearish (S3,S5,S6,S8)"
+
+// ============= SIGNAL PLOTTING =============
+// Plot signals on chart
+if showLabels and validSignalTime
+    if s1_signal and showBullish
+        label.new(bar_index, low, "S1\nSell PUT", color=color.green, style=label.style_label_up, textcolor=color.white, size=size.small)
+    
+    if s2_signal and showBullish
+        label.new(bar_index, low, "S2\nSell PUT", color=color.green, style=label.style_label_up, textcolor=color.white, size=size.small)
+    
+    if s3_signal and showBearish
+        label.new(bar_index, high, "S3\nSell CALL", color=color.red, style=label.style_label_down, textcolor=color.white, size=size.small)
+    
+    if s4_signal and showBullish
+        label.new(bar_index, low, "S4\nSell PUT", color=color.green, style=label.style_label_up, textcolor=color.white, size=size.small)
+    
+    if s5_signal and showBearish
+        label.new(bar_index, high, "S5\nSell CALL", color=color.red, style=label.style_label_down, textcolor=color.white, size=size.small)
+    
+    if s6_signal and showBearish
+        label.new(bar_index, high, "S6\nSell CALL", color=color.red, style=label.style_label_down, textcolor=color.white, size=size.small)
+    
+    if s7_signal and showBullish
+        label.new(bar_index, low, "S7\nSell PUT", color=color.green, style=label.style_label_up, textcolor=color.white, size=size.small)
+    
+    if s8_signal and showBearish
+        label.new(bar_index, high, "S8\nSell CALL", color=color.red, style=label.style_label_down, textcolor=color.white, size=size.small)
+
+// ============= ALERT CONDITIONS =============
+// Create alert conditions with JSON webhook data
+alertMessage(signal, action) =>
+    '{"signal":"' + signal + '","action":"' + action + '","symbol":"NIFTY","price":"' + str.tostring(close) + '","quantity":"' + str.tostring(lotsToTrade) + '","timestamp":"' + str.tostring(time) + '"}'
+
+// S1 Alert
+if s1_signal and showBullish and validSignalTime
+    alert(alertMessage("S1", "SELL_PUT"), alert.freq_once_per_bar)
+
+// S2 Alert  
+if s2_signal and showBullish and validSignalTime
+    alert(alertMessage("S2", "SELL_PUT"), alert.freq_once_per_bar)
+
+// S3 Alert
+if s3_signal and showBearish and validSignalTime
+    alert(alertMessage("S3", "SELL_CALL"), alert.freq_once_per_bar)
+
+// S4 Alert
+if s4_signal and showBullish and validSignalTime
+    alert(alertMessage("S4", "SELL_PUT"), alert.freq_once_per_bar)
+
+// S5 Alert
+if s5_signal and showBearish and validSignalTime
+    alert(alertMessage("S5", "SELL_CALL"), alert.freq_once_per_bar)
+
+// S6 Alert
+if s6_signal and showBearish and validSignalTime
+    alert(alertMessage("S6", "SELL_CALL"), alert.freq_once_per_bar)
+
+// S7 Alert
+if s7_signal and showBullish and validSignalTime
+    alert(alertMessage("S7", "SELL_PUT"), alert.freq_once_per_bar)
+
+// S8 Alert
+if s8_signal and showBearish and validSignalTime
+    alert(alertMessage("S8", "SELL_CALL"), alert.freq_once_per_bar)
+
+// ============= VISUAL ENHANCEMENTS =============
+// Plot support and resistance
+plot(resistance, "Resistance", color=color.red, linewidth=1, style=plot.style_line)
+plot(support, "Support", color=color.green, linewidth=1, style=plot.style_line)
+
+// Plot key EMAs
+plot(ema21, "EMA 21", color=color.orange, linewidth=1)
+plot(sma50, "SMA 50", color=color.blue, linewidth=1)
+
+// Background color for signal zones
+bgcolor(s1_signal or s2_signal or s4_signal or s7_signal ? color.new(color.green, 90) : na, title="Bullish Signal Zone")
+bgcolor(s3_signal or s5_signal or s6_signal or s8_signal ? color.new(color.red, 90) : na, title="Bearish Signal Zone")
+
+// ============= INFO TABLE =============
+var table infoTable = table.new(position.top_right, 2, 9, border_width=1)
+
+if barstate.islast
+    table.cell(infoTable, 0, 0, "Signal", bgcolor=color.gray, text_color=color.white)
+    table.cell(infoTable, 1, 0, "Status", bgcolor=color.gray, text_color=color.white)
+    
+    table.cell(infoTable, 0, 1, "S1: Bear Trap", text_color=color.white)
+    table.cell(infoTable, 1, 1, s1_signal ? "ACTIVE" : "Waiting", bgcolor=s1_signal ? color.green : color.gray, text_color=color.white)
+    
+    table.cell(infoTable, 0, 2, "S2: Support Hold", text_color=color.white)
+    table.cell(infoTable, 1, 2, s2_signal ? "ACTIVE" : "Waiting", bgcolor=s2_signal ? color.green : color.gray, text_color=color.white)
+    
+    table.cell(infoTable, 0, 3, "S3: Resistance Hold", text_color=color.white)
+    table.cell(infoTable, 1, 3, s3_signal ? "ACTIVE" : "Waiting", bgcolor=s3_signal ? color.red : color.gray, text_color=color.white)
+    
+    table.cell(infoTable, 0, 4, "S4: Bias Fail Bull", text_color=color.white)
+    table.cell(infoTable, 1, 4, s4_signal ? "ACTIVE" : "Waiting", bgcolor=s4_signal ? color.green : color.gray, text_color=color.white)
+    
+    table.cell(infoTable, 0, 5, "S5: Bias Fail Bear", text_color=color.white)
+    table.cell(infoTable, 1, 5, s5_signal ? "ACTIVE" : "Waiting", bgcolor=s5_signal ? color.red : color.gray, text_color=color.white)
+    
+    table.cell(infoTable, 0, 6, "S6: Weakness", text_color=color.white)
+    table.cell(infoTable, 1, 6, s6_signal ? "ACTIVE" : "Waiting", bgcolor=s6_signal ? color.red : color.gray, text_color=color.white)
+    
+    table.cell(infoTable, 0, 7, "S7: Breakout", text_color=color.white)
+    table.cell(infoTable, 1, 7, s7_signal ? "ACTIVE" : "Waiting", bgcolor=s7_signal ? color.green : color.gray, text_color=color.white)
+    
+    table.cell(infoTable, 0, 8, "S8: Breakdown", text_color=color.white)
+    table.cell(infoTable, 1, 8, s8_signal ? "ACTIVE" : "Waiting", bgcolor=s8_signal ? color.red : color.gray, text_color=color.white)

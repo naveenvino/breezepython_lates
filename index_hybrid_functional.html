@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified Trading Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #667eea;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --bg-primary: #0a0e27;
+            --bg-secondary: #151932;
+            --bg-hover: #1e2139;
+            --text-primary: #e0e6ed;
+            --text-secondary: #8892b0;
+            --border: #2a2f4a;
+            --header-height: 60px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* Top Navigation Header */
+        .top-nav {
+            height: var(--header-height);
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-right: 40px;
+        }
+        
+        /* Illuminati Eye Symbol */
+        .illuminati-eye {
+            position: relative;
+            width: 32px;
+            height: 32px;
+            display: inline-block;
+            animation: mysticalGlow 3s ease-in-out infinite;
+        }
+        
+        .illuminati-eye svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+        }
+        
+        @keyframes mysticalGlow {
+            0%, 100% {
+                filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+                transform: scale(1);
+            }
+            50% {
+                filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.9));
+                transform: scale(1.05);
+            }
+        }
+        
+        @keyframes eyeBlink {
+            0%, 90%, 100% {
+                transform: scaleY(1);
+            }
+            95% {
+                transform: scaleY(0.1);
+            }
+        }
+        
+        .illuminati-eye:hover svg {
+            filter: drop-shadow(0 0 20px rgba(255, 215, 0, 1));
+            animation: eyePulse 0.5s ease-in-out;
+        }
+        
+        @keyframes eyePulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--primary);
+            text-decoration: none;
+        }
+        
+        /* Main Navigation Menu */
+        .nav-menu {
+            display: flex;
+            flex: 1;
+            height: 100%;
+        }
+        
+        .nav-dropdown {
+            position: relative;
+            height: 100%;
+        }
+        
+        .nav-dropdown-trigger {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            height: 100%;
+            padding: 0 20px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            background: transparent;
+            font-size: 14px;
+            font-weight: 500;
+            position: relative;
+        }
+        
+        .nav-dropdown-trigger:hover {
+            color: var(--text-primary);
+            background: var(--bg-hover);
+        }
+        
+        .nav-dropdown-trigger.active {
+            color: var(--primary);
+            background: var(--bg-hover);
+        }
+        
+        .nav-dropdown-trigger.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--primary);
+        }
+        
+        /* Dropdown Menus */
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            min-width: 220px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 0;
+            margin-top: 4px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.2s;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            z-index: 1001;
+        }
+        
+        .nav-dropdown:hover .dropdown-menu,
+        .dropdown-menu:hover {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 20px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.2s;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .dropdown-item:hover {
+            background: var(--bg-hover);
+            color: var(--primary);
+        }
+        
+        .dropdown-item.active {
+            color: var(--primary);
+            background: rgba(102, 126, 234, 0.1);
+        }
+        
+        .dropdown-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 8px 0;
+        }
+        
+        /* Header Actions (right side) */
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .search-box {
+            position: relative;
+            margin-right: 20px;
+        }
+        
+        .search-box input {
+            background: var(--bg-hover);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px 36px 8px 12px;
+            width: 250px;
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary);
+            width: 300px;
+        }
+        
+        .search-box i {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        /* Search Dropdown Styles */
+        .search-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            right: 0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            z-index: 1002;
+            display: none;
+        }
+
+        .search-dropdown.active {
+            display: block;
+        }
+
+        .search-result {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 1px solid rgba(42, 47, 74, 0.5);
+        }
+
+        .search-result:last-child {
+            border-bottom: none;
+        }
+
+        .search-result:hover,
+        .search-result.selected {
+            background: var(--bg-hover);
+            color: var(--primary);
+        }
+
+        .search-result-icon {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 6px;
+            color: var(--primary);
+        }
+
+        .search-result-content {
+            flex: 1;
+        }
+
+        .search-result-title {
+            font-weight: 500;
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+
+        .search-result-description {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .search-result-type {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            background: rgba(102, 126, 234, 0.2);
+            color: var(--primary);
+        }
+
+        .search-no-results {
+            padding: 24px;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+        
+        .btn-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-icon:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        .notification-badge {
+            position: relative;
+        }
+        
+        .notification-badge::after {
+            content: '';
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 8px;
+            height: 8px;
+            background: var(--danger);
+            border-radius: 50%;
+            border: 2px solid var(--bg-secondary);
+        }
+
+        /* Notification Panel Styles */
+        .notification-panel {
+            position: absolute;
+            top: calc(100% + 12px);
+            right: 0;
+            width: 380px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            z-index: 1002;
+            display: none;
+            max-height: 500px;
+            overflow: hidden;
+        }
+
+        .notification-panel.active {
+            display: block;
+        }
+
+        .notification-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .notification-title {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .notification-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .notification-action {
+            padding: 4px 8px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .notification-action:hover {
+            background: var(--bg-hover);
+            color: var(--primary);
+        }
+
+        .notification-list {
+            max-height: 350px;
+            overflow-y: auto;
+        }
+
+        .notification-item {
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(42, 47, 74, 0.5);
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+
+        .notification-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .notification-item.unread {
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .notification-item.unread::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 4px;
+            background: var(--primary);
+            border-radius: 50%;
+        }
+
+        .notification-icon {
+            width: 36px;
+            height: 36px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 8px;
+            margin-right: 12px;
+            vertical-align: middle;
+        }
+
+        .notification-icon.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .notification-icon.warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+
+        .notification-icon.danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+
+        .notification-content {
+            display: inline-block;
+            vertical-align: middle;
+            flex: 1;
+        }
+
+        .notification-message {
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .notification-time {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .notification-empty {
+            padding: 40px;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .notification-empty i {
+            font-size: 48px;
+            opacity: 0.3;
+            margin-bottom: 12px;
+        }
+        
+        /* Main Content Area */
+        .main-content {
+            margin-top: var(--header-height);
+            height: calc(100vh - var(--header-height));
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Breadcrumb Bar */
+        .breadcrumb-bar {
+            background: var(--bg-secondary);
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        .breadcrumb a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        .breadcrumb a:hover {
+            color: var(--primary);
+        }
+        
+        .breadcrumb .separator {
+            opacity: 0.5;
+        }
+        
+        /* Content Area */
+        .content-area {
+            flex: 1;
+            padding: 0;
+            overflow: hidden;
+            background: var(--bg-primary);
+        }
+        
+        .iframe-container {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .iframe-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        /* Dashboard Welcome Screen */
+        #dashboard-content {
+            display: none;
+            padding: 40px;
+            height: 100%;
+            overflow-y: auto;
+        }
+        
+        #dashboard-content.active {
+            display: block;
+        }
+        
+        .welcome-header {
+            margin-bottom: 40px;
+        }
+        
+        .welcome-title {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--primary), #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .welcome-subtitle {
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+        
+        .dashboard-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .dashboard-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Mobile Menu Toggle */
+        .mobile-menu-toggle {
+            display: none;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 8px;
+        }
+        
+        /* Loading Spinner */
+        .loading-spinner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .mobile-menu-toggle {
+                display: block;
+            }
+            
+            .nav-menu {
+                position: fixed;
+                top: var(--header-height);
+                left: -100%;
+                width: 280px;
+                height: calc(100vh - var(--header-height));
+                background: var(--bg-secondary);
+                border-right: 1px solid var(--border);
+                flex-direction: column;
+                padding: 20px 0;
+                transition: left 0.3s;
+                overflow-y: auto;
+            }
+            
+            .nav-menu.active {
+                left: 0;
+            }
+            
+            .search-box {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation Header -->
+    <header class="top-nav">
+        <div class="logo-section">
+            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+                <i class="fas fa-bars"></i>
+            </button>
+            <a href="#" class="logo" onclick="loadDashboard()">
+                <div class="illuminati-eye">
+                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Radiating rays -->
+                        <g stroke="#FFD700" stroke-width="1.5" opacity="0.7">
+                            <line x1="50" y1="5" x2="50" y2="0" stroke-linecap="round"/>
+                            <line x1="30" y1="12" x2="25" y2="7" stroke-linecap="round"/>
+                            <line x1="70" y1="12" x2="75" y2="7" stroke-linecap="round"/>
+                            <line x1="18" y1="28" x2="11" y2="23" stroke-linecap="round"/>
+                            <line x1="82" y1="28" x2="89" y2="23" stroke-linecap="round"/>
+                            <line x1="15" y1="50" x2="8" y2="50" stroke-linecap="round"/>
+                            <line x1="85" y1="50" x2="92" y2="50" stroke-linecap="round"/>
+                            <line x1="25" y1="72" x2="18" y2="77" stroke-linecap="round"/>
+                            <line x1="75" y1="72" x2="82" y2="77" stroke-linecap="round"/>
+                        </g>
+                        
+                        <!-- Triangle/Pyramid -->
+                        <polygon points="50,15 85,85 15,85" 
+                                fill="none" 
+                                stroke="#FFD700" 
+                                stroke-width="2.5"/>
+                        
+                        <!-- Eye outer shape -->
+                        <ellipse cx="50" cy="52" rx="22" ry="13" 
+                                fill="none" 
+                                stroke="#FFD700" 
+                                stroke-width="2"/>
+                        
+                        <!-- Eye inner -->
+                        <ellipse cx="50" cy="52" rx="22" ry="13" 
+                                fill="rgba(255, 215, 0, 0.1)"/>
+                        
+                        <!-- Iris -->
+                        <circle cx="50" cy="52" r="10" 
+                               fill="#667eea" 
+                               stroke="#FFD700" 
+                               stroke-width="1"/>
+                        
+                        <!-- Pupil -->
+                        <circle cx="50" cy="52" r="5" 
+                               fill="#0a0e27"
+                               style="animation: eyeBlink 10s ease-in-out infinite;"/>
+                        
+                        <!-- Light reflection -->
+                        <circle cx="52" cy="50" r="2" 
+                               fill="rgba(255, 255, 255, 0.8)"/>
+                    </svg>
+                </div>
+                <span>AlphaOne</span>
+            </a>
+        </div>
+        
+        <nav class="nav-menu" id="navMenu">
+            <!-- Trading Dropdown -->
+            <div class="nav-dropdown">
+                <button class="nav-dropdown-trigger">
+                    <span>Trading</span>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item" data-page="live_trading_pro_complete.html" data-title="Live Trading Pro" onclick="loadPage(this)">
+                        <i class="fas fa-play-circle"></i>
+                        <span>Live Trading Pro</span>
+                    </a>
+                    <a class="dropdown-item" data-page="paper_trading.html" data-title="Paper Trading" onclick="loadPage(this)">
+                        <i class="fas fa-flask"></i>
+                        <span>Paper Trading</span>
+                    </a>
+                    <a class="dropdown-item" data-page="positions.html" data-title="Positions" onclick="loadPage(this)">
+                        <i class="fas fa-wallet"></i>
+                        <span>Positions</span>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Analytics Dropdown -->
+            <div class="nav-dropdown">
+                <button class="nav-dropdown-trigger">
+                    <span>Analytics</span>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item" data-page="ml_analysis.html" data-title="ML Analysis" onclick="loadPage(this)">
+                        <i class="fas fa-brain"></i>
+                        <span>ML Analysis</span>
+                    </a>
+                    <a class="dropdown-item" data-page="backtest.html" data-title="Backtesting" onclick="loadPage(this)">
+                        <i class="fas fa-history"></i>
+                        <span>Backtesting</span>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Settings -->
+            <div class="nav-dropdown">
+                <button class="nav-dropdown-trigger" onclick="loadPageDirect('settings.html', 'Settings')">
+                    <span>Settings</span>
+                </button>
+            </div>
+        </nav>
+        
+        <!-- Header Actions (Right Side) -->
+        <div class="header-actions">
+            <div class="search-box">
+                <input type="text" placeholder="Search..." id="globalSearch">
+                <i class="fas fa-search"></i>
+                <div class="search-dropdown" id="searchDropdown"></div>
+            </div>
+            
+            <div style="position: relative;">
+                <button class="btn-icon notification-badge" title="Notifications" onclick="toggleNotifications()" id="notificationBtn">
+                    <i class="fas fa-bell"></i>
+                </button>
+                <div class="notification-panel" id="notificationPanel">
+                    <div class="notification-header">
+                        <span class="notification-title">Notifications</span>
+                        <div class="notification-actions">
+                            <button class="notification-action" onclick="markAllAsRead()">
+                                <i class="fas fa-check"></i> Mark all read
+                            </button>
+                            <button class="notification-action" onclick="clearNotifications()">
+                                <i class="fas fa-trash"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+                    <div class="notification-list" id="notificationList">
+                        <div class="notification-empty">
+                            <i class="fas fa-bell-slash"></i>
+                            <p>No notifications yet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="btn-icon" onclick="toggleFullScreen()" title="Fullscreen">
+                <i class="fas fa-expand"></i>
+            </button>
+            
+            <button class="btn-icon" onclick="refreshCurrentPage()" title="Refresh">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+    </header>
+    
+    <!-- Main Content Area -->
+    <div class="main-content">
+        <!-- Breadcrumb Bar -->
+        <div class="breadcrumb-bar">
+            <div class="breadcrumb" id="breadcrumb">
+                <a href="#" onclick="loadDashboard()">Home</a>
+                <span class="separator">/</span>
+                <span id="currentPage">Dashboard</span>
+            </div>
+        </div>
+        
+        <!-- Content Area -->
+        <div class="content-area">
+            <!-- Dashboard Content (Home Page) -->
+            <div id="dashboard-content" class="active">
+                <div class="welcome-header">
+                    <h1 class="welcome-title">Welcome to AlphaOne Platform</h1>
+                    <p class="welcome-subtitle">Your comprehensive trading and analytics dashboard</p>
+                </div>
+                
+                <div class="dashboard-grid">
+                    <div class="dashboard-card" onclick="loadPageDirect('live_trading_pro_complete.html', 'Live Trading Pro')">
+                        <h3>Live Trading</h3>
+                        <p>Real-time trading with advanced features</p>
+                    </div>
+                    
+                    <div class="dashboard-card" onclick="loadPageDirect('backtest.html', 'Backtesting')">
+                        <h3>Backtesting</h3>
+                        <p>Test your strategies with historical data</p>
+                    </div>
+                    
+                    <div class="dashboard-card" onclick="loadPageDirect('ml_analysis.html', 'ML Analysis')">
+                        <h3>ML Analytics</h3>
+                        <p>Machine learning powered insights</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Dynamic Page Content (iframe) -->
+            <div class="iframe-container" id="pageContent" style="display: none;">
+                <div class="loading-spinner"></div>
+                <iframe id="contentFrame"></iframe>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:8000' : '';
+        // State Management
+        let currentPage = 'dashboard';
+        let isMobileMenuOpen = false;
+        
+        // Search functionality
+        const searchableItems = [
+            // Pages
+            { title: 'Live Trading Pro', description: 'Real-time trading interface', type: 'Page', icon: 'fa-play-circle', page: 'live_trading_pro_complete.html' },
+            { title: 'Paper Trading', description: 'Practice trading without risk', type: 'Page', icon: 'fa-flask', page: 'paper_trading.html' },
+            { title: 'Positions', description: 'View open positions', type: 'Page', icon: 'fa-wallet', page: 'positions.html' },
+            { title: 'Option Chain', description: 'Options trading interface', type: 'Page', icon: 'fa-th', page: 'option_chain.html' },
+            { title: 'Backtesting', description: 'Test strategies with historical data', type: 'Page', icon: 'fa-history', page: 'backtest.html' },
+            { title: 'Signals', description: 'Trading signal alerts', type: 'Page', icon: 'fa-signal', page: 'signals.html' },
+            { title: 'ML Analysis', description: 'Machine learning analytics', type: 'Page', icon: 'fa-brain', page: 'ml_analysis.html' },
+            { title: 'Data Collection', description: 'Collect market data', type: 'Page', icon: 'fa-download', page: 'data_collection.html' },
+            { title: 'Settings', description: 'Application settings', type: 'Page', icon: 'fa-cog', page: 'settings.html' },
+            // Symbols
+            { title: 'NIFTY', description: 'NIFTY 50 Index', type: 'Symbol', icon: 'fa-chart-line' },
+            { title: 'BANKNIFTY', description: 'Bank NIFTY Index', type: 'Symbol', icon: 'fa-university' },
+            { title: 'FINNIFTY', description: 'Financial Services Index', type: 'Symbol', icon: 'fa-coins' },
+            // Actions
+            { title: 'Start Auto Login', description: 'Login to all brokers', type: 'Action', icon: 'fa-sign-in-alt', action: 'loginBoth' },
+            { title: 'Refresh Data', description: 'Refresh current page', type: 'Action', icon: 'fa-sync-alt', action: 'refreshCurrentPage' },
+            { title: 'Toggle Fullscreen', description: 'Enter/exit fullscreen', type: 'Action', icon: 'fa-expand', action: 'toggleFullScreen' }
+        ];
+
+        let searchSelectedIndex = -1;
+        let searchResults = [];
+        let searchHistory = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+
+        function fuzzySearch(query, items) {
+            if (!query) return [];
+            query = query.toLowerCase();
+            return items
+                .map(item => {
+                    const title = item.title.toLowerCase();
+                    const desc = item.description.toLowerCase();
+                    let score = 0;
+                    if (title.includes(query)) score += 10;
+                    if (title.startsWith(query)) score += 5;
+                    if (desc.includes(query)) score += 3;
+                    const words = query.split(' ');
+                    words.forEach(word => {
+                        if (title.includes(word)) score += 2;
+                        if (desc.includes(word)) score += 1;
+                    });
+                    return { ...item, score };
+                })
+                .filter(item => item.score > 0)
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 8);
+        }
+
+        function renderSearchResults(results) {
+            const dropdown = document.getElementById('searchDropdown');
+            if (results.length === 0) {
+                dropdown.innerHTML = '<div class="search-no-results">No results found</div>';
+            } else {
+                dropdown.innerHTML = results.map((item, index) => `
+                    <div class="search-result ${index === searchSelectedIndex ? 'selected' : ''}" 
+                         data-index="${index}"
+                         onclick="selectSearchResult(${index})">
+                        <div class="search-result-icon">
+                            <i class="fas ${item.icon || 'fa-file'}"></i>
+                        </div>
+                        <div class="search-result-content">
+                            <div class="search-result-title">${item.title}</div>
+                            <div class="search-result-description">${item.description}</div>
+                        </div>
+                        <div class="search-result-type">${item.type}</div>
+                    </div>
+                `).join('');
+            }
+            dropdown.classList.add('active');
+        }
+
+        function selectSearchResult(index) {
+            const result = searchResults[index];
+            if (!result) return;
+
+            // Add to search history
+            searchHistory = searchHistory.filter(h => h.title !== result.title);
+            searchHistory.unshift(result);
+            searchHistory = searchHistory.slice(0, 10);
+            localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+
+            // Perform action
+            if (result.page) {
+                loadPageDirect(result.page, result.title);
+            } else if (result.action) {
+                window[result.action]();
+            } else if (result.type === 'Symbol') {
+                // Open option chain with symbol
+                loadPageDirect('option_chain.html', 'Option Chain');
+                setTimeout(() => {
+                    const iframe = document.getElementById('contentFrame');
+                    if (iframe && iframe.contentWindow) {
+                        iframe.contentWindow.postMessage({ type: 'setSymbol', symbol: result.title }, '*');
+                    }
+                }, 1000);
+            }
+
+            // Clear search
+            document.getElementById('globalSearch').value = '';
+            document.getElementById('searchDropdown').classList.remove('active');
+        }
+
+        function handleSearch(query) {
+            if (!query) {
+                document.getElementById('searchDropdown').classList.remove('active');
+                return;
+            }
+            searchResults = fuzzySearch(query, searchableItems);
+            searchSelectedIndex = -1;
+            renderSearchResults(searchResults);
+        }
+
+        // Notification System
+        class NotificationCenter {
+            constructor() {
+                this.notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
+                this.unreadCount = 0;
+                this.init();
+            }
+
+            init() {
+                this.updateUI();
+                this.startPolling();
+                this.setupWebSocket();
+            }
+
+            add(notification) {
+                notification.id = Date.now();
+                notification.timestamp = new Date().toISOString();
+                notification.unread = true;
+                this.notifications.unshift(notification);
+                this.notifications = this.notifications.slice(0, 50);
+                this.save();
+                this.updateUI();
+                this.showBrowserNotification(notification);
+            }
+
+            markAsRead(id) {
+                const notification = this.notifications.find(n => n.id === id);
+                if (notification) {
+                    notification.unread = false;
+                    this.save();
+                    this.updateUI();
+                }
+            }
+
+            markAllAsRead() {
+                this.notifications.forEach(n => n.unread = false);
+                this.save();
+                this.updateUI();
+            }
+
+            clear() {
+                this.notifications = [];
+                this.save();
+                this.updateUI();
+            }
+
+            save() {
+                localStorage.setItem('notifications', JSON.stringify(this.notifications));
+            }
+
+            updateUI() {
+                const list = document.getElementById('notificationList');
+                const badge = document.querySelector('.notification-badge');
+                
+                this.unreadCount = this.notifications.filter(n => n.unread).length;
+                
+                // Update badge
+                if (this.unreadCount > 0) {
+                    badge.classList.add('has-notifications');
+                    if (!badge.querySelector('.badge-count')) {
+                        const count = document.createElement('span');
+                        count.className = 'badge-count';
+                        count.style.cssText = 'position:absolute;top:-4px;right:-4px;background:#ef4444;color:white;border-radius:10px;padding:2px 6px;font-size:10px;';
+                        badge.appendChild(count);
+                    }
+                    badge.querySelector('.badge-count').textContent = this.unreadCount;
+                } else {
+                    badge.classList.remove('has-notifications');
+                    const count = badge.querySelector('.badge-count');
+                    if (count) count.remove();
+                }
+
+                // Update list
+                if (this.notifications.length === 0) {
+                    list.innerHTML = `
+                        <div class="notification-empty">
+                            <i class="fas fa-bell-slash"></i>
+                            <p>No notifications yet</p>
+                        </div>
+                    `;
+                } else {
+                    list.innerHTML = this.notifications.map(n => `
+                        <div class="notification-item ${n.unread ? 'unread' : ''}" onclick="notificationCenter.handleClick(${n.id})">
+                            <span class="notification-icon ${n.type || 'info'}">
+                                <i class="fas ${this.getIcon(n.type)}"></i>
+                            </span>
+                            <span class="notification-content">
+                                <div class="notification-message">${n.message}</div>
+                                <div class="notification-time">${this.formatTime(n.timestamp)}</div>
+                            </span>
+                        </div>
+                    `).join('');
+                }
+            }
+
+            getIcon(type) {
+                const icons = {
+                    'success': 'fa-check-circle',
+                    'warning': 'fa-exclamation-triangle',
+                    'danger': 'fa-times-circle',
+                    'info': 'fa-info-circle',
+                    'trade': 'fa-exchange-alt',
+                    'order': 'fa-shopping-cart',
+                    'signal': 'fa-signal'
+                };
+                return icons[type] || 'fa-bell';
+            }
+
+            formatTime(timestamp) {
+                const date = new Date(timestamp);
+                const now = new Date();
+                const diff = Math.floor((now - date) / 1000);
+                
+                if (diff < 60) return 'Just now';
+                if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
+                if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
+                return date.toLocaleDateString();
+            }
+
+            handleClick(id) {
+                this.markAsRead(id);
+                const notification = this.notifications.find(n => n.id === id);
+                if (notification && notification.link) {
+                    loadPageDirect(notification.link, notification.linkTitle || 'Page');
+                    toggleNotifications();
+                }
+            }
+
+            showBrowserNotification(notification) {
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    new Notification('AlphaOne Platform', {
+                        body: notification.message,
+                        icon: '/favicon.ico',
+                        badge: '/favicon.ico'
+                    });
+                }
+            }
+
+            startPolling() {
+                // Poll for new notifications every 30 seconds
+                setInterval(async () => {
+                    try {
+                        const response = await fetch(`${API_BASE}/notifications/new`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            data.notifications?.forEach(n => this.add(n));
+                        }
+                    } catch (error) {
+                        // Silent fail
+                    }
+                }, 30000);
+            }
+
+            setupWebSocket() {
+                // WebSocket for real-time notifications
+                try {
+                    const ws = new WebSocket(`ws://${window.location.host}/ws/notifications`);
+                    ws.onmessage = (event) => {
+                        const notification = JSON.parse(event.data);
+                        this.add(notification);
+                    };
+                } catch (error) {
+                    // Fallback to polling only
+                }
+            }
+        }
+
+        let notificationCenter;
+
+        function toggleNotifications() {
+            const panel = document.getElementById('notificationPanel');
+            panel.classList.toggle('active');
+        }
+
+        function markAllAsRead() {
+            notificationCenter.markAllAsRead();
+        }
+
+        function clearNotifications() {
+            notificationCenter.clear();
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set initial state
+            updateBreadcrumb('Dashboard');
+            
+            // Initialize notification center
+            notificationCenter = new NotificationCenter();
+
+            // Request notification permission
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+
+            // Add some demo notifications after 2 seconds
+            setTimeout(() => {
+                notificationCenter.add({
+                    type: 'success',
+                    message: 'Successfully connected to trading platform',
+                    link: 'live_trading_pro_complete.html',
+                    linkTitle: 'Live Trading'
+                });
+            }, 2000);
+
+            setTimeout(() => {
+                notificationCenter.add({
+                    type: 'info',
+                    message: 'Market opens in 15 minutes',
+                });
+            }, 5000);
+
+            // Setup search input
+            document.getElementById('globalSearch').addEventListener('input', function(e) {
+                handleSearch(e.target.value);
+            });
+
+            document.getElementById('globalSearch').addEventListener('keydown', function(e) {
+                const dropdown = document.getElementById('searchDropdown');
+                if (!dropdown.classList.contains('active')) return;
+
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    searchSelectedIndex = Math.min(searchSelectedIndex + 1, searchResults.length - 1);
+                    renderSearchResults(searchResults);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    searchSelectedIndex = Math.max(searchSelectedIndex - 1, -1);
+                    renderSearchResults(searchResults);
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (searchSelectedIndex >= 0) {
+                        selectSearchResult(searchSelectedIndex);
+                    }
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    dropdown.classList.remove('active');
+                    this.blur();
+                }
+            });
+
+            // Close search on click outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.search-box')) {
+                    document.getElementById('searchDropdown').classList.remove('active');
+                }
+            });
+
+            // Close notification panel on click outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('#notificationBtn') && !e.target.closest('#notificationPanel')) {
+                    document.getElementById('notificationPanel').classList.remove('active');
+                }
+            });
+        });
+        
+        // Page Loading
+        function loadPage(element) {
+            const page = element.dataset.page;
+            const title = element.dataset.title;
+            
+            // Update active states
+            document.querySelectorAll('.dropdown-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            element.classList.add('active');
+            
+            // Load page
+            loadPageContent(page, title);
+            
+            // Close mobile menu if open
+            if (isMobileMenuOpen) {
+                toggleMobileMenu();
+            }
+        }
+        
+        function loadPageDirect(page, title) {
+            loadPageContent(page, title);
+        }
+        
+        function loadPageContent(page, title) {
+            currentPage = page;
+            
+            // Hide dashboard, show iframe
+            document.getElementById('dashboard-content').classList.remove('active');
+            document.getElementById('pageContent').style.display = 'block';
+            
+            // Update breadcrumb
+            updateBreadcrumb(title);
+            
+            // Load content
+            const iframe = document.getElementById('contentFrame');
+            iframe.src = page;
+            
+            // Handle iframe load
+            iframe.onload = function() {
+                document.querySelector('.loading-spinner').style.display = 'none';
+            };
+            
+            // Show spinner
+            document.querySelector('.loading-spinner').style.display = 'block';
+        }
+        
+        function loadDashboard() {
+            currentPage = 'dashboard';
+            
+            // Show dashboard, hide iframe
+            document.getElementById('dashboard-content').classList.add('active');
+            document.getElementById('pageContent').style.display = 'none';
+            
+            // Update breadcrumb
+            updateBreadcrumb('Dashboard');
+        }
+        
+        // Breadcrumb Management
+        function updateBreadcrumb(pageName) {
+            document.getElementById('currentPage').textContent = pageName;
+            document.title = `${pageName} - AlphaOne Platform`;
+        }
+        
+        // Mobile Menu
+        function toggleMobileMenu() {
+            const navMenu = document.getElementById('navMenu');
+            isMobileMenuOpen = !isMobileMenuOpen;
+            
+            if (isMobileMenuOpen) {
+                navMenu.classList.add('active');
+            } else {
+                navMenu.classList.remove('active');
+            }
+        }
+        
+        // Utility Functions
+        function refreshCurrentPage() {
+            if (currentPage === 'dashboard') {
+                location.reload();
+            } else {
+                const iframe = document.getElementById('contentFrame');
+                iframe.src = iframe.src;
+            }
+        }
+        
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768 && isMobileMenuOpen) {
+                toggleMobileMenu();
+            }
+        });
+    </script>
+</body>
+</html>

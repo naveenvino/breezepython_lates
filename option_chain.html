@@ -968,27 +968,51 @@
                     <td colspan="23">
                         <div class="loading">
                             <div class="spinner"></div>
+                            <span style="margin-left: 10px;">Loading Live Data...</span>
                         </div>
                     </td>
                 </tr>
             `;
 
             try {
-                // Fetch option chain data
-                const response = await fetch(`http://localhost:8000/option-chain/${currentSymbol}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    chainData = data.records?.data || [];
-                    spotPrice = data.records?.underlyingValue || spotPrice;
-                    updateStats(data);
+                // CORRECTED API ENDPOINT
+                const response = await fetch(`/option-chain/live?symbol=${currentSymbol}&expiry=${currentExpiry}`);
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+
+                if (result.status === 'success' && result.data && result.data.chain && result.data.chain.length > 0) {
+                    chainData = result.data.chain;
+                    spotPrice = result.data.spot_price;
+                    atmStrike = result.data.atm_strike;
+                    
+                    updateStats(result.data); 
                     displayOptionChain(chainData);
                 } else {
-                    // If API fails, show mock data
-                    displayMockData();
+                    // Handle case where API returns success but no data
+                    throw new Error(result.message || "API returned an empty or invalid option chain.");
                 }
+
             } catch (error) {
                 console.error('Failed to load option chain:', error);
-                displayMockData();
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="23" style="padding: 40px; text-align: center; color: var(--accent-red);">
+                            <i class="fas fa-exclamation-triangle fa-2x" style="margin-bottom: 10px;"></i>
+                            <h3 style="margin-bottom: 5px;">Could Not Load Option Chain</h3>
+                            <p style="font-size: 13px; color: var(--text-secondary);">
+                                The backend failed to fetch data from the broker. Please ensure you are logged in via the Auto-Login screen and that the broker API is active.
+                            </p>
+                            <p style="font-size: 11px; color: var(--text-muted); margin-top: 15px;">
+                                Error: ${error.message}
+                            </p>
+                        </td>
+                    </tr>
+                `;
             }
         }
 
