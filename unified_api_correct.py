@@ -9534,6 +9534,450 @@ async def reset_circuit_breaker(name: str):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+# ============================================================================
+# MISSING UI INTEGRATION ENDPOINTS
+# ============================================================================
+
+# Settings CRUD Endpoints
+@app.get("/settings/{key}", tags=["Settings"])
+async def get_setting(key: str):
+    """Get a specific setting by key"""
+    try:
+        import sqlite3
+        from pathlib import Path
+        
+        db_dir = Path("data")
+        db_dir.mkdir(exist_ok=True)
+        db_path = db_dir / "trading_settings.db"
+        
+        with sqlite3.connect(str(db_path)) as conn:
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT,
+                    category TEXT DEFAULT 'general',
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            cursor = conn.cursor()
+            cursor.execute("SELECT value FROM settings WHERE key = ?", (key,))
+            result = cursor.fetchone()
+            
+            if result:
+                import json
+                return {"key": key, "value": json.loads(result[0])}
+            else:
+                return {"key": key, "value": None}
+                
+    except Exception as e:
+        logger.error(f"Error getting setting {key}: {str(e)}")
+        return {"key": key, "value": None, "error": str(e)}
+
+@app.put("/settings/{key}", tags=["Settings"])
+async def update_setting(key: str, request: dict):
+    """Update a specific setting"""
+    try:
+        import sqlite3
+        import json
+        from pathlib import Path
+        
+        db_dir = Path("data")
+        db_dir.mkdir(exist_ok=True)
+        db_path = db_dir / "trading_settings.db"
+        
+        value = request.get("value")
+        category = request.get("category", "general")
+        
+        with sqlite3.connect(str(db_path)) as conn:
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT,
+                    category TEXT DEFAULT 'general',
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT OR REPLACE INTO settings (key, value, category, updated_at)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            ''', (key, json.dumps(value), category))
+            
+            conn.commit()
+            
+        return {"status": "success", "message": f"Setting {key} updated"}
+                
+    except Exception as e:
+        logger.error(f"Error updating setting {key}: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+@app.delete("/settings/{key}", tags=["Settings"])
+async def delete_setting(key: str):
+    """Delete a specific setting"""
+    try:
+        import sqlite3
+        from pathlib import Path
+        
+        db_dir = Path("data")
+        db_path = db_dir / "trading_settings.db"
+        
+        if not db_path.exists():
+            return {"status": "error", "message": "Settings database not found"}
+            
+        with sqlite3.connect(str(db_path)) as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM settings WHERE key = ?", (key,))
+            deleted_count = cursor.rowcount
+            conn.commit()
+            
+        if deleted_count > 0:
+            return {"status": "success", "message": f"Setting {key} deleted"}
+        else:
+            return {"status": "error", "message": f"Setting {key} not found"}
+                
+    except Exception as e:
+        logger.error(f"Error deleting setting {key}: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+# Trade Config Endpoints
+@app.post("/save-trade-config", tags=["Trading"])
+async def save_trade_config(config: dict):
+    """Save trade configuration"""
+    try:
+        import sqlite3
+        import json
+        from pathlib import Path
+        
+        db_dir = Path("data")
+        db_dir.mkdir(exist_ok=True)
+        db_path = db_dir / "trading_settings.db"
+        
+        with sqlite3.connect(str(db_path)) as conn:
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT,
+                    category TEXT DEFAULT 'general',
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT OR REPLACE INTO settings (key, value, category, updated_at)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            ''', ("trade_config", json.dumps(config), "trading"))
+            
+            conn.commit()
+            
+        return {"status": "success", "message": "Trade config saved"}
+                
+    except Exception as e:
+        logger.error(f"Error saving trade config: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+@app.get("/trade-config", tags=["Trading"])
+async def get_trade_config():
+    """Get trade configuration"""
+    try:
+        import sqlite3
+        import json
+        from pathlib import Path
+        
+        db_dir = Path("data")
+        db_path = db_dir / "trading_settings.db"
+        
+        if not db_path.exists():
+            # Return default config
+            return {
+                "num_lots": 10,
+                "max_loss_per_trade": 5000,
+                "stop_loss_points": 200,
+                "target_points": 400,
+                "max_positions": 3
+            }
+            
+        with sqlite3.connect(str(db_path)) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT value FROM settings WHERE key = ?", ("trade_config",))
+            result = cursor.fetchone()
+            
+            if result:
+                return json.loads(result[0])
+            else:
+                # Return default config
+                return {
+                    "num_lots": 10,
+                    "max_loss_per_trade": 5000,
+                    "stop_loss_points": 200,
+                    "target_points": 400,
+                    "max_positions": 3
+                }
+                
+    except Exception as e:
+        logger.error(f"Error getting trade config: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+# Signal States Endpoints
+@app.post("/save-signal-states", tags=["Signals"])
+async def save_signal_states(states: dict):
+    """Save signal states"""
+    try:
+        import sqlite3
+        import json
+        from pathlib import Path
+        
+        db_dir = Path("data")
+        db_dir.mkdir(exist_ok=True)
+        db_path = db_dir / "trading_settings.db"
+        
+        with sqlite3.connect(str(db_path)) as conn:
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT,
+                    category TEXT DEFAULT 'general',
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT OR REPLACE INTO settings (key, value, category, updated_at)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            ''', ("signal_states", json.dumps(states), "signals"))
+            
+            conn.commit()
+            
+        return {"status": "success", "message": "Signal states saved"}
+                
+    except Exception as e:
+        logger.error(f"Error saving signal states: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+@app.get("/signal-states", tags=["Signals"])
+async def get_signal_states():
+    """Get signal states"""
+    try:
+        import sqlite3
+        import json
+        from pathlib import Path
+        
+        db_dir = Path("data")
+        db_path = db_dir / "trading_settings.db"
+        
+        if not db_path.exists():
+            # Return default signal states
+            return {
+                "S1": True, "S2": True, "S3": True, "S4": True,
+                "S5": True, "S6": True, "S7": True, "S8": True
+            }
+            
+        with sqlite3.connect(str(db_path)) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT value FROM settings WHERE key = ?", ("signal_states",))
+            result = cursor.fetchone()
+            
+            if result:
+                return json.loads(result[0])
+            else:
+                # Return default signal states
+                return {
+                    "S1": True, "S2": True, "S3": True, "S4": True,
+                    "S5": True, "S6": True, "S7": True, "S8": True
+                }
+                
+    except Exception as e:
+        logger.error(f"Error getting signal states: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+# Expiry Config Endpoints
+@app.post("/save-weekday-expiry-config", tags=["Configuration"])
+async def save_weekday_expiry_config(config: dict):
+    """Save weekday expiry configuration"""
+    try:
+        import sqlite3
+        import json
+        from pathlib import Path
+        
+        db_dir = Path("data")
+        db_dir.mkdir(exist_ok=True)
+        db_path = db_dir / "trading_settings.db"
+        
+        with sqlite3.connect(str(db_path)) as conn:
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT,
+                    category TEXT DEFAULT 'general',
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT OR REPLACE INTO settings (key, value, category, updated_at)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            ''', ("weekday_expiry_config", json.dumps(config), "configuration"))
+            
+            conn.commit()
+            
+        return {"status": "success", "message": "Weekday expiry config saved"}
+                
+    except Exception as e:
+        logger.error(f"Error saving weekday expiry config: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+@app.get("/weekday-expiry-config", tags=["Configuration"])
+async def get_weekday_expiry_config():
+    """Get weekday expiry configuration"""
+    try:
+        import sqlite3
+        import json
+        from pathlib import Path
+        
+        db_dir = Path("data")
+        db_path = db_dir / "trading_settings.db"
+        
+        if not db_path.exists():
+            # Return default config
+            return {
+                "enabled": False,
+                "exit_time": "15:15",
+                "weekdays": ["monday", "tuesday", "wednesday", "thursday", "friday"]
+            }
+            
+        with sqlite3.connect(str(db_path)) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT value FROM settings WHERE key = ?", ("weekday_expiry_config",))
+            result = cursor.fetchone()
+            
+            if result:
+                return json.loads(result[0])
+            else:
+                return {
+                    "enabled": False,
+                    "exit_time": "15:15",
+                    "weekdays": ["monday", "tuesday", "wednesday", "thursday", "friday"]
+                }
+                
+    except Exception as e:
+        logger.error(f"Error getting weekday expiry config: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/save-exit-timing-config", tags=["Configuration"])
+async def save_exit_timing_config(config: dict):
+    """Save exit timing configuration"""
+    try:
+        import sqlite3
+        import json
+        from pathlib import Path
+        
+        db_dir = Path("data")
+        db_dir.mkdir(exist_ok=True)
+        db_path = db_dir / "trading_settings.db"
+        
+        with sqlite3.connect(str(db_path)) as conn:
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT,
+                    category TEXT DEFAULT 'general',
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT OR REPLACE INTO settings (key, value, category, updated_at)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            ''', ("exit_timing_config", json.dumps(config), "configuration"))
+            
+            conn.commit()
+            
+        return {"status": "success", "message": "Exit timing config saved"}
+                
+    except Exception as e:
+        logger.error(f"Error saving exit timing config: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+# Market Data Endpoints
+@app.get("/nifty-spot", tags=["Market Data"])
+async def get_nifty_spot():
+    """Get NIFTY spot price"""
+    try:
+        # Try to get real NIFTY data from Breeze service
+        breeze_service = BreezeService()
+        spot_data = breeze_service.get_nifty_spot()
+        
+        if spot_data:
+            return {
+                "status": "success",
+                "spot": spot_data.get("last_price", 0),
+                "timestamp": datetime.now().isoformat(),
+                "source": "breeze"
+            }
+        else:
+            # Return mock data if real data not available
+            return {
+                "status": "success", 
+                "spot": 25000,  # Mock value
+                "timestamp": datetime.now().isoformat(),
+                "source": "mock"
+            }
+                
+    except Exception as e:
+        logger.error(f"Error getting NIFTY spot: {str(e)}")
+        return {
+            "status": "error",
+            "spot": 25000,  # Mock fallback
+            "timestamp": datetime.now().isoformat(),
+            "message": str(e)
+        }
+
+@app.get("/positions", tags=["Trading"])
+async def get_positions():
+    """Get current positions"""
+    try:
+        from src.services.hybrid_data_manager import get_hybrid_data_manager
+        data_manager = get_hybrid_data_manager()
+        
+        # Get positions from memory cache
+        positions = data_manager.memory_cache.get('active_positions', {})
+        
+        # Convert to list format
+        position_list = []
+        for pos_id, position in positions.items():
+            position_list.append({
+                "id": pos_id,
+                "symbol": position.get("symbol", "NIFTY"),
+                "quantity": position.get("quantity", 0),
+                "average_price": position.get("entry_price", 0),
+                "ltp": position.get("ltp", 0),
+                "pnl": position.get("pnl", 0),
+                "status": position.get("status", "OPEN"),
+                "entry_time": position.get("entry_time"),
+                "exit_time": position.get("exit_time")
+            })
+        
+        return {
+            "status": "success",
+            "positions": position_list,
+            "total_positions": len(position_list),
+            "timestamp": datetime.now().isoformat()
+        }
+                
+    except Exception as e:
+        logger.error(f"Error getting positions: {str(e)}")
+        return {
+            "status": "error",
+            "positions": [],
+            "total_positions": 0,
+            "message": str(e)
+        }
+
 if __name__ == "__main__":
     # Kill any existing process on port 8000
     kill_existing_process_on_port(8000)

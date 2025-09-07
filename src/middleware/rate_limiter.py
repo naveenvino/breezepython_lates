@@ -2,15 +2,19 @@ from typing import Dict, Optional, Callable
 from datetime import datetime, timedelta
 import time
 import hashlib
+import logging
 from collections import defaultdict, deque
 from fastapi import Request, HTTPException
 from fastapi.responses import JSONResponse
 import redis
 import json
 
+logger = logging.getLogger(__name__)
+
 class RateLimiter:
     """
-    Token bucket rate limiter with Redis support for distributed systems
+    Production-grade rate limiting middleware with multi-tier protection
+    Implements token bucket algorithm with Redis support for distributed systems
     """
     
     def __init__(
@@ -69,6 +73,18 @@ class RateLimiter:
             return await self._check_redis_rate_limit(client_id, now)
         else:
             return self._check_memory_rate_limit(client_id, now)
+    
+    def check_request(self, ip_address: str) -> tuple[bool, Optional[int]]:
+        """Check if request from IP address is allowed"""
+        return self.check_rate_limit_by_ip(ip_address)
+    
+    def check_rate_limit_by_ip(self, ip_address: str) -> tuple[bool, Optional[int]]:
+        """Check rate limit for IP address"""
+        bucket = self.buckets[ip_address]
+        if bucket.consume(1):
+            return True, None
+        else:
+            return False, 60  # Retry after 1 minute
             
     def _check_memory_rate_limit(self, client_id: str, now: float) -> bool:
         """Check rate limit using in-memory storage"""

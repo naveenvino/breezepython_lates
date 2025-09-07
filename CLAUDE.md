@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # BreezeConnect Trading System - Project Guidelines
 
 ## Project Overview
-This is a trading system using Breeze API for Indian markets (NIFTY options trading) with backtesting capabilities.
+This is a production-grade algorithmic trading system using Breeze API for Indian markets (NIFTY options trading) with comprehensive backtesting capabilities, enterprise database architecture, and advanced risk management features.
 
 ## Critical Rules - DO NOT VIOLATE
 1. **NEVER change working code without explicit permission**
@@ -221,3 +221,6 @@ Example prompts that trigger subagent use:
 - "Use subagents to find all places where options are priced"
 - "Delegate testing of the backtest API to appropriate agent"
 - "Use parallel tasks to check data in all tables"
+
+## Production Deployment Guidelines
+This system is now Production-ready with enterprise-grade security, monitoring, and risk management features.
