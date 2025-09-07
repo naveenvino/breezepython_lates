@@ -23,7 +23,7 @@
   },
   "trading": {
     "auto_trade_enabled": false,
-    "paper_trading": true,
+    "paper_trading": false,
     "max_positions": 10,
     "max_daily_trades": 50,
     "min_capital": 100000,

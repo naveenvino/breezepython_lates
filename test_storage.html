@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test LocalStorage</title>
+</head>
+<body>
+    <h2>LocalStorage Test</h2>
+    
+    <div>
+        <h3>Exit Timing Config:</h3>
+        <pre id="exitConfig">Loading...</pre>
+    </div>
+    
+    <div>
+        <h3>Weekday Config:</h3>
+        <pre id="weekdayConfig">Loading...</pre>
+    </div>
+    
+    <div>
+        <h3>Trade Config:</h3>
+        <pre id="tradeConfig">Loading...</pre>
+    </div>
+    
+    <button onclick="clearAll()">Clear All Storage</button>
+    <button onclick="setTestData()">Set Test Data</button>
+    <button onclick="reload()">Reload Page</button>
+    
+    <script>
+        function loadStorage() {
+            // Exit timing
+            const exitTiming = localStorage.getItem('exitTimingConfig');
+            document.getElementById('exitConfig').textContent = exitTiming || 'Not set';
+            
+            // Weekday config
+            const weekdayConfig = localStorage.getItem('weekdayExpiryConfig');
+            document.getElementById('weekdayConfig').textContent = weekdayConfig || 'Not set';
+            
+            // Trade config
+            const tradeConfig = localStorage.getItem('tradeConfig');
+            document.getElementById('tradeConfig').textContent = tradeConfig ? 
+                JSON.stringify(JSON.parse(tradeConfig), null, 2) : 'Not set';
+        }
+        
+        function clearAll() {
+            localStorage.clear();
+            alert('Cleared all localStorage');
+            loadStorage();
+        }
+        
+        function setTestData() {
+            localStorage.setItem('exitTimingConfig', JSON.stringify({
+                exit_day_offset: 0,
+                exit_time: "14:15",
+                auto_square_off_enabled: true
+            }));
+            
+            localStorage.setItem('weekdayExpiryConfig', JSON.stringify({
+                monday: "current",
+                tuesday: "current",
+                wednesday: "next",
+                thursday: "month_end",
+                friday: "next"
+            }));
+            
+            alert('Test data set');
+            loadStorage();
+        }
+        
+        function reload() {
+            location.reload();
+        }
+        
+        // Load on page load
+        loadStorage();
+    </script>
+</body>
+</html>

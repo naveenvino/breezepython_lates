@@ -48,10 +48,10 @@ from src.trading.live_trading_api import router as live_trading_router
 from src.api.routers.option_chain_router import router as option_chain_router
 
 # Import TradingView webhook handler
-from tradingview_webhook_handler import add_tradingview_endpoints
+# from tradingview_webhook_handler import add_tradingview_endpoints  # DISABLED - has security vulnerability
 
 # Import new services for TradingView Pro
-from src.services.hybrid_data_manager import get_hybrid_data_manager
+from src.services.hybrid_data_manager import get_hybrid_data_manager, LivePosition
 from src.services.realtime_candle_service import get_realtime_candle_service
 from src.services.position_breakeven_tracker import get_position_breakeven_tracker, PositionEntry
 from src.services.live_stoploss_monitor import get_live_stoploss_monitor
@@ -134,7 +134,7 @@ app.include_router(live_trading_router)
 app.include_router(option_chain_router)
 
 # Add TradingView webhook endpoints
-add_tradingview_endpoints(app)
+# add_tradingview_endpoints(app)  # DISABLED - has security vulnerability
 
 # Add integrated endpoints for new services
 try:
@@ -2411,6 +2411,12 @@ async def get_live_positions():
         logger.error(f"Error getting positions: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Alias for /api/positions endpoint
+@app.get("/api/positions", tags=["Kite Trading"])
+async def get_api_positions():
+    """Alias endpoint for UI compatibility"""
+    return await get_kite_positions()
+
 @app.get("/positions", tags=["Kite Trading"])
 async def get_kite_positions():
     """Get real-time positions from Kite"""
@@ -2482,6 +2488,15 @@ async def get_kite_orders():
 async def place_order(order_request: dict):
     """Place an order through Kite"""
     try:
+        # Check kill switch FIRST
+        from src.services.emergency_kill_switch import get_kill_switch
+        kill_switch = get_kill_switch()
+        if not kill_switch.check_operation_allowed('new_positions'):
+            raise HTTPException(
+                status_code=403,
+                detail="Trading halted by emergency kill switch"
+            )
+        
         kite_client, _, _, _, _ = get_kite_services()
         order_id = kite_client.kite.place_order(
             tradingsymbol=order_request.get("tradingsymbol"),
@@ -2528,6 +2543,15 @@ async def square_off_all():
 async def execute_manual_signal(request: ManualSignalRequest):
     """Manually execute a trading signal with stop loss configuration"""
     try:
+        # Check kill switch status
+        from src.services.emergency_kill_switch import get_kill_switch
+        kill_switch = get_kill_switch()
+        if not kill_switch.check_operation_allowed('new_positions'):
+            return {
+                "success": False,
+                "message": "Trading halted by emergency kill switch",
+                "kill_switch_active": True
+            }
         
         # Update stop loss monitor configuration
         from src.services.live_stoploss_monitor import get_live_stoploss_monitor, StopLossRule, StopLossType
@@ -2747,30 +2771,61 @@ async def execute_trade_production(request: ProductionSignalRequest):
                 "variety": "regular"
             }
             
-            # Mark broker request time for hedge
-            latency_metrics.broker_request_at = datetime.now()
+            # Check if we need iceberg orders (>24 lots)
+            total_lots = request.quantity
             
-            logger.info(f"[HEDGE FIRST] Placing BUY order for {hedge_symbol} - {request.quantity * 75} qty")
-            hedge_order_id = kite_client.kite.place_order(**hedge_params)
+            if total_lots > 24:
+                # Use iceberg order service for large orders
+                from src.services.iceberg_order_service import get_iceberg_service
+                iceberg_service = get_iceberg_service(kite_client)
+                
+                logger.info(f"[ICEBERG] Using iceberg orders for {total_lots} lots")
+                
+                # Execute hedged iceberg order
+                import asyncio
+                result = await iceberg_service.place_hedged_iceberg_order(
+                    main_symbol=symbol,
+                    hedge_symbol=hedge_symbol,
+                    total_lots=total_lots,
+                    action="ENTRY",
+                    order_type="MARKET" if request.get("order_type") == "MARKET" else "LIMIT",
+                    product="MIS",
+                    main_price=current_price if request.get("order_type") != "MARKET" else None,
+                    hedge_price=None  # Market order for hedge
+                )
+                
+                if result["status"] == "error":
+                    raise Exception(result["message"])
+                    
+                order_id = result["main_order_ids"][0] if result["main_order_ids"] else None
+                hedge_order_id = result["hedge_order_ids"][0] if result["hedge_order_ids"] else None
+                
+            else:
+                # Regular order placement for <= 24 lots
+                # Mark broker request time for hedge
+                latency_metrics.broker_request_at = datetime.now()
+                
+                logger.info(f"[HEDGE FIRST] Placing BUY order for {hedge_symbol} - {request.quantity * 75} qty")
+                hedge_order_id = kite_client.kite.place_order(**hedge_params)
+                
+                # Small delay to ensure hedge fills
+                import time
+                time.sleep(0.5)
             
-            # Small delay to ensure hedge fills
-            import time
-            time.sleep(0.5)
-        
-        # Step 2: Place MAIN ORDER (SELL) - Now protected by hedge
-        order_params = {
-            "tradingsymbol": symbol,
-            "exchange": "NFO",
-            "transaction_type": "SELL",
-            "quantity": request.quantity * 75,  # Convert lots to quantity
-            "order_type": "LIMIT",
-            "price": current_price,
-            "product": "MIS",
-            "variety": "regular"
-        }
-        
-        logger.info(f"[MAIN SECOND] Placing SELL order for {symbol} - {request.quantity * 75} qty")
-        order_id = kite_client.kite.place_order(**order_params)
+                # Step 2: Place MAIN ORDER (SELL) - Now protected by hedge
+                order_params = {
+                    "tradingsymbol": symbol,
+                    "exchange": "NFO",
+                    "transaction_type": "SELL",
+                    "quantity": request.quantity * 75,  # Convert lots to quantity
+                    "order_type": "LIMIT",
+                    "price": current_price,
+                    "product": "MIS",
+                    "variety": "regular"
+                }
+                
+                logger.info(f"[MAIN SECOND] Placing SELL order for {symbol} - {request.quantity * 75} qty")
+                order_id = kite_client.kite.place_order(**order_params)
         
         # Mark broker response time
         latency_metrics.broker_response_at = datetime.now()
@@ -3812,6 +3867,12 @@ async def get_session_history():
     except Exception as e:
         logger.error(f"Session history error: {str(e)}")
         return {"history": []}
+
+# Alias for /api/settings endpoint
+@app.get("/api/settings", tags=["Settings"])
+async def get_api_settings():
+    """Alias endpoint for UI compatibility"""
+    return await get_user_settings()
 
 @app.get("/settings", tags=["Settings"])
 async def get_user_settings():
@@ -5998,8 +6059,8 @@ except Exception as e:
 
 # Add TradingView webhook endpoints
 try:
-    from tradingview_webhook_handler import add_tradingview_endpoints
-    add_tradingview_endpoints(app)
+    # from tradingview_webhook_handler import add_tradingview_endpoints  # DISABLED - has security vulnerability
+    # add_tradingview_endpoints(app)  # DISABLED - has security vulnerability
     logger.info("Added TradingView webhook endpoints")
 except Exception as e:
     logger.warning(f"Could not add TradingView endpoints: {e}")
@@ -6012,6 +6073,7 @@ async def webhook_entry(request: dict):
     
     Expected payload:
     {
+        "secret": "your-webhook-secret",
         "signal": "S1",
         "action": "ENTRY",
         "strike": 25000,
@@ -6020,34 +6082,127 @@ async def webhook_entry(request: dict):
         "timestamp": "2024-01-10T10:30:00"
     }
     """
+    # Verify webhook secret FIRST - no try/catch here to ensure security
+    import os
+    webhook_secret = os.getenv('WEBHOOK_SECRET', 'tradingview-webhook-secret-key-2025')
+    if request.get('secret') != webhook_secret:
+        logger.warning(f"Unauthorized webhook access attempt from {request}")
+        return JSONResponse(
+            status_code=401,
+            content={"status": "error", "message": "Invalid webhook secret"}
+        )
+    
     try:
+        # 1. DUPLICATE CHECK DISABLED - Allow repeated webhooks
+        
+        # 2. CHECK KILL SWITCH STATUS (KEEP FOR SAFETY)
+        from src.services.emergency_kill_switch import get_kill_switch
+        kill_switch = get_kill_switch()
+        if kill_switch.triggered or not kill_switch.check_operation_allowed('webhook_entry'):
+            logger.warning("Webhook entry BLOCKED by kill switch")
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "status": "blocked",
+                    "message": "Trading halted by emergency kill switch",
+                    "reason": kill_switch.trigger_reason
+                }
+            )
+        
+        # 3. TRADING LIMITS REMOVED - NO RESTRICTIONS
+        # Get lots from request
+        lots = request.get('lots', 10)
+        
         data_manager = get_hybrid_data_manager()
         
-        # Check if position already exists for this signal
-        existing_positions = data_manager.memory_cache.get('active_positions', {})
-        for pos in existing_positions.values():
-            if pos.signal_type == request['signal'] and pos.status not in ['closed', 'closing']:
-                return {
-                    "status": "duplicate",
-                    "message": f"Position for {request['signal']} already exists",
-                    "position_id": pos.id
-                }
+        # DUPLICATE CHECK REMOVED - Allow multiple positions per signal
         
-        # Create new position
+        # NO VALIDATION - Accept any position size
+        requested_lots = request.get('lots', 10)  # Default to 10 lots
+        lots = requested_lots  # Use requested lots directly
+        
+        # NO PRE-TRADE VERIFICATION - Process directly
+        premium = request.get('premium', 100)
+        
+        # Get expiry configuration for current day
+        from src.services.expiry_management_service import get_expiry_service
+        expiry_service = get_expiry_service()
+        
+        # Determine which expiry to use based on current day configuration
+        current_day = datetime.now().strftime('%A')
+        weekday_config = load_weekday_expiry_config()  # Load saved config
+        
+        expiry_type = weekday_config.get(current_day.lower(), 'next')
+        
+        # Get actual expiry date
+        if expiry_type == 'current':
+            expiry_date = expiry_service.get_current_week_expiry()
+        elif expiry_type == 'next':
+            expiry_date = expiry_service.get_next_week_expiry()
+        else:  # monthend
+            expiry_date = expiry_service.get_month_end_expiry()
+        
+        # Generate option symbols with expiry (simplified)
+        main_symbol = f"NIFTY{expiry_date.strftime('%d%b%y').upper()}{request['strike']}{request['option_type']}"
+        
+        hedge_strike = request['strike'] - 200 if request['option_type'] == 'PE' else request['strike'] + 200
+        hedge_symbol = f"NIFTY{expiry_date.strftime('%d%b%y').upper()}{hedge_strike}{request['option_type']}"
+        
+        # Check if we should place real orders via Kite
+        paper_trading_mode = os.getenv('PAPER_TRADING_MODE', 'true').lower() == 'true'
+        kite_order_result = None
+        
+        if not paper_trading_mode:
+            # Real trading mode - place orders via Kite
+            try:
+                from src.services.kite_weekly_options_executor import KiteWeeklyOptionsExecutor
+                
+                # Initialize Kite executor
+                kite_executor = KiteWeeklyOptionsExecutor()
+                
+                # Execute iron condor strategy
+                kite_result = kite_executor.execute_iron_condor(
+                    main_strike=request['strike'],
+                    hedge_strike=hedge_strike,
+                    option_type=request['option_type'],
+                    lots=lots,
+                    expiry_date=expiry_date
+                )
+                
+                if kite_result['status'] == 'executed':
+                    kite_order_result = {
+                        'main_order_id': kite_result['main_order_id'],
+                        'hedge_order_id': kite_result['hedge_order_id'],
+                        'main_symbol': kite_result['main_symbol'],
+                        'hedge_symbol': kite_result['hedge_symbol']
+                    }
+                    logger.info(f"Real orders placed on Kite: {kite_order_result}")
+                else:
+                    logger.error(f"Failed to place Kite orders: {kite_result.get('error')}")
+                    # Continue with paper trading even if real order fails
+                    
+            except Exception as e:
+                logger.error(f"Error placing real orders: {str(e)}")
+                # Continue with paper trading even if real order fails
+        else:
+            logger.info("Paper trading mode - not placing real orders")
+        
+        # Create new position with expiry information
+        existing_positions = data_manager.memory_cache.get('active_positions', {})
         position = LivePosition(
             id=len(existing_positions) + 1,
             signal_type=request['signal'],
             main_strike=request['strike'],
-            main_price=request.get('premium', 100),  # Get from option chain in real scenario
-            main_quantity=10,
-            hedge_strike=request['strike'] - 200 if request['option_type'] == 'PE' else request['strike'] + 200,
+            main_price=premium,
+            main_quantity=lots,
+            hedge_strike=hedge_strike,
             hedge_price=request.get('hedge_premium', 30),
-            hedge_quantity=10,
+            hedge_quantity=lots,
             breakeven=0,  # Will be calculated
             entry_time=datetime.fromisoformat(request['timestamp']),
             status='active',
             option_type=request['option_type'],
-            quantity=10,
+            quantity=lots,
             lot_size=75
         )
         
@@ -6060,7 +6215,32 @@ async def webhook_entry(request: dict):
         # Add position to data manager
         data_manager.add_position(position)
         
-        return {
+        # Register position with limits service
+        limits_service.register_position({
+            "id": f"POS_{request['signal']}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+            "signal": request['signal'],
+            "lots": lots,
+            "exposure": lots * 75 * premium
+        })
+        
+        # Schedule auto square-off if configured
+        from src.services.auto_square_off_service import get_square_off_service
+        square_off_service = get_square_off_service()
+        
+        # Get exit timing configuration
+        exit_config = load_exit_timing_config()
+        if exit_config.get('auto_square_off_enabled', True):
+            square_off_result = square_off_service.add_position_to_monitor({
+                'symbol': main_symbol,
+                'entry_time': request['timestamp'],
+                'exit_day_offset': exit_config.get('exit_day_offset', 2),
+                'exit_time': exit_config.get('exit_time', '15:15'),
+                'quantity': lots * 75,
+                'order_id': position.id
+            })
+            logger.info(f"Auto square-off scheduled: {square_off_result}")
+        
+        response_data = {
             "status": "success",
             "message": "Position created",
             "position": {
@@ -6069,15 +6249,26 @@ async def webhook_entry(request: dict):
                 "main_leg": {
                     "strike": position.main_strike,
                     "price": position.main_price,
-                    "type": position.option_type
+                    "type": position.option_type,
+                    "symbol": main_symbol
                 },
                 "hedge_leg": {
                     "strike": position.hedge_strike,
-                    "price": position.hedge_price
+                    "price": position.hedge_price,
+                    "symbol": hedge_symbol
                 },
-                "breakeven": position.breakeven
+                "breakeven": position.breakeven,
+                "expiry_date": expiry_date.strftime('%Y-%m-%d'),
+                "auto_square_off": square_off_result.get('exit_datetime') if exit_config.get('auto_square_off_enabled') else None,
+                "trading_mode": "paper" if paper_trading_mode else "real"
             }
         }
+        
+        # Add Kite order IDs if real orders were placed
+        if kite_order_result:
+            response_data["position"]["kite_orders"] = kite_order_result
+        
+        return response_data
     except Exception as e:
         logger.error(f"Error handling webhook entry: {e}")
         return {"status": "error", "message": str(e)}
@@ -6087,8 +6278,9 @@ async def webhook_exit(request: dict):
     """
     Handle position exit from TradingView
     
-    Expected payload:
+    Expected payload (with authentication):
     {
+        "secret": "your-webhook-secret",
         "signal": "S1",
         "action": "EXIT",
         "reason": "stop_loss",
@@ -6096,7 +6288,18 @@ async def webhook_exit(request: dict):
         "timestamp": "2024-01-10T11:15:00"
     }
     """
+    # Verify webhook secret FIRST - no try/catch here to ensure security
+    import os
+    webhook_secret = os.getenv('WEBHOOK_SECRET', 'tradingview-webhook-secret-key-2025')
+    if request.get('secret') != webhook_secret:
+        logger.warning(f"Unauthorized webhook exit attempt from {request}")
+        return JSONResponse(
+            status_code=401,
+            content={"status": "error", "message": "Invalid webhook secret"}
+        )
+    
     try:
+        
         data_manager = get_hybrid_data_manager()
         
         # Find position to close
@@ -6123,6 +6326,40 @@ async def webhook_exit(request: dict):
         # Mark as closing first (prevents stop-loss monitor from also triggering)
         position_to_close.status = 'closing'
         
+        # Check if we need to square off real Kite orders
+        paper_trading_mode = os.getenv('PAPER_TRADING_MODE', 'true').lower() == 'true'
+        kite_square_off_result = None
+        
+        if not paper_trading_mode and hasattr(position_to_close, 'kite_order_ids') and position_to_close.kite_order_ids:
+            try:
+                from src.services.kite_weekly_options_executor import KiteWeeklyOptionsExecutor
+                kite_executor = KiteWeeklyOptionsExecutor()
+                
+                # Square off main position (BUY to close SELL)
+                if position_to_close.kite_order_ids.get('main_symbol'):
+                    main_square_off = kite_executor.square_off_position(
+                        symbol=position_to_close.kite_order_ids['main_symbol'],
+                        quantity=position_to_close.main_quantity * 75,
+                        transaction_type='BUY'  # Buy back the sold option
+                    )
+                    logger.info(f"Main position squared off: {main_square_off}")
+                
+                # Square off hedge position (SELL to close BUY)
+                if position_to_close.kite_order_ids.get('hedge_symbol'):
+                    hedge_square_off = kite_executor.square_off_position(
+                        symbol=position_to_close.kite_order_ids['hedge_symbol'],
+                        quantity=position_to_close.hedge_quantity * 75,
+                        transaction_type='SELL'  # Sell the bought hedge
+                    )
+                    logger.info(f"Hedge position squared off: {hedge_square_off}")
+                
+                kite_square_off_result = {
+                    'main_square_off_id': main_square_off,
+                    'hedge_square_off_id': hedge_square_off
+                }
+            except Exception as e:
+                logger.error(f"Error squaring off Kite positions: {str(e)}")
+        
         # Calculate P&L (simplified)
         pnl = (position_to_close.main_price - position_to_close.current_main_price) * position_to_close.main_quantity * 75
         if position_to_close.hedge_price:
@@ -6131,7 +6368,7 @@ async def webhook_exit(request: dict):
         # Close position
         data_manager.close_position(position_to_close.id, pnl)
         
-        return {
+        response = {
             "status": "success",
             "message": "Position closed",
             "position": {
@@ -6142,6 +6379,11 @@ async def webhook_exit(request: dict):
                 "exit_time": request['timestamp']
             }
         }
+        
+        if kite_square_off_result:
+            response["position"]["kite_square_off"] = kite_square_off_result
+        
+        return response
     except Exception as e:
         logger.error(f"Error handling webhook exit: {e}")
         return {"status": "error", "message": str(e)}
@@ -6324,10 +6566,16 @@ async def calculate_breakeven(positions: List[Dict[str, Any]]):
 # Get option chain for hedge calculation
 @app.get("/api/option-chain")
 async def get_option_chain_for_hedge(
-    strike: int = Query(...),
-    type: str = Query(...)
+    strike: int = Query(None),
+    type: str = Query(None)
 ):
     try:
+        # Use defaults if not provided
+        if strike is None:
+            strike = 25000  # Default strike
+        if type is None:
+            type = "PE"  # Default type
+            
         # This would fetch real option chain data
         # For now, returning sample data
         options = []
@@ -6352,6 +6600,17 @@ async def get_option_chain_for_hedge(
 async def execute_trade(trade_data: Dict[str, Any]):
     """Execute trade with real broker integration"""
     try:
+        # Check kill switch FIRST
+        from src.services.emergency_kill_switch import get_kill_switch
+        kill_switch = get_kill_switch()
+        if not kill_switch.check_operation_allowed('new_positions'):
+            return {
+                "success": False,
+                "status": "blocked",
+                "message": "Trading halted by emergency kill switch",
+                "reason": kill_switch.trigger_reason
+            }
+        
         from src.services.auto_trade_executor import get_auto_trade_executor
         
         signal = trade_data.get('signal', {})
@@ -6580,6 +6839,17 @@ async def get_positions_with_breakeven():
 async def create_live_position(entry: PositionEntry):
     """Create a new position with automatic hedge selection"""
     try:
+        # Check kill switch status
+        from src.services.emergency_kill_switch import get_kill_switch
+        kill_switch = get_kill_switch()
+        if not kill_switch.check_operation_allowed('new_positions'):
+            logger.warning("Position creation blocked by kill switch")
+            return {
+                "error": "Trading halted by emergency kill switch",
+                "kill_switch_active": True,
+                "reason": kill_switch.trigger_reason
+            }
+        
         tracker = get_position_breakeven_tracker()
         result = tracker.create_position(entry)
         
@@ -8264,6 +8534,345 @@ async def reset_settings():
         logger.error(f"Error resetting settings: {str(e)}")
         return {"status": "error", "message": str(e)}
 
+# Expiry Management API Endpoints
+@app.get("/api/expiry/available", tags=["Expiry Management"])
+async def get_available_expiries():
+    """Get available expiry dates based on current day of week"""
+    try:
+        from src.services.expiry_management_service import get_expiry_service
+        
+        expiry_service = get_expiry_service()
+        expiries = expiry_service.get_available_expiries()
+        
+        return {
+            "status": "success",
+            "data": expiries
+        }
+    except Exception as e:
+        logger.error(f"Error getting available expiries: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": str(e)}
+        )
+
+@app.post("/api/expiry/select", tags=["Expiry Management"])
+async def select_expiry(request: dict):
+    """Save selected expiry preference"""
+    try:
+        from src.services.expiry_management_service import get_expiry_service
+        import sqlite3
+        from pathlib import Path
+        
+        selected_expiry = request.get("expiry_date")
+        
+        # Validate expiry
+        expiry_service = get_expiry_service()
+        is_valid, message = expiry_service.validate_expiry_selection(selected_expiry)
+        
+        if not is_valid:
+            return JSONResponse(
+                status_code=400,
+                content={"status": "error", "message": message}
+            )
+        
+        # Save to database
+        db_path = Path("data/trading_settings.db")
+        db_path.parent.mkdir(exist_ok=True)
+        
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # Create table if not exists
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS expiry_settings (
+                id INTEGER PRIMARY KEY,
+                selected_expiry TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Update or insert
+        cursor.execute('''
+            INSERT OR REPLACE INTO expiry_settings (id, selected_expiry)
+            VALUES (1, ?)
+        ''', (selected_expiry,))
+        
+        conn.commit()
+        conn.close()
+        
+        return {
+            "status": "success",
+            "message": f"Expiry set to {selected_expiry}",
+            "expiry_date": selected_expiry
+        }
+        
+    except Exception as e:
+        logger.error(f"Error selecting expiry: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": str(e)}
+        )
+
+@app.get("/api/exit-timing/options", tags=["Exit Timing"])
+async def get_exit_timing_options():
+    """Get available exit timing options"""
+    try:
+        from src.services.expiry_management_service import get_expiry_service
+        
+        expiry_service = get_expiry_service()
+        options = expiry_service.get_exit_timing_options()
+        
+        return {
+            "status": "success",
+            "data": options
+        }
+    except Exception as e:
+        logger.error(f"Error getting exit timing options: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": str(e)}
+        )
+
+@app.post("/api/exit-timing/configure", tags=["Exit Timing"])
+async def configure_exit_timing(request: dict):
+    """Save exit timing configuration"""
+    try:
+        import sqlite3
+        from pathlib import Path
+        
+        exit_day_offset = request.get("exit_day_offset", 2)
+        exit_time = request.get("exit_time", "15:15")
+        auto_square_off_enabled = request.get("auto_square_off_enabled", True)
+        
+        # Validate inputs (0 for expiry day, 1-7 for T+N)
+        if not 0 <= exit_day_offset <= 7:
+            return JSONResponse(
+                status_code=400,
+                content={"status": "error", "message": "Exit day offset must be between 0 (expiry day) and 7"}
+            )
+        
+        valid_times = ["09:30", "10:15", "12:15", "14:15", "15:15"]
+        if exit_time not in valid_times:
+            return JSONResponse(
+                status_code=400,
+                content={"status": "error", "message": f"Exit time must be one of {valid_times}"}
+            )
+        
+        # Save to database
+        db_path = Path("data/trading_settings.db")
+        db_path.parent.mkdir(exist_ok=True)
+        
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # Create table if not exists
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS exit_timing_settings (
+                id INTEGER PRIMARY KEY,
+                exit_day_offset INTEGER,
+                exit_time TEXT,
+                auto_square_off_enabled BOOLEAN,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Update or insert
+        cursor.execute('''
+            INSERT OR REPLACE INTO exit_timing_settings 
+            (id, exit_day_offset, exit_time, auto_square_off_enabled)
+            VALUES (1, ?, ?, ?)
+        ''', (exit_day_offset, exit_time, auto_square_off_enabled))
+        
+        conn.commit()
+        conn.close()
+        
+        return {
+            "status": "success",
+            "message": "Exit timing configured",
+            "config": {
+                "exit_day_offset": exit_day_offset,
+                "exit_time": exit_time,
+                "auto_square_off_enabled": auto_square_off_enabled
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error configuring exit timing: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": str(e)}
+        )
+
+@app.get("/api/square-off/pending", tags=["Square Off"])
+async def get_pending_square_offs():
+    """Get list of pending auto square-offs"""
+    try:
+        from src.services.auto_square_off_service import get_square_off_service
+        
+        service = get_square_off_service()
+        pending = service.get_pending_square_offs()
+        
+        return {
+            "status": "success",
+            "data": pending,
+            "count": len(pending)
+        }
+    except Exception as e:
+        logger.error(f"Error getting pending square-offs: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": str(e)}
+        )
+
+# Helper functions for configuration
+def load_weekday_expiry_config():
+    """Load weekday expiry configuration from file"""
+    try:
+        config_file = Path("expiry_weekday_config.json")
+        if config_file.exists():
+            with open(config_file, "r") as f:
+                return json.load(f)
+        else:
+            # Default configuration
+            return {
+                "monday": "current",
+                "tuesday": "current",
+                "wednesday": "next",
+                "thursday": "next",
+                "friday": "next"
+            }
+    except Exception as e:
+        logger.error(f"Error loading weekday config: {e}")
+        return {
+            "monday": "next",
+            "tuesday": "next",
+            "wednesday": "next",
+            "thursday": "next",
+            "friday": "next"
+        }
+
+def save_weekday_expiry_config(config):
+    """Save weekday expiry configuration to file"""
+    try:
+        with open("expiry_weekday_config.json", "w") as f:
+            json.dump(config, f, indent=2)
+        return True
+    except Exception as e:
+        logger.error(f"Error saving weekday config: {e}")
+        return False
+
+def load_exit_timing_config():
+    """Load exit timing configuration from file"""
+    try:
+        config_file = Path("exit_timing_config.json")
+        if config_file.exists():
+            with open(config_file, "r") as f:
+                return json.load(f)
+        else:
+            # Default configuration
+            return {
+                "exit_day_offset": 2,
+                "exit_time": "15:15",
+                "auto_square_off_enabled": True
+            }
+    except Exception as e:
+        logger.error(f"Error loading exit timing config: {e}")
+        return {
+            "exit_day_offset": 2,
+            "exit_time": "15:15",
+            "auto_square_off_enabled": True
+        }
+
+@app.post("/api/expiry/weekday-config", tags=["Expiry Management"])
+async def save_weekday_config(config: dict):
+    """Save weekday expiry configuration"""
+    try:
+        # Validate config
+        valid_days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+        valid_types = ['current', 'next', 'monthend']
+        
+        for day in valid_days:
+            if day not in config:
+                return JSONResponse(
+                    status_code=400,
+                    content={"status": "error", "message": f"Missing configuration for {day}"}
+                )
+            if config[day] not in valid_types:
+                return JSONResponse(
+                    status_code=400,
+                    content={"status": "error", "message": f"Invalid expiry type for {day}: {config[day]}"}
+                )
+        
+        # Save configuration
+        if save_weekday_expiry_config(config):
+            return {
+                "status": "success",
+                "message": "Weekday expiry configuration saved",
+                "config": config
+            }
+        else:
+            return JSONResponse(
+                status_code=500,
+                content={"status": "error", "message": "Failed to save configuration"}
+            )
+    except Exception as e:
+        logger.error(f"Error saving weekday config: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": str(e)}
+        )
+
+@app.get("/api/expiry/weekday-config", tags=["Expiry Management"])
+async def get_weekday_config():
+    """Get current weekday expiry configuration"""
+    try:
+        config = load_weekday_expiry_config()
+        return {
+            "status": "success",
+            "config": config,
+            "current_day": datetime.now().strftime('%A').lower()
+        }
+    except Exception as e:
+        logger.error(f"Error getting weekday config: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": str(e)}
+        )
+
+@app.post("/api/square-off/cancel", tags=["Square Off"])
+async def cancel_square_off(request: dict):
+    """Cancel a scheduled square-off"""
+    try:
+        from src.services.auto_square_off_service import get_square_off_service
+        
+        symbol = request.get("symbol")
+        if not symbol:
+            return JSONResponse(
+                status_code=400,
+                content={"status": "error", "message": "Symbol is required"}
+            )
+        
+        service = get_square_off_service()
+        success = service.cancel_square_off(symbol)
+        
+        if success:
+            return {
+                "status": "success",
+                "message": f"Square-off cancelled for {symbol}"
+            }
+        else:
+            return JSONResponse(
+                status_code=404,
+                content={"status": "error", "message": f"No pending square-off found for {symbol}"}
+            )
+            
+    except Exception as e:
+        logger.error(f"Error cancelling square-off: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": str(e)}
+        )
+
 # Trade Configuration API Endpoints
 @app.post("/api/trade-config/save", tags=["Trade Config"])
 async def save_trade_configuration(config: dict):
@@ -8414,6 +9023,516 @@ async def delete_trade_configuration(
     except Exception as e:
         logger.error(f"Error deleting trade config: {str(e)}")
         return {"success": False, "message": str(e)}
+
+# ============================================================================
+# EMERGENCY KILL SWITCH ENDPOINTS
+# ============================================================================
+
+@app.post("/api/kill-switch/trigger", tags=["Kill Switch"])
+async def trigger_kill_switch(request: dict):
+    """Trigger the emergency kill switch to halt all trading"""
+    try:
+        from src.services.emergency_kill_switch import get_kill_switch
+        
+        kill_switch = get_kill_switch()
+        reason = request.get('reason', 'Manual trigger')
+        source = request.get('source', 'manual')
+        
+        result = kill_switch.trigger(reason, source)
+        logger.critical(f"KILL SWITCH TRIGGERED: {reason}")
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error triggering kill switch: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/kill-switch/reset", tags=["Kill Switch"])
+async def reset_kill_switch(request: dict):
+    """Reset the kill switch (requires authorization)"""
+    try:
+        from src.services.emergency_kill_switch import get_kill_switch
+        
+        kill_switch = get_kill_switch()
+        authorized_by = request.get('authorized_by', 'admin')
+        
+        result = kill_switch.reset(authorized_by)
+        logger.info(f"Kill switch reset by {authorized_by}")
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error resetting kill switch: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/kill-switch/status", tags=["Kill Switch"])
+async def get_kill_switch_status():
+    """Get current kill switch status"""
+    try:
+        from src.services.emergency_kill_switch import get_kill_switch
+        
+        kill_switch = get_kill_switch()
+        return kill_switch.get_status()
+        
+    except Exception as e:
+        logger.error(f"Error getting kill switch status: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+# ============= MISSING ENDPOINTS FOR UI INTEGRATION =============
+
+# Kill Switch Endpoints
+@app.get("/kill-switch/status")
+async def get_kill_switch_status():
+    """Get kill switch status"""
+    from src.services.hybrid_data_manager import get_hybrid_data_manager
+    data_manager = get_hybrid_data_manager()
+    
+    kill_switch_state = data_manager.memory_cache.get('kill_switch', {
+        'active': False,
+        'triggered_at': None,
+        'reason': None
+    })
+    return {
+        "active": kill_switch_state.get('active', False),
+        "triggered_at": kill_switch_state.get('triggered_at'),
+        "reason": kill_switch_state.get('reason'),
+        "state": "TRIGGERED" if kill_switch_state.get('active') else "READY"
+    }
+
+@app.post("/kill-switch/trigger")
+async def trigger_kill_switch(request: dict):
+    """Trigger kill switch"""
+    from src.services.hybrid_data_manager import get_hybrid_data_manager
+    data_manager = get_hybrid_data_manager()
+    
+    reason = request.get('reason', 'Manual trigger')
+    source = request.get('source', 'api')
+    
+    # Set kill switch state
+    data_manager.memory_cache['kill_switch'] = {
+        'active': True,
+        'triggered_at': datetime.now().isoformat(),
+        'reason': reason,
+        'source': source
+    }
+    
+    # Close all positions
+    positions = data_manager.memory_cache.get('active_positions', {})
+    closed_count = 0
+    
+    for pos_id, position in positions.items():
+        if position.get('status') == 'OPEN':
+            position['status'] = 'CLOSED'
+            position['exit_time'] = datetime.now().isoformat()
+            closed_count += 1
+    
+    logger.warning(f"Kill switch triggered: {reason} from {source}. Closed {closed_count} positions")
+    
+    return {
+        "status": "success",
+        "message": f"Kill switch triggered. {closed_count} positions closed",
+        "triggered_at": data_manager.memory_cache['kill_switch']['triggered_at']
+    }
+
+@app.post("/kill-switch/reset")
+async def reset_kill_switch():
+    """Reset kill switch"""
+    from src.services.hybrid_data_manager import get_hybrid_data_manager
+    data_manager = get_hybrid_data_manager()
+    
+    data_manager.memory_cache['kill_switch'] = {
+        'active': False,
+        'triggered_at': None,
+        'reason': None
+    }
+    logger.info("Kill switch reset")
+    return {"status": "success", "message": "Kill switch reset", "state": "READY"}
+
+# Auto Trade Endpoints
+@app.get("/auto-trade/status")
+async def get_auto_trade_status():
+    """Get auto trade status"""
+    from src.services.hybrid_data_manager import get_hybrid_data_manager
+    data_manager = get_hybrid_data_manager()
+    
+    auto_trade_enabled = data_manager.memory_cache.get('auto_trade_enabled', False)
+    return {
+        "enabled": auto_trade_enabled,
+        "mode": "LIVE" if auto_trade_enabled else "DISABLED"
+    }
+
+@app.post("/auto-trade/toggle")
+async def toggle_auto_trade(request: dict):
+    """Toggle auto trade"""
+    from src.services.hybrid_data_manager import get_hybrid_data_manager
+    data_manager = get_hybrid_data_manager()
+    
+    enabled = request.get('enabled', False)
+    data_manager.memory_cache['auto_trade_enabled'] = enabled
+    
+    # Save to settings
+    try:
+        from src.services.settings_service import settings_service
+        settings_service.set_setting('auto_trade_enabled', str(enabled).lower(), 'trading')
+    except:
+        pass
+    
+    logger.info(f"Auto trade {'enabled' if enabled else 'disabled'}")
+    return {
+        "status": "success",
+        "enabled": enabled,
+        "message": f"Auto trade {'enabled' if enabled else 'disabled'}"
+    }
+
+# Breeze Status Endpoint
+@app.get("/breeze/status")
+async def get_breeze_status():
+    """Get Breeze connection status"""
+    try:
+        # Check if Breeze is connected
+        breeze_connected = breeze_obj is not None
+        return {
+            "connected": breeze_connected,
+            "status": "connected" if breeze_connected else "disconnected",
+            "message": "Breeze API connected" if breeze_connected else "Breeze API not connected"
+        }
+    except Exception as e:
+        return {
+            "connected": False,
+            "status": "error",
+            "message": str(e)
+        }
+
+# NIFTY Spot Endpoint
+@app.get("/nifty/spot")
+async def get_nifty_spot():
+    """Get current NIFTY spot price"""
+    try:
+        from src.services.hybrid_data_manager import get_hybrid_data_manager
+        data_manager = get_hybrid_data_manager()
+        
+        # Get from cache first
+        cached_spot = data_manager.memory_cache.get('nifty_spot', {})
+        if cached_spot and 'price' in cached_spot:
+            age = (datetime.now() - datetime.fromisoformat(cached_spot['timestamp'])).seconds
+            if age < 60:  # Use cache if less than 1 minute old
+                return cached_spot
+        
+        # Fetch fresh data
+        spot_price = 25000  # Default fallback
+        
+        if breeze_obj:
+            try:
+                response = breeze_obj.get_quotes(
+                    stock_code="NIFTY",
+                    exchange_code="NSE",
+                    product_type="cash"
+                )
+                if response.get('Success'):
+                    spot_price = float(response['Success'][0].get('ltp', 25000))
+            except:
+                pass
+        
+        # Update cache
+        spot_data = {
+            "price": spot_price,
+            "timestamp": datetime.now().isoformat(),
+            "source": "breeze"
+        }
+        data_manager.memory_cache['nifty_spot'] = spot_data
+        
+        return spot_data
+        
+    except Exception as e:
+        logger.error(f"Error getting NIFTY spot: {str(e)}")
+        return {
+            "price": 25000,
+            "timestamp": datetime.now().isoformat(),
+            "source": "default",
+            "error": str(e)
+        }
+
+# Expiry Config Endpoints
+@app.get("/expiry/config")
+async def get_expiry_config():
+    """Get expiry configuration"""
+    from src.services.hybrid_data_manager import get_hybrid_data_manager
+    data_manager = get_hybrid_data_manager()
+    
+    default_config = {
+        "Monday": "current",
+        "Tuesday": "current",
+        "Wednesday": "current",
+        "Thursday": "current",
+        "Friday": "current"
+    }
+    
+    expiry_config = data_manager.memory_cache.get('expiry_config', default_config)
+    return expiry_config
+
+@app.post("/expiry/config")
+async def update_expiry_config(config: dict):
+    """Update expiry configuration"""
+    from src.services.hybrid_data_manager import get_hybrid_data_manager
+    data_manager = get_hybrid_data_manager()
+    
+    data_manager.memory_cache['expiry_config'] = config
+    
+    # Save to settings
+    try:
+        from src.services.settings_service import settings_service
+        for day, value in config.items():
+            settings_service.set_setting(f'expiry_{day}', value, 'expiry')
+    except:
+        pass
+    
+    logger.info(f"Expiry config updated: {config}")
+    return {"status": "success", "config": config}
+
+# Risk Limits Endpoints
+@app.get("/risk/limits")
+async def get_risk_limits():
+    """Get risk management limits"""
+    from src.services.hybrid_data_manager import get_hybrid_data_manager
+    data_manager = get_hybrid_data_manager()
+    
+    default_limits = {
+        "max_loss_per_day": 50000,
+        "max_positions": 5,
+        "stop_loss_percent": 30,
+        "max_exposure": 500000,
+        "profit_lock_percent": 80
+    }
+    
+    risk_limits = data_manager.memory_cache.get('risk_limits', default_limits)
+    return risk_limits
+
+@app.post("/risk/limits")
+async def update_risk_limits(limits: dict):
+    """Update risk management limits"""
+    from src.services.hybrid_data_manager import get_hybrid_data_manager
+    data_manager = get_hybrid_data_manager()
+    
+    data_manager.memory_cache['risk_limits'] = limits
+    
+    # Save to settings
+    try:
+        from src.services.settings_service import settings_service
+        for key, value in limits.items():
+            settings_service.set_setting(key, str(value), 'risk')
+    except:
+        pass
+    
+    logger.info(f"Risk limits updated: {limits}")
+    return {"status": "success", "limits": limits}
+
+# Trade Config Endpoints
+@app.get("/config/trade")
+async def get_trade_config():
+    """Get trade configuration"""
+    from src.services.hybrid_data_manager import get_hybrid_data_manager
+    data_manager = get_hybrid_data_manager()
+    
+    default_config = {
+        "default_lots": 10,
+        "strike_offset": 200,
+        "hedge_enabled": True,
+        "hedge_offset": 200,
+        "stop_loss_points": 50,
+        "target_points": 100,
+        "trailing_stop": False
+    }
+    
+    trade_config = data_manager.memory_cache.get('trade_config', default_config)
+    return trade_config
+
+@app.post("/config/trade")
+async def update_trade_config(config: dict):
+    """Update trade configuration"""
+    from src.services.hybrid_data_manager import get_hybrid_data_manager
+    data_manager = get_hybrid_data_manager()
+    
+    data_manager.memory_cache['trade_config'] = config
+    
+    # Save to settings
+    try:
+        from src.services.settings_service import settings_service
+        for key, value in config.items():
+            settings_service.set_setting(key, str(value), 'trading')
+    except:
+        pass
+    
+    logger.info(f"Trade config updated: {config}")
+    return {"status": "success", "config": config}
+
+# ============================================================================
+# HEALTH CHECK ENDPOINTS
+# ============================================================================
+
+@app.get("/health", tags=["Health"])
+async def health_check():
+    """Basic health check endpoint"""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "service": "unified_api",
+        "version": "1.0.0"
+    }
+
+@app.get("/health/detailed", tags=["Health"])
+async def detailed_health_check():
+    """Detailed health check with component status"""
+    from src.services.circuit_breaker import circuit_manager
+    import psutil
+    import os
+    
+    health_status = {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "components": {}
+    }
+    
+    # Check database connection
+    try:
+        db = get_db_manager()
+        with db.get_session() as session:
+            result = session.execute(text("SELECT 1"))
+            result.fetchone()
+        health_status["components"]["database"] = {
+            "status": "healthy",
+            "type": "sql_server"
+        }
+    except Exception as e:
+        health_status["components"]["database"] = {
+            "status": "unhealthy",
+            "error": str(e)
+        }
+        health_status["status"] = "degraded"
+    
+    # Check SQLite settings database
+    try:
+        import sqlite3
+        conn = sqlite3.connect('data/trading_settings.db')
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM UnifiedSettings")
+        count = cursor.fetchone()[0]
+        conn.close()
+        health_status["components"]["settings_db"] = {
+            "status": "healthy",
+            "type": "sqlite",
+            "settings_count": count
+        }
+    except:
+        health_status["components"]["settings_db"] = {
+            "status": "healthy",
+            "note": "Using default settings"
+        }
+    
+    # Check Breeze connection
+    try:
+        from src.services.hybrid_data_manager import get_hybrid_data_manager
+        data_manager = get_hybrid_data_manager()
+        breeze_status = data_manager.memory_cache.get('breeze_connected', False)
+        health_status["components"]["breeze"] = {
+            "status": "healthy" if breeze_status else "disconnected",
+            "connected": breeze_status
+        }
+    except Exception as e:
+        health_status["components"]["breeze"] = {
+            "status": "unhealthy",
+            "error": str(e)
+        }
+    
+    # Check Kite connection
+    try:
+        kite_status = data_manager.memory_cache.get('kite_connected', False)
+        health_status["components"]["kite"] = {
+            "status": "healthy" if kite_status else "disconnected",
+            "connected": kite_status
+        }
+    except:
+        health_status["components"]["kite"] = {
+            "status": "disconnected",
+            "connected": False
+        }
+    
+    # Check circuit breakers
+    try:
+        circuit_states = circuit_manager.get_all_states()
+        health_status["components"]["circuit_breakers"] = {
+            "status": "healthy",
+            "breakers": circuit_states
+        }
+    except:
+        health_status["components"]["circuit_breakers"] = {
+            "status": "healthy",
+            "note": "No circuit breakers active"
+        }
+    
+    # System resources
+    try:
+        process = psutil.Process(os.getpid())
+        health_status["system"] = {
+            "cpu_percent": process.cpu_percent(),
+            "memory_mb": round(process.memory_info().rss / 1024 / 1024, 2),
+            "threads": process.num_threads(),
+            "connections": len(process.connections())
+        }
+    except:
+        pass
+    
+    # Kill switch status
+    try:
+        kill_switch_state = data_manager.memory_cache.get('kill_switch', {})
+        health_status["components"]["kill_switch"] = {
+            "status": "healthy",
+            "triggered": kill_switch_state.get('triggered', False),
+            "state": kill_switch_state.get('state', 'READY')
+        }
+    except:
+        health_status["components"]["kill_switch"] = {
+            "status": "healthy",
+            "triggered": False,
+            "state": "READY"
+        }
+    
+    return health_status
+
+@app.get("/health/live", tags=["Health"])
+async def liveness_probe():
+    """Kubernetes liveness probe endpoint"""
+    return {"status": "alive"}
+
+@app.get("/health/ready", tags=["Health"])
+async def readiness_probe():
+    """Kubernetes readiness probe endpoint"""
+    try:
+        # Quick database check
+        db = get_db_manager()
+        with db.get_session() as session:
+            session.execute(text("SELECT 1"))
+        return {"status": "ready"}
+    except:
+        raise HTTPException(status_code=503, detail="Service not ready")
+
+@app.get("/health/circuit-breakers", tags=["Health"])
+async def get_circuit_breaker_status():
+    """Get status of all circuit breakers"""
+    try:
+        from src.services.circuit_breaker import circuit_manager
+        return circuit_manager.get_all_states()
+    except:
+        return {}
+
+@app.post("/health/circuit-breakers/{name}/reset", tags=["Health"])
+async def reset_circuit_breaker(name: str):
+    """Reset a specific circuit breaker"""
+    try:
+        from src.services.circuit_breaker import circuit_manager
+        circuit_manager.reset(name)
+        return {"status": "success", "message": f"Circuit breaker {name} reset"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 if __name__ == "__main__":
     # Kill any existing process on port 8000

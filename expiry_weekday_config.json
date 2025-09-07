@@ -1,0 +1,7 @@
+{
+  "monday": "next",
+  "tuesday": "current",
+  "wednesday": "next",
+  "thursday": "next",
+  "friday": "monthend"
+}

@@ -1575,6 +1575,17 @@
                 <span style="font-weight: 600; color: white;">LIVE TRADING MODE</span>
             </div>
 
+            <!-- Kill Switch Controls -->
+            <div id="killSwitchContainer" style="display: inline-flex; align-items: center; gap: 15px; padding: 8px 16px; background: var(--glass-bg); border: 2px solid var(--glass-border); border-radius: 8px;">
+                <div id="killSwitchStatus" style="display: inline-flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-shield-alt" style="color: var(--accent-green);"></i>
+                    <span style="font-weight: 600;">KILL SWITCH: <span id="killSwitchState" style="color: var(--accent-green);">READY</span></span>
+                </div>
+                <button id="killSwitchBtn" class="btn btn-danger" onclick="triggerKillSwitch()" style="padding: 8px 16px; background: linear-gradient(135deg, #ff3366, #ff0044); border: none; border-radius: 6px; color: white; font-weight: 600; cursor: pointer;">
+                    <i class="fas fa-power-off"></i> TRIGGER
+                </button>
+            </div>
+
             <button class="panic-btn" onclick="emergencyCloseAll()">
                 <i class="fas fa-exclamation-triangle"></i> PANIC CLOSE ALL
             </button>
@@ -1638,7 +1649,7 @@
                     <div class="signal-card active" id="signalS1" data-signal="S1">
                         <div class="signal-header">
                             <span class="signal-name">S1</span>
-                            <input type="checkbox" id="toggleS1" class="signal-toggle" checked onchange="toggleSignal('S1')">
+                            <input type="checkbox" id="toggleS1" class="signal-toggle" data-signal="S1" value="S1" checked onchange="toggleSignal('S1')">
                             <span class="signal-type bullish">BULLISH</span>
                         </div>
                         <div style="font-size: 12px; color: var(--text-muted); margin: 5px 0;">Bear Trap</div>
@@ -1661,7 +1672,7 @@
                     <div class="signal-card active" id="signalS2" data-signal="S2">
                         <div class="signal-header">
                             <span class="signal-name">S2</span>
-                            <input type="checkbox" id="toggleS2" class="signal-toggle" checked onchange="toggleSignal('S2')">
+                            <input type="checkbox" id="toggleS2" class="signal-toggle" data-signal="S2" value="S2" checked onchange="toggleSignal('S2')">
                             <span class="signal-type bullish">BULLISH</span>
                         </div>
                         <div style="font-size: 12px; color: var(--text-muted); margin: 5px 0;">Support Hold</div>
@@ -1684,7 +1695,7 @@
                     <div class="signal-card active" id="signalS3" data-signal="S3">
                         <div class="signal-header">
                             <span class="signal-name">S3</span>
-                            <input type="checkbox" id="toggleS3" class="signal-toggle" checked onchange="toggleSignal('S3')">
+                            <input type="checkbox" id="toggleS3" class="signal-toggle" data-signal="S3" value="S3" checked onchange="toggleSignal('S3')">
                             <span class="signal-type bearish">BEARISH</span>
                         </div>
                         <div style="font-size: 12px; color: var(--text-muted); margin: 5px 0;">Resistance Hold</div>
@@ -1707,7 +1718,7 @@
                     <div class="signal-card active" id="signalS4" data-signal="S4">
                         <div class="signal-header">
                             <span class="signal-name">S4</span>
-                            <input type="checkbox" id="toggleS4" class="signal-toggle" checked onchange="toggleSignal('S4')">
+                            <input type="checkbox" id="toggleS4" class="signal-toggle" data-signal="S4" value="S4" checked onchange="toggleSignal('S4')">
                             <span class="signal-type bullish">BULLISH</span>
                         </div>
                         <div style="font-size: 12px; color: var(--text-muted); margin: 5px 0;">Bias Failure Bull</div>
@@ -1730,7 +1741,7 @@
                     <div class="signal-card active" id="signalS5" data-signal="S5">
                         <div class="signal-header">
                             <span class="signal-name">S5</span>
-                            <input type="checkbox" id="toggleS5" class="signal-toggle" checked onchange="toggleSignal('S5')">
+                            <input type="checkbox" id="toggleS5" class="signal-toggle" data-signal="S5" value="S5" checked onchange="toggleSignal('S5')">
                             <span class="signal-type bearish">BEARISH</span>
                         </div>
                         <div style="font-size: 12px; color: var(--text-muted); margin: 5px 0;">Bias Failure Bear</div>
@@ -1753,7 +1764,7 @@
                     <div class="signal-card active" id="signalS6" data-signal="S6">
                         <div class="signal-header">
                             <span class="signal-name">S6</span>
-                            <input type="checkbox" id="toggleS6" class="signal-toggle" checked onchange="toggleSignal('S6')">
+                            <input type="checkbox" id="toggleS6" class="signal-toggle" data-signal="S6" value="S6" checked onchange="toggleSignal('S6')">
                             <span class="signal-type bearish">BEARISH</span>
                         </div>
                         <div style="font-size: 12px; color: var(--text-muted); margin: 5px 0;">Weakness Confirmed</div>
@@ -1776,7 +1787,7 @@
                     <div class="signal-card active" id="signalS7" data-signal="S7">
                         <div class="signal-header">
                             <span class="signal-name">S7</span>
-                            <input type="checkbox" id="toggleS7" class="signal-toggle" checked onchange="toggleSignal('S7')">
+                            <input type="checkbox" id="toggleS7" class="signal-toggle" data-signal="S7" value="S7" checked onchange="toggleSignal('S7')">
                             <span class="signal-type bullish">BULLISH</span>
                         </div>
                         <div style="font-size: 12px; color: var(--text-muted); margin: 5px 0;">Breakout Confirmed</div>
@@ -1799,7 +1810,7 @@
                     <div class="signal-card active" id="signalS8" data-signal="S8">
                         <div class="signal-header">
                             <span class="signal-name">S8</span>
-                            <input type="checkbox" id="toggleS8" class="signal-toggle" checked onchange="toggleSignal('S8')">
+                            <input type="checkbox" id="toggleS8" class="signal-toggle" data-signal="S8" value="S8" checked onchange="toggleSignal('S8')">
                             <span class="signal-type bearish">BEARISH</span>
                         </div>
                         <div style="font-size: 12px; color: var(--text-muted); margin: 5px 0;">Breakdown Confirmed</div>
@@ -1830,6 +1841,7 @@
                     </div>
                 </div>
                 <div id="positionsTable">
+                <div id="activePositions" style="display:none;"></div>
                     <div style="text-align: center; padding: 20px; color: var(--text-muted);">
                         No open positions
                     </div>
@@ -1916,6 +1928,153 @@
                             <option value="next_candle">Next Candle (11:15)</option>
                             <option value="custom">Custom Delay</option>
                         </select>
+                    </div>
+                </div>
+
+                <!-- Expiry Selection -->
+                <div class="config-section" style="grid-column: span 2;">
+                    <div class="config-header">
+                        <span class="config-title">📅 Expiry Selection Per Weekday</span>
+                    </div>
+                    <div style="padding: 10px; background: var(--bg-tertiary); border-radius: 8px; margin-bottom: 15px;">
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">
+                            💡 Configure which expiry to use when signals arrive on each day
+                        </div>
+                        <div style="font-size: 11px; color: var(--accent-yellow);">
+                            NIFTY expires every Tuesday | Current week expiry only available on Monday & Tuesday
+                        </div>
+                    </div>
+                    
+                    <div id="expirySelectionContainer">
+                        <!-- Monday -->
+                        <div class="expiry-day-row" data-day="monday" style="display: flex; align-items: center; gap: 15px; padding: 12px; background: var(--bg-secondary); border-radius: 6px; margin-bottom: 8px;">
+                            <div style="flex: 0 0 120px; font-weight: 600; font-size: 13px;">Monday</div>
+                            <select id="expiryMonday" class="form-control" style="flex: 1;">
+                                <option value="current">Current Week (This Tuesday)</option>
+                                <option value="next">Next Week Tuesday</option>
+                                <option value="monthend">Month End Tuesday</option>
+                            </select>
+                            <div id="mondayExpiryDate" style="flex: 0 0 150px; font-size: 11px; color: var(--text-secondary);"></div>
+                        </div>
+                        
+                        <!-- Tuesday -->
+                        <div class="expiry-day-row" data-day="tuesday" style="display: flex; align-items: center; gap: 15px; padding: 12px; background: var(--bg-secondary); border-radius: 6px; margin-bottom: 8px; border: 2px solid var(--accent-yellow);">
+                            <div style="flex: 0 0 120px; font-weight: 600; font-size: 13px;">
+                                Tuesday <span style="font-size: 10px; color: var(--accent-yellow);">📅</span>
+                            </div>
+                            <select id="expiryTuesday" class="form-control" style="flex: 1;">
+                                <option value="current">Current Week (Today)</option>
+                                <option value="next">Next Week Tuesday</option>
+                                <option value="monthend">Month End Tuesday</option>
+                            </select>
+                            <div id="tuesdayExpiryDate" style="flex: 0 0 150px; font-size: 11px; color: var(--text-secondary);"></div>
+                        </div>
+                        
+                        <!-- Wednesday -->
+                        <div class="expiry-day-row" data-day="wednesday" style="display: flex; align-items: center; gap: 15px; padding: 12px; background: var(--bg-secondary); border-radius: 6px; margin-bottom: 8px;">
+                            <div style="flex: 0 0 120px; font-weight: 600; font-size: 13px;">Wednesday</div>
+                            <select id="expiryWednesday" class="form-control" style="flex: 1;">
+                                <option value="next">Next Week Tuesday</option>
+                                <option value="monthend">Month End Tuesday</option>
+                            </select>
+                            <div id="wednesdayExpiryDate" style="flex: 0 0 150px; font-size: 11px; color: var(--text-secondary);"></div>
+                        </div>
+                        
+                        <!-- Thursday -->
+                        <div class="expiry-day-row" data-day="thursday" style="display: flex; align-items: center; gap: 15px; padding: 12px; background: var(--bg-secondary); border-radius: 6px; margin-bottom: 8px;">
+                            <div style="flex: 0 0 120px; font-weight: 600; font-size: 13px;">Thursday</div>
+                            <select id="expiryThursday" class="form-control" style="flex: 1;">
+                                <option value="next">Next Week Tuesday</option>
+                                <option value="monthend">Month End Tuesday</option>
+                            </select>
+                            <div id="thursdayExpiryDate" style="flex: 0 0 150px; font-size: 11px; color: var(--text-secondary);"></div>
+                        </div>
+                        
+                        <!-- Friday -->
+                        <div class="expiry-day-row" data-day="friday" style="display: flex; align-items: center; gap: 15px; padding: 12px; background: var(--bg-secondary); border-radius: 6px; margin-bottom: 8px;">
+                            <div style="flex: 0 0 120px; font-weight: 600; font-size: 13px;">Friday</div>
+                            <select id="expiryFriday" class="form-control" style="flex: 1;">
+                                <option value="next">Next Week Tuesday</option>
+                                <option value="monthend">Month End Tuesday</option>
+                            </select>
+                            <div id="fridayExpiryDate" style="flex: 0 0 150px; font-size: 11px; color: var(--text-secondary);"></div>
+                        </div>
+                        
+                        <!-- Immediate Load Script for Weekday Expiry Settings -->
+                        <script>
+                            (function() {
+                                console.log('[IMMEDIATE LOAD] Loading weekday expiry settings...');
+                                const saved = localStorage.getItem('weekdayExpiryConfig');
+                                if (saved) {
+                                    try {
+                                        const config = JSON.parse(saved);
+                                        console.log('[IMMEDIATE LOAD] Found saved config:', config);
+                                        
+                                        const weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+                                        weekdays.forEach(day => {
+                                            const select = document.getElementById('expiry' + day.charAt(0).toUpperCase() + day.slice(1));
+                                            if (select && config[day]) {
+                                                console.log(`[IMMEDIATE LOAD] Setting ${day} to ${config[day]}`);
+                                                select.value = config[day];
+                                            }
+                                        });
+                                    } catch (e) {
+                                        console.error('[IMMEDIATE LOAD] Error loading weekday config:', e);
+                                    }
+                                } else {
+                                    console.log('[IMMEDIATE LOAD] No saved weekday config found');
+                                }
+                            })();
+                        </script>
+                        
+                        <!-- Current Status -->
+                        <div id="currentExpiryStatus" style="margin-top: 15px; padding: 12px; background: var(--bg-primary); border-radius: 6px; border-left: 3px solid var(--accent-blue);">
+                            <div style="font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 5px;">
+                                Today's Configuration
+                            </div>
+                            <div id="todayExpiryInfo" style="font-size: 13px; color: var(--text-secondary);">
+                                <!-- Will be populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Exit Timing Configuration -->
+                <div class="config-section" style="grid-column: span 2;">
+                    <div class="config-header">
+                        <span class="config-title">⏰ Exit Timing Configuration</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="autoSquareOffEnabled" checked onchange="saveExitTiming(); document.getElementById('exitTimingConfig').style.display = this.checked ? 'flex' : 'none';">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div id="exitTimingConfig" style="display: flex; gap: 20px;">
+                        <div style="flex: 1;">
+                            <label class="form-label">Exit Day (T+N)</label>
+                            <select class="form-control" id="exitDayOffset" onchange="updateExitPreview(); saveExitTiming();">
+                                <option value="0">Expiry Day</option>
+                                <option value="1">T+1 (Next trading day)</option>
+                                <option value="2" selected>T+2 (2 trading days)</option>
+                                <option value="3">T+3 (3 trading days)</option>
+                                <option value="4">T+4 (4 trading days)</option>
+                                <option value="5">T+5 (5 trading days)</option>
+                                <option value="6">T+6 (6 trading days)</option>
+                                <option value="7">T+7 (7 trading days)</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1;">
+                            <label class="form-label">Exit Time</label>
+                            <select class="form-control" id="exitTime" onchange="updateExitPreview(); saveExitTiming();">
+                                <option value="09:30">9:30 AM</option>
+                                <option value="10:15">10:15 AM</option>
+                                <option value="12:15">12:15 PM</option>
+                                <option value="14:15">2:15 PM</option>
+                                <option value="15:15" selected>3:15 PM</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="exitPreview" style="margin-top: 15px; padding: 12px; background: var(--bg-tertiary); border-radius: 8px; border-left: 3px solid var(--accent-blue);">
+                        <!-- Exit preview will be shown here -->
                     </div>
                 </div>
 
@@ -2373,6 +2532,57 @@
             return baseUrl + endpoint;
         }
         
+        // Robust fetch with retry logic
+        async function fetchWithRetry(url, options = {}, maxRetries = 3, retryDelay = 1000) {
+            let lastError;
+            
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const controller = new AbortController();
+                    const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+                    
+                    const response = await fetch(url, {
+                        ...options,
+                        signal: controller.signal
+                    });
+                    
+                    clearTimeout(timeout);
+                    
+                    if (!response.ok && response.status >= 500) {
+                        throw new Error(`Server error: ${response.status}`);
+                    }
+                    
+                    return response;
+                } catch (error) {
+                    lastError = error;
+                    
+                    if (error.name === 'AbortError') {
+                        console.error(`Request timeout for ${url}`);
+                    } else {
+                        console.error(`Attempt ${i + 1} failed for ${url}:`, error);
+                    }
+                    
+                    if (i < maxRetries - 1) {
+                        await new Promise(resolve => setTimeout(resolve, retryDelay * (i + 1)));
+                    }
+                }
+            }
+            
+            throw lastError || new Error(`Failed after ${maxRetries} attempts`);
+        }
+        
+        // Error notification helper
+        function showError(message, details = null) {
+            console.error(message, details);
+            showNotification(message, 'error');
+            
+            // Also update status indicators
+            const apiStatus = document.getElementById('apiStatus');
+            if (apiStatus) {
+                apiStatus.querySelector('.status-dot').style.background = '#ff3366';
+            }
+        }
+        
         // Trade Configuration Management Functions
         async function saveTradeConfig() {
             try {
@@ -2402,7 +2612,22 @@
                     daily_profit_target: 100000,
                     max_loss_per_trade: parseFloat(document.getElementById('maxLossPerTrade')?.value) || 20000,
                     max_exposure: parseFloat(document.getElementById('maxExposure')?.value) || 200000,
-                    position_size_mode: 'fixed'
+                    position_size_mode: 'fixed',
+                    
+                    // Expiry and Exit Timing Settings
+                    selected_expiry: document.getElementById('expiryDate')?.value || null,
+                    exit_day_offset: parseInt(document.getElementById('exitDayOffset')?.value ?? 2),
+                    exit_time: document.getElementById('exitTime')?.value || '15:15',
+                    auto_square_off_enabled: document.getElementById('autoSquareOffEnabled')?.checked || true,
+                    
+                    // Weekday Expiry Configuration
+                    weekday_config: {
+                        monday: document.getElementById('expiryMonday')?.value || 'current',
+                        tuesday: document.getElementById('expiryTuesday')?.value || 'current',
+                        wednesday: document.getElementById('expiryWednesday')?.value || 'next',
+                        thursday: document.getElementById('expiryThursday')?.value || 'next',
+                        friday: document.getElementById('expiryFriday')?.value || 'next'
+                    }
                 };
                 
                 // Check mandatory fields client-side
@@ -2519,7 +2744,18 @@
                     max_positions: 5,
                     daily_profit_target: 100000,
                     max_loss_per_trade: 20000,
-                    position_size_mode: 'fixed'
+                    position_size_mode: 'fixed',
+                    selected_expiry: null,
+                    exit_day_offset: 2,
+                    exit_time: '15:15',
+                    auto_square_off_enabled: true,
+                    weekday_config: {
+                        monday: 'current',
+                        tuesday: 'current',
+                        wednesday: 'next',
+                        thursday: 'next',
+                        friday: 'next'
+                    }
                 };
                 
                 applyTradeConfig(defaultConfig);
@@ -2545,7 +2781,20 @@
                 max_positions: 5,
                 daily_profit_target: 100000,
                 max_loss_per_trade: 20000,
-                position_size_mode: 'fixed'
+                position_size_mode: 'fixed',
+                // Add expiry and exit timing
+                selected_expiry: document.getElementById('expiryDate')?.value || null,
+                exit_day_offset: parseInt(document.getElementById('exitDayOffset')?.value) || 2,
+                exit_time: document.getElementById('exitTime')?.value || '15:15',
+                auto_square_off_enabled: document.getElementById('autoSquareOffEnabled')?.checked || true,
+                // Add weekday configuration
+                weekday_config: {
+                    monday: document.getElementById('expiryMonday')?.value || 'current',
+                    tuesday: document.getElementById('expiryTuesday')?.value || 'current',
+                    wednesday: document.getElementById('expiryWednesday')?.value || 'next',
+                    thursday: document.getElementById('expiryThursday')?.value || 'next',
+                    friday: document.getElementById('expiryFriday')?.value || 'next'
+                }
             };
         }
         
@@ -2628,32 +2877,70 @@
                     if (checkbox) checkbox.checked = true;
                 });
             }
+            
+            // Apply Expiry Selection
+            if (config.selected_expiry && document.getElementById('expiryDate')) {
+                document.getElementById('expiryDate').value = config.selected_expiry;
+                console.log('[CONFIG] Set selected_expiry to:', config.selected_expiry);
+            }
+            
+            // Apply Exit Timing Settings - but don't override localStorage settings
+            const savedExitConfig = localStorage.getItem('exitTimingConfig');
+            if (savedExitConfig) {
+                // If we have localStorage settings, use those instead
+                console.log('[CONFIG] Preserving exit timing from localStorage');
+                const exitConfig = JSON.parse(savedExitConfig);
+                if (document.getElementById('exitDayOffset')) {
+                    document.getElementById('exitDayOffset').value = exitConfig.exit_day_offset !== undefined ? exitConfig.exit_day_offset : 2;
+                }
+                if (document.getElementById('exitTime')) {
+                    document.getElementById('exitTime').value = exitConfig.exit_time || '15:15';
+                }
+                if (document.getElementById('autoSquareOffEnabled')) {
+                    document.getElementById('autoSquareOffEnabled').checked = exitConfig.auto_square_off_enabled !== false;
+                    // Show/hide config without triggering save
+                    const exitTimingConfigDiv = document.getElementById('exitTimingConfig');
+                    if (exitTimingConfigDiv) {
+                        exitTimingConfigDiv.style.display = exitConfig.auto_square_off_enabled !== false ? 'flex' : 'none';
+                    }
+                }
+            } else if (config.exit_day_offset !== undefined || config.exit_time || config.auto_square_off_enabled !== undefined) {
+                // Only apply from config if no localStorage exists
+                if (document.getElementById('exitDayOffset')) {
+                    document.getElementById('exitDayOffset').value = config.exit_day_offset !== undefined ? config.exit_day_offset : 2;
+                    console.log('[CONFIG] Set exitDayOffset to:', config.exit_day_offset);
+                }
+                if (document.getElementById('exitTime')) {
+                    document.getElementById('exitTime').value = config.exit_time || '15:15';
+                    console.log('[CONFIG] Set exitTime to:', config.exit_time || '15:15');
+                }
+                if (document.getElementById('autoSquareOffEnabled')) {
+                    document.getElementById('autoSquareOffEnabled').checked = config.auto_square_off_enabled !== false;
+                    console.log('[CONFIG] Set autoSquareOffEnabled to:', config.auto_square_off_enabled !== false);
+                    // Show/hide config without triggering save
+                    const exitTimingConfigDiv = document.getElementById('exitTimingConfig');
+                    if (exitTimingConfigDiv) {
+                        exitTimingConfigDiv.style.display = config.auto_square_off_enabled !== false ? 'flex' : 'none';
+                    }
+                }
+            }
+            
+            // Skip weekday settings - they're loaded by immediate script to avoid conflicts
+            console.log('[CONFIG] Weekday settings handled by immediate load script, skipping...');
+            
+            // Update exit preview after loading settings
+            if (typeof updateExitPreview === 'function') {
+                updateExitPreview();
+            }
         }
         
         // Auto-load configuration on page load
+        // Single load on DOMContentLoaded - weekday settings already loaded by immediate script
         window.addEventListener('DOMContentLoaded', () => {
-            console.log('[CONFIG] Page loaded, attempting to restore saved settings...');
-            // Load immediately when DOM is ready
-            loadTradeConfig();
-            
-            // Also try after a short delay in case some elements load async
-            setTimeout(() => {
-                console.log('[CONFIG] Secondary load attempt...');
-                loadTradeConfig();
-            }, 500);
-        });
-        
-        // Also load when the full page (including resources) is loaded
-        window.addEventListener('load', () => {
-            console.log('[CONFIG] Full page loaded, ensuring settings are restored...');
+            console.log('[CONFIG] DOM loaded, loading trade configuration (except weekday settings)...');
+            // Load config once - weekday settings are already loaded by immediate script
             loadTradeConfig();
         });
-        
-        // Immediately try to load if script runs after DOM is ready
-        if (document.readyState === 'interactive' || document.readyState === 'complete') {
-            console.log('[CONFIG] Document already ready, loading configuration...');
-            setTimeout(() => loadTradeConfig(), 100);
-        }
         
         // Auto-save configuration on changes (debounced)
         let saveTimeout;
@@ -3101,6 +3388,10 @@
             }
         }
         
+        // WebSocket reconnection tracking
+        let positionsWsReconnectAttempts = 0;
+        let positionsWsMaxReconnectDelay = 30000; // Max 30 seconds
+        
         // Initialize Live Positions WebSocket for real-time position updates
         window.initializeLivePositionsWebSocket = function() {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -3110,45 +3401,74 @@
             
             console.log('Connecting to Live Positions WebSocket...');
             
+            // Close existing connection if any
+            if (window.positionsWs && window.positionsWs.readyState === WebSocket.OPEN) {
+                window.positionsWs.close();
+            }
+            
             try {
                 window.positionsWs = new WebSocket(wsUrl);
                 
                 window.positionsWs.onopen = function() {
                     console.log('Live Positions WebSocket connected');
+                    positionsWsReconnectAttempts = 0; // Reset on successful connection
+                    
+                    // Update UI indicator
+                    const wsIndicator = document.getElementById('apiStatus');
+                    if (wsIndicator) {
+                        wsIndicator.querySelector('.status-dot').style.background = '#00c851';
+                    }
                 };
                 
                 window.positionsWs.onmessage = function(event) {
-                    const data = JSON.parse(event.data);
-                    
-                    if (data.type === 'positions_update') {
-                        // Update the Live Breakeven Monitor
-                        if (data.data && data.data.positions) {
-                            positions = data.data.positions;
-                            updateLiveBreakevenMonitor(data.data.positions);
-                            
-                            // Update the positions table
-                            updatePositionsTable(data.data.positions);
-                            
-                            // Update positions list if visible
-                            if (typeof displayPositions === 'function') {
-                                displayPositions();
+                    try {
+                        const data = JSON.parse(event.data);
+                        
+                        if (data.type === 'positions_update') {
+                            // Update the Live Breakeven Monitor
+                            if (data.data && data.data.positions) {
+                                positions = data.data.positions;
+                                updateLiveBreakevenMonitor(data.data.positions);
+                                
+                                // Update the positions table
+                                updatePositionsTable(data.data.positions);
+                                
+                                // Update positions list if visible
+                                if (typeof displayPositions === 'function') {
+                                    displayPositions();
+                                }
                             }
                         }
+                    } catch (parseError) {
+                        console.error('Error parsing WebSocket message:', parseError);
                     }
                 };
                 
                 window.positionsWs.onerror = function(error) {
                     console.error('Live Positions WebSocket error:', error);
+                    
+                    // Update UI indicator
+                    const wsIndicator = document.getElementById('apiStatus');
+                    if (wsIndicator) {
+                        wsIndicator.querySelector('.status-dot').style.background = '#ff9800';
+                    }
                 };
                 
-                window.positionsWs.onclose = function() {
-                    console.log('Live Positions WebSocket disconnected');
-                    // Attempt reconnection after 5 seconds
-                    setTimeout(window.initializeLivePositionsWebSocket, 5000);
+                window.positionsWs.onclose = function(event) {
+                    console.log('Live Positions WebSocket disconnected:', event.code, event.reason);
+                    
+                    // Exponential backoff for reconnection
+                    positionsWsReconnectAttempts++;
+                    const reconnectDelay = Math.min(1000 * Math.pow(2, positionsWsReconnectAttempts), positionsWsMaxReconnectDelay);
+                    
+                    console.log(`Reconnecting in ${reconnectDelay/1000} seconds... (attempt ${positionsWsReconnectAttempts})`);
+                    setTimeout(window.initializeLivePositionsWebSocket, reconnectDelay);
                 };
                 
             } catch (error) {
                 console.error('Failed to create Live Positions WebSocket:', error);
+                // Try again after delay
+                setTimeout(window.initializeLivePositionsWebSocket, 5000);
             }
         }
         
@@ -6196,16 +6516,20 @@
         // Test webhook
         window.testWebhook = async function() {
             try {
-                const response = await fetch(getApiUrl('/webhook/tradingview'), {
+                const secretKey = document.getElementById('secretKey').value || 'tradingview-webhook-secret-key-2025';
+                const response = await fetch(getApiUrl('/webhook/entry'), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
+                        secret: secretKey,
+                        signal: 'S1',
                         strike: 25000,
-                        type: 'PE',
-                        signal: 'TEST',
-                        action: 'Test'
+                        option_type: 'PE',
+                        lots: 10,
+                        timestamp: new Date().toISOString(),
+                        test_mode: true
                     })
                 });
 
@@ -6289,29 +6613,45 @@
         // Server settings storage
         let serverSettings = {};
         
-        // Save setting to server database
+        // Save setting to server database with retry
         async function saveSettingToServer(key, value) {
             try {
                 serverSettings[key] = value;
-                const response = await fetch(getApiUrl('/settings'), {
+                
+                // Also save to localStorage immediately for offline resilience
+                localStorage.setItem(key, value);
+                
+                const response = await fetchWithRetry(getApiUrl('/settings'), {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(serverSettings)
+                    body: JSON.stringify({
+                        key: key,
+                        value: value,
+                        category: getCategoryForKey(key)
+                    })
                 });
                 
                 if (response.ok) {
                     console.log(`[SETTINGS] Saved to database: ${key} = ${value}`);
                     return true;
                 } else {
-                    console.error('[SETTINGS] Failed to save to database, using localStorage fallback');
-                    localStorage.setItem(key, value);
+                    console.error('[SETTINGS] Failed to save to database, using localStorage');
                     return false;
                 }
             } catch (error) {
                 console.error('[SETTINGS] Error saving to database:', error);
-                localStorage.setItem(key, value);
                 return false;
             }
+        }
+        
+        // Helper to categorize settings
+        function getCategoryForKey(key) {
+            if (key.includes('risk')) return 'risk';
+            if (key.includes('trading')) return 'trading';
+            if (key.includes('expiry')) return 'expiry';
+            if (key.includes('webhook')) return 'webhook';
+            if (key.includes('kill')) return 'safety';
+            return 'general';
         }
         
         // Load configuration from server database
@@ -8756,20 +9096,694 @@ setInterval(function() {
     }
 }, 5000);
 
-// IMPORTANT: Load saved configuration on page initialization
-// This ensures settings are restored when page is refreshed
-console.log('[INIT] Loading saved configuration on page init...');
+// IMPORTANT: Configuration is now loaded once in DOMContentLoaded event
+// Weekday settings are loaded immediately after dropdown HTML
+console.log('[INIT] Configuration loading handled by event listeners...');
 setTimeout(() => {
-    if (typeof loadTradeConfig === 'function') {
-        loadTradeConfig();
-    }
-    // Also ensure alert configuration is loaded
+    // Only load alert configuration here
     if (typeof loadAlertConfig === 'function') {
         console.log('[INIT] Loading alert configuration...');
         loadAlertConfig();
     }
 }, 1000);
 
+// Kill Switch Functions
+let killSwitchActive = false;
+
+async function checkKillSwitchStatus() {
+    try {
+        const response = await fetch('http://localhost:8000/api/kill-switch/status');
+        const status = await response.json();
+        updateKillSwitchUI(status);
+        killSwitchActive = status.active;
+    } catch (error) {
+        console.error('Error checking kill switch status:', error);
+    }
+}
+
+function updateKillSwitchUI(status) {
+    const stateElement = document.getElementById('killSwitchState');
+    const btnElement = document.getElementById('killSwitchBtn');
+    const containerElement = document.getElementById('killSwitchContainer');
+    
+    if (status.active) {
+        stateElement.textContent = 'ACTIVE';
+        stateElement.style.color = 'var(--accent-red)';
+        containerElement.style.borderColor = 'var(--accent-red)';
+        btnElement.innerHTML = '<i class="fas fa-unlock"></i> RESET';
+        btnElement.onclick = resetKillSwitch;
+        btnElement.style.background = 'linear-gradient(135deg, #00ff88, #00d4aa)';
+    } else {
+        stateElement.textContent = 'READY';
+        stateElement.style.color = 'var(--accent-green)';
+        containerElement.style.borderColor = 'var(--glass-border)';
+        btnElement.innerHTML = '<i class="fas fa-power-off"></i> TRIGGER';
+        btnElement.onclick = triggerKillSwitch;
+        btnElement.style.background = 'linear-gradient(135deg, #ff3366, #ff0044)';
+    }
+}
+
+async function triggerKillSwitch() {
+    const confirmed = confirm('⚠️ EMERGENCY KILL SWITCH ⚠️\n\nThis will immediately:\n• Block ALL new trades\n• Disable auto trading\n• Prevent webhook entries\n\nAre you absolutely sure?');
+    
+    if (!confirmed) return;
+    
+    try {
+        const response = await fetch('http://localhost:8000/api/kill-switch/trigger', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                reason: 'Manual trigger from UI',
+                source: 'tradingview_pro_dashboard'
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === 'triggered') {
+            showNotification('🔴 KILL SWITCH ACTIVATED', 'error');
+            await checkKillSwitchStatus();
+        } else {
+            showNotification('Failed to trigger kill switch', 'error');
+        }
+    } catch (error) {
+        console.error('Error triggering kill switch:', error);
+        showNotification('Kill switch trigger failed!', 'error');
+    }
+}
+
+async function resetKillSwitch() {
+    const password = prompt('Enter authorization password to reset kill switch:');
+    
+    if (!password) return;
+    
+    try {
+        const response = await fetch('http://localhost:8000/api/kill-switch/reset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                authorized_by: password
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === 'reset') {
+            showNotification('✅ Kill switch has been reset', 'success');
+            await checkKillSwitchStatus();
+        } else {
+            showNotification('Failed to reset kill switch', 'error');
+        }
+    } catch (error) {
+        console.error('Error resetting kill switch:', error);
+        showNotification('Kill switch reset failed!', 'error');
+    }
+}
+
+async function emergencyCloseAll() {
+    const confirmed = confirm('⚠️ PANIC CLOSE ALL POSITIONS ⚠️\n\nThis will close ALL open positions immediately at market price.\n\nAre you sure?');
+    
+    if (!confirmed) return;
+    
+    try {
+        // First trigger kill switch to prevent new trades
+        await fetch('http://localhost:8000/kill-switch/trigger', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                reason: 'Panic close initiated',
+                source: 'emergency_close'
+            })
+        });
+        
+        // Then close all positions
+        const response = await fetch('http://localhost:8000/positions/square-off-all', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification(`🔴 PANIC CLOSE: ${result.closed_count} positions closed`, 'error');
+            await loadActivePositions();
+            await checkKillSwitchStatus();
+        } else {
+            showNotification('Panic close failed: ' + result.message, 'error');
+        }
+    } catch (error) {
+        console.error('Error in panic close:', error);
+        showNotification('Emergency close failed!', 'error');
+    }
+}
+
+// Expiry Management Functions
+async function loadAvailableExpiries() {
+    try {
+        const response = await fetch(getApiUrl('/api/expiry/available'));
+        if (response.ok) {
+            const data = await response.json();
+            if (data.status === 'success') {
+                populateExpiryOptions(data.data);
+            }
+        }
+    } catch (error) {
+        console.error('Error loading expiries:', error);
+    }
+}
+
+function populateExpiryOptions(expiryData) {
+    // Update each day's dropdown and show actual expiry dates
+    const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    const currentDayName = expiryData.current_day;
+    
+    // Calculate actual expiry dates
+    const expiries = calculateExpiryDates();
+    
+    weekdays.forEach(day => {
+        const selectId = `expiry${day}`;
+        const dateId = `${day.toLowerCase()}ExpiryDate`;
+        const select = document.getElementById(selectId);
+        const dateDiv = document.getElementById(dateId);
+        
+        if (select) {
+            // Clear and populate options based on day
+            select.innerHTML = '';
+            
+            if (day === 'Monday' || day === 'Tuesday') {
+                // Current week expiry available
+                const currentOption = document.createElement('option');
+                currentOption.value = 'current';
+                currentOption.textContent = 'Current Week';
+                select.appendChild(currentOption);
+            }
+            
+            // Add next week option
+            const nextOption = document.createElement('option');
+            nextOption.value = 'next';
+            nextOption.textContent = 'Next Week';
+            select.appendChild(nextOption);
+            
+            // Add month-end option
+            const monthEndOption = document.createElement('option');
+            monthEndOption.value = 'monthend';
+            monthEndOption.textContent = 'Month End';
+            select.appendChild(monthEndOption);
+            
+            // Restore saved value from localStorage or set defaults
+            const savedConfig = localStorage.getItem('weekdayExpiryConfig');
+            if (savedConfig) {
+                try {
+                    const config = JSON.parse(savedConfig);
+                    if (config[day.toLowerCase()]) {
+                        select.value = config[day.toLowerCase()];
+                        console.log(`[EXPIRY LOAD] Restored ${day} to ${config[day.toLowerCase()]}`);
+                    }
+                } catch (e) {
+                    console.error('Error restoring saved value:', e);
+                }
+            } else if (day === 'Wednesday' || day === 'Thursday' || day === 'Friday') {
+                // Only set default if no saved config
+                select.value = 'next'; // Default to next week for Wed-Fri
+            }
+            
+            // Update the date display
+            updateExpiryDateDisplay(day, select.value, expiries);
+        }
+        
+        // Highlight current day
+        const dayRow = select ? select.closest('.expiry-day-row') : null;
+        if (dayRow && day === currentDayName) {
+            dayRow.style.border = '2px solid var(--accent-blue)';
+            dayRow.style.background = 'var(--bg-primary)';
+        }
+    });
+    
+    // Update today's configuration status
+    updateTodayStatus(currentDayName, expiries);
+}
+
+function calculateExpiryDates() {
+    const today = new Date();
+    const currentDay = today.getDay();
+    
+    // Find this Tuesday
+    const daysToTuesday = (2 - currentDay + 7) % 7;
+    const thisTuesday = new Date(today);
+    thisTuesday.setDate(today.getDate() + (daysToTuesday === 0 && today.getHours() >= 15 ? 7 : daysToTuesday));
+    
+    // Find next Tuesday
+    const nextTuesday = new Date(thisTuesday);
+    nextTuesday.setDate(thisTuesday.getDate() + 7);
+    
+    // Find month-end Tuesday
+    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const monthEndTuesday = new Date(lastDayOfMonth);
+    while (monthEndTuesday.getDay() !== 2) {
+        monthEndTuesday.setDate(monthEndTuesday.getDate() - 1);
+    }
+    
+    return {
+        current: thisTuesday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        next: nextTuesday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        monthend: monthEndTuesday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    };
+}
+
+function updateExpiryDateDisplay(day, selectedValue, expiries) {
+    const dateId = `${day.toLowerCase()}ExpiryDate`;
+    const dateDiv = document.getElementById(dateId);
+    
+    if (dateDiv) {
+        let dateText = '';
+        switch(selectedValue) {
+            case 'current':
+                dateText = '→ Current Week';
+                break;
+            case 'next':
+                dateText = '→ Next Week';
+                break;
+            case 'monthend':
+                dateText = '→ Month End';
+                break;
+        }
+        dateDiv.textContent = dateText;
+        dateDiv.style.color = 'var(--accent-green)';
+        dateDiv.style.fontWeight = 'bold';
+    }
+}
+
+function updateTodayStatus(currentDay, expiries) {
+    const statusDiv = document.getElementById('todayExpiryInfo');
+    if (statusDiv) {
+        const selectId = `expiry${currentDay}`;
+        const select = document.getElementById(selectId);
+        
+        if (select) {
+            const selectedOption = select.options[select.selectedIndex];
+            const selectedDate = select.value === 'current' ? expiries.current : 
+                               select.value === 'next' ? expiries.next : expiries.monthend;
+            
+            statusDiv.innerHTML = `
+                <div>Today is <strong>${currentDay}</strong></div>
+                <div>If signal comes today, will use: <strong>${selectedOption.textContent}</strong></div>
+                <div>Expiry Date: <strong>${selectedDate}</strong></div>
+            `;
+        } else {
+            // Weekend
+            statusDiv.innerHTML = `
+                <div>Today is <strong>${currentDay}</strong> (Weekend)</div>
+                <div style="color: var(--accent-yellow);">No trading on weekends</div>
+            `;
+        }
+    }
+}
+
+// Debounce timer for saveExpiryConfig
+let saveExpiryConfigTimer = null;
+
+async function saveExpiryConfig() {
+    // Clear any existing timer
+    if (saveExpiryConfigTimer) {
+        clearTimeout(saveExpiryConfigTimer);
+    }
+    
+    // Collect config immediately for localStorage
+    const config = {};
+    const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    
+    weekdays.forEach(day => {
+        const select = document.getElementById(`expiry${day}`);
+        if (select) {
+            config[day.toLowerCase()] = select.value;
+        }
+    });
+    
+    // Save to localStorage immediately
+    localStorage.setItem('weekdayExpiryConfig', JSON.stringify(config));
+    console.log('[EXPIRY] Saved to localStorage:', config);
+    
+    // Update date displays immediately
+    const expiries = calculateExpiryDates();
+    weekdays.forEach(day => {
+        const select = document.getElementById(`expiry${day}`);
+        if (select) {
+            updateExpiryDateDisplay(day, select.value, expiries);
+        }
+    });
+    
+    // Debounce the backend save to avoid rapid consecutive saves
+    saveExpiryConfigTimer = setTimeout(async () => {
+        try {
+            const response = await fetch(getApiUrl('/api/expiry/weekday-config'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config)
+            });
+            
+            if (response.ok) {
+                console.log('[EXPIRY] Saved to backend');
+                // Don't show notification for every change, too noisy
+            }
+        } catch (error) {
+            console.error('Error saving expiry config to backend:', error);
+        }
+    }, 1000); // Wait 1 second before saving to backend
+}
+
+async function saveSelectedExpiry() {
+    const selectedExpiry = document.getElementById('expiryDate').value;
+    if (!selectedExpiry) {
+        showNotification('Please select an expiry date', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch(getApiUrl('/api/expiry/select'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ expiry_date: selectedExpiry })
+        });
+        
+        const data = await response.json();
+        if (data.status === 'success') {
+            showNotification(data.message, 'success');
+        } else {
+            showNotification(data.message || 'Failed to save expiry', 'error');
+        }
+    } catch (error) {
+        console.error('Error saving expiry:', error);
+        showNotification('Error saving expiry selection', 'error');
+    }
+}
+
+// Exit Timing Functions
+function updateExitPreview() {
+    const exitDay = parseInt(document.getElementById('exitDayOffset').value);
+    const exitTime = document.getElementById('exitTime').value;
+    const exitPreview = document.getElementById('exitPreview');
+    
+    // Handle expiry day exit (T+0)
+    if (exitDay === 0) {
+        // Get next Tuesday (expiry day)
+        const entryDate = new Date();
+        let exitDate = new Date(entryDate);
+        
+        // Find next Tuesday
+        const daysUntilTuesday = (2 - exitDate.getDay() + 7) % 7 || 7; // 2 = Tuesday
+        exitDate.setDate(exitDate.getDate() + daysUntilTuesday);
+        
+        const dayName = exitDate.toLocaleDateString('en-US', { weekday: 'long' });
+        const dateStr = exitDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        
+        exitPreview.innerHTML = `
+            <div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">
+                📅 Exit Schedule: Expiry Day at ${exitTime}
+            </div>
+            <div style="margin-top: 8px; font-size: 12px; color: var(--text-secondary);">
+                Position will exit on the actual expiry day (Tuesday):
+            </div>
+            <div style="margin-top: 5px; font-size: 14px; font-weight: 600; color: var(--accent-orange);">
+                Next ${dayName}, ${dateStr} at ${exitTime}
+            </div>
+            <div style="margin-top: 8px; padding: 8px; background: rgba(255, 107, 0, 0.1); border-radius: 4px; font-size: 11px; color: var(--accent-orange);">
+                ⚠️ Important: Exit will be on the actual expiry Tuesday based on entry day and weekday config
+            </div>
+        `;
+    } else {
+        // Calculate T+N exit date
+        const entryDate = new Date();
+        let exitDate = new Date(entryDate);
+        let tradingDaysAdded = 0;
+        
+        while (tradingDaysAdded < exitDay) {
+            exitDate.setDate(exitDate.getDate() + 1);
+            // Skip weekends
+            if (exitDate.getDay() !== 0 && exitDate.getDay() !== 6) {
+                tradingDaysAdded++;
+            }
+        }
+        
+        const dayName = exitDate.toLocaleDateString('en-US', { weekday: 'long' });
+        const dateStr = exitDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        
+        exitPreview.innerHTML = `
+            <div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">
+                📅 Exit Schedule: T+${exitDay} at ${exitTime}
+            </div>
+            <div style="margin-top: 8px; font-size: 12px; color: var(--text-secondary);">
+                If trade entered today, exit will be on:
+            </div>
+            <div style="margin-top: 5px; font-size: 14px; font-weight: 600; color: var(--accent-blue);">
+                ${dayName}, ${dateStr} at ${exitTime}
+            </div>
+            <div style="margin-top: 8px; padding: 8px; background: var(--bg-primary); border-radius: 4px; font-size: 11px;">
+                ⚠️ Note: Actual exit date will be calculated from trade entry time
+            </div>
+        `;
+    }
+}
+
+function loadExitTimingConfig() {
+    // Load from localStorage first
+    const savedConfig = localStorage.getItem('exitTimingConfig');
+    if (savedConfig) {
+        try {
+            const config = JSON.parse(savedConfig);
+            if (document.getElementById('exitDayOffset')) {
+                document.getElementById('exitDayOffset').value = config.exit_day_offset !== undefined ? config.exit_day_offset : 2;
+            }
+            if (document.getElementById('exitTime')) {
+                document.getElementById('exitTime').value = config.exit_time || '15:15';
+            }
+            if (document.getElementById('autoSquareOffEnabled')) {
+                document.getElementById('autoSquareOffEnabled').checked = config.auto_square_off_enabled !== false;
+                // Show/hide config WITHOUT triggering save
+                const exitTimingConfig = document.getElementById('exitTimingConfig');
+                if (exitTimingConfig) {
+                    exitTimingConfig.style.display = config.auto_square_off_enabled !== false ? 'flex' : 'none';
+                }
+            }
+            updateExitPreview();
+            console.log('[EXIT TIMING] Loaded from localStorage:', config);
+        } catch (e) {
+            console.error('Error loading exit timing config:', e);
+        }
+    }
+    
+    // Also try to load from file
+    fetch('exit_timing_config.json')
+        .then(r => r.json())
+        .then(config => {
+            if (config && !savedConfig) {
+                // Apply if no localStorage config
+                if (document.getElementById('exitDayOffset')) {
+                    document.getElementById('exitDayOffset').value = config.exit_day_offset !== undefined ? config.exit_day_offset : 2;
+                }
+                if (document.getElementById('exitTime')) {
+                    document.getElementById('exitTime').value = config.exit_time || '15:15';
+                }
+                if (document.getElementById('autoSquareOffEnabled')) {
+                    document.getElementById('autoSquareOffEnabled').checked = config.auto_square_off_enabled !== false;
+                    // Show/hide config WITHOUT triggering save
+                    const exitTimingConfig = document.getElementById('exitTimingConfig');
+                    if (exitTimingConfig) {
+                        exitTimingConfig.style.display = config.auto_square_off_enabled !== false ? 'flex' : 'none';
+                    }
+                }
+                updateExitPreview();
+                console.log('[EXIT TIMING] Loaded from file:', config);
+            }
+        })
+        .catch(() => {
+            // File might not exist yet
+        });
+}
+
+function saveWeekdayConfig() {
+    const config = {};
+    const weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+    
+    weekdays.forEach(day => {
+        const dayElement = document.querySelector(`[data-day="${day}"]`);
+        if (dayElement) {
+            const select = dayElement.querySelector('select');
+            if (select) {
+                config[day] = select.value;
+            }
+        }
+    });
+    
+    // Save to localStorage
+    localStorage.setItem('weekdayExpiryConfig', JSON.stringify(config));
+    console.log('[WEEKDAY CONFIG] Saved to localStorage:', config);
+    
+    // Also save to backend
+    fetch(getApiUrl('/api/expiry/weekday-config'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config)
+    }).catch(e => console.error('Error saving weekday config to backend:', e));
+}
+
+function loadWeekdayConfig() {
+    // Load from localStorage first
+    const savedConfig = localStorage.getItem('weekdayExpiryConfig');
+    if (savedConfig) {
+        try {
+            const config = JSON.parse(savedConfig);
+            Object.keys(config).forEach(day => {
+                // Use the ID directly
+                const dayCapitalized = day.charAt(0).toUpperCase() + day.slice(1);
+                const select = document.getElementById(`expiry${dayCapitalized}`);
+                if (select) {
+                    select.value = config[day];
+                    console.log(`[WEEKDAY CONFIG] Set ${day} to ${config[day]}`);
+                }
+            });
+            console.log('[WEEKDAY CONFIG] Loaded from localStorage:', config);
+        } catch (e) {
+            console.error('Error loading weekday config:', e);
+        }
+    } else {
+        // Try to load from file as fallback
+        fetch('expiry_weekday_config.json')
+            .then(r => r.json())
+            .then(config => {
+                if (config) {
+                    Object.keys(config).forEach(day => {
+                        // Use the ID directly
+                        const dayCapitalized = day.charAt(0).toUpperCase() + day.slice(1);
+                        const select = document.getElementById(`expiry${dayCapitalized}`);
+                        if (select) {
+                            select.value = config[day];
+                        }
+                    });
+                    // Save to localStorage for next time
+                    localStorage.setItem('weekdayExpiryConfig', JSON.stringify(config));
+                    console.log('[WEEKDAY CONFIG] Loaded from file and saved to localStorage:', config);
+                }
+            })
+            .catch(() => {
+                console.log('[WEEKDAY CONFIG] No saved config found, using defaults');
+            });
+    }
+}
+
+async function saveExitTiming(showMessage = true) {
+    const config = {
+        exit_day_offset: parseInt(document.getElementById('exitDayOffset').value),
+        exit_time: document.getElementById('exitTime').value,
+        auto_square_off_enabled: document.getElementById('autoSquareOffEnabled').checked
+    };
+    
+    // Save to localStorage as well
+    localStorage.setItem('exitTimingConfig', JSON.stringify(config));
+    
+    try {
+        const response = await fetch(getApiUrl('/api/exit-timing/configure'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        });
+        
+        const data = await response.json();
+        if (data.status === 'success') {
+            // Only show notification if explicitly requested
+            if (showMessage) {
+                showNotification('Exit timing configured', 'success');
+            }
+        } else {
+            showNotification(data.message || 'Failed to save exit timing', 'error');
+        }
+    } catch (error) {
+        console.error('Error saving exit timing:', error);
+        if (showMessage) {
+            showNotification('Error saving exit timing', 'error');
+        }
+    }
+}
+
+// Check kill switch status on page load and periodically
+document.addEventListener('DOMContentLoaded', () => {
+    checkKillSwitchStatus();
+    setInterval(checkKillSwitchStatus, 5000); // Check every 5 seconds
+    
+    // Initialize expiry and exit timing
+    loadAvailableExpiries();
+    
+    // Setup weekday config listeners immediately
+    const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    weekdays.forEach(day => {
+        const select = document.getElementById(`expiry${day}`);
+        if (select) {
+            select.addEventListener('change', () => {
+                console.log(`[EVENT] ${day} dropdown changed to: ${select.value}`);
+                saveExpiryConfig();
+                // Update date display with available expiries
+                const expiries = calculateExpiryDates();
+                updateExpiryDateDisplay(day, select.value, expiries);
+            });
+        }
+    });
+    
+    // Setup exit timing listeners immediately
+    const exitDayOffset = document.getElementById('exitDayOffset');
+    const exitTime = document.getElementById('exitTime');
+    const autoSquareOff = document.getElementById('autoSquareOffEnabled');
+    
+    if (exitDayOffset) {
+        exitDayOffset.addEventListener('change', () => {
+            updateExitPreview();
+            saveExitTiming();
+        });
+    }
+    
+    if (exitTime) {
+        exitTime.addEventListener('change', () => {
+            updateExitPreview();
+            saveExitTiming();
+        });
+    }
+    
+    if (autoSquareOff) {
+        autoSquareOff.addEventListener('change', () => {
+            saveExitTiming();
+            const exitConfig = document.getElementById('exitTimingConfig');
+            if (exitConfig) {
+                exitConfig.style.display = autoSquareOff.checked ? 'flex' : 'none';
+            }
+        });
+    }
+    
+    document.getElementById('expiryDate')?.addEventListener('change', saveSelectedExpiry);
+    
+    // Load configurations after a short delay
+    setTimeout(() => {
+        // Load saved exit timing configuration
+        loadExitTimingConfig();
+        
+        // Load saved weekday configuration  
+        loadWeekdayConfig();
+    }, 100); // Small delay to ensure DOM is ready
+    
+    // Removed duplicate event listener - already handled above
+    
+    // Initial preview
+    updateExitPreview();
+});
+
+// Removed duplicate immediate load script - now located right after dropdown HTML
+
 </script>
+
+<!-- New JavaScript files for improved architecture -->
+<script src="static/js/error_handler.js"></script>
+<script src="static/js/api_client.js"></script>
+<script src="static/js/api_versioning.js"></script>
+<script src="static/js/settings_manager.js"></script>
+<script src="static/js/state_manager.js"></script>
+<script src="static/js/localStorage_migration.js"></script>
+
 </body>
 </html>

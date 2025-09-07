@@ -1,0 +1,20 @@
+{
+  "max_lots_per_trade": 500,
+  "max_concurrent_positions": 5,
+  "max_positions_per_signal": 1,
+  "max_daily_trades": 50,
+  "max_exposure_amount": 1000000,
+  "max_loss_per_day": 50000,
+  "freeze_quantity": 1800,
+  "market_hours": {
+    "start": "09:15",
+    "end": "15:30",
+    "days": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ]
+  }
+}

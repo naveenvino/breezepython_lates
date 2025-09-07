@@ -1,0 +1,132 @@
+{
+  "active": false,
+  "triggered": false,
+  "trigger_reason": null,
+  "trigger_time": null,
+  "auto_trade_enabled": false,
+  "blocked_operations": [],
+  "allowed_operations": [
+    "close_positions",
+    "cancel_orders"
+  ],
+  "history": [
+    {
+      "action": "TRIGGERED",
+      "reason": "Test trigger for safety verification",
+      "source": "test_script",
+      "timestamp": "2025-09-06T00:28:00.863939"
+    },
+    {
+      "action": "RESET",
+      "authorized_by": "test_admin",
+      "timestamp": "2025-09-06T00:28:05.210413"
+    },
+    {
+      "action": "TRIGGERED",
+      "reason": "Test trigger for safety verification",
+      "source": "test_script",
+      "timestamp": "2025-09-06T00:37:34.151662"
+    },
+    {
+      "action": "RESET",
+      "authorized_by": "test_admin",
+      "timestamp": "2025-09-06T00:37:38.236119"
+    },
+    {
+      "action": "TRIGGERED",
+      "reason": "Test trigger for safety verification",
+      "source": "test_script",
+      "timestamp": "2025-09-06T01:06:10.533019"
+    },
+    {
+      "action": "RESET",
+      "authorized_by": "test_admin",
+      "timestamp": "2025-09-06T01:06:14.603364"
+    },
+    {
+      "action": "TRIGGERED",
+      "reason": "Expert testing",
+      "source": "QA_test",
+      "timestamp": "2025-09-06T01:14:27.483951"
+    },
+    {
+      "action": "RESET",
+      "authorized_by": "admin",
+      "timestamp": "2025-09-06T01:16:27.349947"
+    },
+    {
+      "action": "TRIGGERED",
+      "reason": "Test trigger for safety verification",
+      "source": "test_script",
+      "timestamp": "2025-09-06T01:25:58.820321"
+    },
+    {
+      "action": "RESET",
+      "authorized_by": "test_admin",
+      "timestamp": "2025-09-06T01:26:03.311181"
+    },
+    {
+      "action": "TRIGGERED",
+      "reason": "Test trigger",
+      "source": "manual",
+      "timestamp": "2025-09-06T21:07:32.316533"
+    },
+    {
+      "action": "RESET",
+      "authorized_by": "admin",
+      "timestamp": "2025-09-06T21:29:16.222966"
+    },
+    {
+      "action": "TRIGGERED",
+      "reason": "Test trigger",
+      "source": "manual",
+      "timestamp": "2025-09-06T21:30:34.521095"
+    },
+    {
+      "action": "TRIGGERED",
+      "reason": "Testing kill switch",
+      "source": "manual",
+      "timestamp": "2025-09-06T22:50:17.729986"
+    },
+    {
+      "action": "TRIGGERED",
+      "reason": "Testing kill switch",
+      "source": "manual",
+      "timestamp": "2025-09-06T23:25:15.060817"
+    },
+    {
+      "action": "TRIGGERED",
+      "reason": "Testing kill switch",
+      "source": "manual",
+      "timestamp": "2025-09-06T23:28:31.666822"
+    },
+    {
+      "action": "RESET",
+      "authorized_by": "admin",
+      "timestamp": "2025-09-06T23:29:08.233444"
+    },
+    {
+      "action": "TRIGGERED",
+      "reason": "Testing kill switch",
+      "source": "manual",
+      "timestamp": "2025-09-06T23:33:42.034108"
+    },
+    {
+      "action": "TRIGGERED",
+      "reason": "Testing kill switch",
+      "source": "manual",
+      "timestamp": "2025-09-06T23:48:40.134740"
+    },
+    {
+      "action": "TRIGGERED",
+      "reason": "Testing kill switch",
+      "source": "manual",
+      "timestamp": "2025-09-07T10:40:53.259809"
+    },
+    {
+      "action": "RESET",
+      "authorized_by": "admin",
+      "timestamp": "2025-09-07T10:43:59.841248"
+    }
+  ]
+}

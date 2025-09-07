@@ -1,6 +1,5 @@
 {
   "telegram_enabled": true,
-  "telegram_bot_token": "8268902303:AAFy8t0gARt0iWGech3mlIfrOZ9S4Jrt3WM",
   "telegram_chat_id": "992005734",
   "email_enabled": false,
   "email_smtp_server": "smtp.gmail.com",
