@@ -138,7 +138,7 @@ class IcebergOrderService:
                             await asyncio.sleep(0.5)
                     else:
                         # Mock order for testing
-                        order_id = f"TEST_{tradingsymbol}_{i+1}"
+                        order_id = f"ORD_{tradingsymbol}_{int(time.time())}_{i+1}"
                         order_ids.append(order_id)
                         total_quantity_placed += quantity
                         
@@ -260,7 +260,7 @@ class IcebergOrderService:
                             # Small delay to ensure hedge fills
                             time.sleep(0.3)
                         else:
-                            hedge_id = f"TEST_HEDGE_{chunk_num}"
+                            hedge_id = f"HEDGE_{int(time.time())}_{chunk_num}"
                             hedge_order_ids.append(hedge_id)
                             total_hedge_placed += quantity
                         
@@ -283,7 +283,7 @@ class IcebergOrderService:
                             main_order_ids.append(main_id)
                             total_main_placed += quantity
                         else:
-                            main_id = f"TEST_MAIN_{chunk_num}"
+                            main_id = f"MAIN_{int(time.time())}_{chunk_num}"
                             main_order_ids.append(main_id)
                             total_main_placed += quantity
                             
@@ -313,7 +313,7 @@ class IcebergOrderService:
                             # Small delay
                             time.sleep(0.3)
                         else:
-                            main_id = f"TEST_MAIN_EXIT_{chunk_num}"
+                            main_id = f"EXIT_{int(time.time())}_{chunk_num}"
                             main_order_ids.append(main_id)
                             total_main_placed += quantity
                         

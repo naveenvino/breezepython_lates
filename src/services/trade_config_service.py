@@ -124,6 +124,14 @@ class TradeConfigService:
                             active_signals = ?,
                             daily_profit_target = ?,
                             position_size_mode = ?,
+                            max_positions = ?,
+                            max_loss_per_trade = ?,
+                            max_exposure = ?,
+                            selected_expiry = ?,
+                            exit_day_offset = ?,
+                            exit_time = ?,
+                            auto_square_off_enabled = ?,
+                            weekday_config = ?,
                             updated_at = CURRENT_TIMESTAMP
                         WHERE user_id = ? AND config_name = ?
                     """, (
@@ -142,6 +150,14 @@ class TradeConfigService:
                         json.dumps(config.get('active_signals', [])),
                         config.get('daily_profit_target', 100000),
                         config.get('position_size_mode', 'fixed'),
+                        config.get('max_positions', 5),
+                        config.get('max_loss_per_trade', 20000),
+                        config.get('max_exposure', 200000),
+                        config.get('selected_expiry'),
+                        config.get('exit_day_offset', 2),
+                        config.get('exit_time', '15:15'),
+                        config.get('auto_square_off_enabled', True),
+                        json.dumps(config.get('weekday_config', {})),
                         user_id, config_name
                     ))
                     
@@ -157,8 +173,11 @@ class TradeConfigService:
                             profit_lock_enabled, profit_target, profit_lock,
                             trailing_stop_enabled, trail_percent,
                             auto_trade_enabled, active_signals,
-                            daily_profit_target, position_size_mode
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            daily_profit_target, position_size_mode,
+                            max_positions, max_loss_per_trade, max_exposure,
+                            selected_expiry, exit_day_offset, exit_time,
+                            auto_square_off_enabled, weekday_config
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, (
                         user_id, config_name,
                         config.get('num_lots', 10),
@@ -175,7 +194,15 @@ class TradeConfigService:
                         config.get('auto_trade_enabled', False),
                         json.dumps(config.get('active_signals', [])),
                         config.get('daily_profit_target', 100000),
-                        config.get('position_size_mode', 'fixed')
+                        config.get('position_size_mode', 'fixed'),
+                        config.get('max_positions', 5),
+                        config.get('max_loss_per_trade', 20000),
+                        config.get('max_exposure', 200000),
+                        config.get('selected_expiry'),
+                        config.get('exit_day_offset', 2),
+                        config.get('exit_time', '15:15'),
+                        config.get('auto_square_off_enabled', True),
+                        json.dumps(config.get('weekday_config', {}))
                     ))
                     
                     # Log the insert
@@ -214,8 +241,15 @@ class TradeConfigService:
                     config = dict(row)
                     # Parse JSON fields
                     config['active_signals'] = json.loads(config.get('active_signals', '[]'))
+                    # Parse weekday_config JSON
+                    if config.get('weekday_config'):
+                        try:
+                            config['weekday_config'] = json.loads(config['weekday_config'])
+                        except:
+                            config['weekday_config'] = {}
                     # Convert boolean values
-                    for key in ['hedge_enabled', 'profit_lock_enabled', 'trailing_stop_enabled', 'auto_trade_enabled']:
+                    for key in ['hedge_enabled', 'profit_lock_enabled', 'trailing_stop_enabled', 
+                                'auto_trade_enabled', 'auto_square_off_enabled']:
                         if key in config:
                             config[key] = bool(config[key])
                     
@@ -245,7 +279,21 @@ class TradeConfigService:
             'auto_trade_enabled': False,
             'active_signals': [],
             'daily_profit_target': 100000,
-            'position_size_mode': 'fixed'
+            'position_size_mode': 'fixed',
+            'max_positions': 5,
+            'max_loss_per_trade': 20000,
+            'max_exposure': 200000,
+            'selected_expiry': None,
+            'exit_day_offset': 2,
+            'exit_time': '15:15',
+            'auto_square_off_enabled': True,
+            'weekday_config': {
+                'monday': 'current',
+                'tuesday': 'current',
+                'wednesday': 'next',
+                'thursday': 'next',
+                'friday': 'next'
+            }
         }
     
     def save_session_setting(self, key: str, value: Any, user_id: str = 'default') -> bool:

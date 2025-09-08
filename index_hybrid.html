@@ -2827,7 +2827,7 @@
                 window.open('auto_login_dashboard.html?broker=zerodha', '_blank');
                 
                 // Alternative: Direct API call for auto-login
-                const response = await fetch(`${API_BASE}/kite/auto-login`, {
+                const response = await fetch(`${API_BASE}/auth/auto-login/kite`, {
                     method: 'POST'
                 });
                 
@@ -2847,7 +2847,7 @@
                 window.open('auto_login_dashboard.html?broker=breeze', '_blank');
                 
                 // Alternative: Direct API call for auto-login
-                const response = await fetch(`${API_BASE}/broker/auto-login`, {
+                const response = await fetch(`${API_BASE}/auth/auto-login/breeze`, {
                     method: 'POST'
                 });
                 
@@ -2868,8 +2868,8 @@
                 
                 // Alternative: Trigger both logins via API
                 Promise.all([
-                    fetch(`${API_BASE}/kite/auto-login`, { method: 'POST' }),
-                    fetch(`${API_BASE}/broker/auto-login`, { method: 'POST' })
+                    fetch(`${API_BASE}/auth/auto-login/kite`, { method: 'POST' }),
+                    fetch(`${API_BASE}/auth/auto-login/breeze`, { method: 'POST' })
                 ]).then(() => {
                     console.log('Both brokers auto-login initiated');
                     // Recheck connections after a delay

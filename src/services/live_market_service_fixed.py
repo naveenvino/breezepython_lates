@@ -106,8 +106,8 @@ class LiveMarketService:
         raise Exception("Breeze connection not available - Cannot provide real data")
     
     def _get_mock_spot_price(self, symbol: str) -> Dict:
-        """DEPRECATED - No mock data allowed"""
-        raise Exception("Mock data is disabled - Only real data allowed")
+        """No mock data allowed"""
+        return {"error": "No data available", "symbol": symbol}
     
     async def get_all_market_data(self) -> Dict:
         """Get market data for all major indices"""
@@ -161,8 +161,8 @@ class LiveMarketService:
         raise Exception("Cannot fetch real option chain data")
     
     def _get_mock_option_chain(self, symbol: str, strike: int, range_count: int) -> List[Dict]:
-        """DEPRECATED - No mock data allowed"""
-        raise Exception("Mock data is disabled - Only real data allowed")
+        """No mock data allowed"""
+        return []
         return []  # Never reached but kept for structure
         
     def _get_mock_option_chain_old(self, symbol: str, strike: int, range_count: int) -> List[Dict]:

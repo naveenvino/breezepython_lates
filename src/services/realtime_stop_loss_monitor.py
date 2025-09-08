@@ -47,11 +47,12 @@ class RealtimeStopLossMonitor:
                 # Import here to avoid circular imports
                 from src.services.hybrid_data_manager import get_hybrid_data_manager
                 from src.services.live_stoploss_monitor import get_live_stoploss_monitor
-                from src.infrastructure.brokers.breeze.breeze_service import get_breeze_service
+                from src.infrastructure.brokers.breeze.breeze_client import BreezeClient
                 
                 data_manager = get_hybrid_data_manager()
                 monitor = get_live_stoploss_monitor()
-                breeze = get_breeze_service()
+                # Initialize Breeze client directly
+                breeze = BreezeClient()
                 
                 # Get all active positions
                 positions = list(data_manager.memory_cache.get('active_positions', {}).values())

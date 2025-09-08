@@ -1,8 +1,8 @@
 {
-  "enabled": false,
-  "mode": "LIVE",
+  "enabled": true,
+  "mode": "PAPER",
   "daily_pnl": 0,
   "open_positions": [],
   "orders_today": [],
-  "last_updated": "2025-09-07T10:54:56.975507"
+  "last_updated": "2025-09-08T17:53:11.726430"
 }

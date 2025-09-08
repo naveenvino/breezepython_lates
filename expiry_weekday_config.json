@@ -1,7 +1,1 @@
-{
-  "monday": "next",
-  "tuesday": "current",
-  "wednesday": "next",
-  "thursday": "next",
-  "friday": "monthend"
-}
+{"monday": "next", "tuesday": "next", "wednesday": "next", "thursday": "next", "friday": "next", "description": "Expiry selection configuration per weekday"}

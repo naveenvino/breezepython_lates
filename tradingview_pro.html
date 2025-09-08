@@ -1487,6 +1487,31 @@
             initializeStopLossHandlers();
         }
     </script>
+    <script>
+        // Detect if page is loaded in an iframe
+        if (window.self !== window.top) {
+            document.documentElement.classList.add('in-iframe');
+        }
+    </script>
+    <style>
+        /* Keep header visible even in iframe */
+        /* Removed the hiding of header in iframe */
+        
+        /* Adjust container when header is hidden */
+        .in-iframe .container {
+            margin-top: 20px;
+        }
+        
+        /* Keep master controls visible but compact */
+        .in-iframe .master-controls {
+            position: sticky;
+            top: 0;
+            background: var(--bg-primary);
+            z-index: 100;
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+    </style>
 </head>
 <body>
     <!-- Header -->
@@ -1540,15 +1565,15 @@
             </div>
             <div class="stat-item">
                 <div class="stat-label">Today's P&L</div>
-                <div class="stat-value" id="todayPnL">Loading...</div>
+                <div class="stat-value" id="todayPnL">₹0</div>
             </div>
             <div class="stat-item">
                 <div class="stat-label">Open Positions</div>
-                <div class="stat-value" id="openPositions">2</div>
+                <div class="stat-value" id="openPositions">0</div>
             </div>
             <div class="stat-item">
                 <div class="stat-label">Win Rate</div>
-                <div class="stat-value positive" id="winRate">68%</div>
+                <div class="stat-value positive" id="winRate">0%</div>
             </div>
             <div class="stat-item">
                 <div class="stat-label">Active Signals</div>
@@ -1569,10 +1594,10 @@
                 </label>
             </div>
 
-            <!-- Live Trading Only -->
-            <div style="padding: 8px 16px; background: var(--accent-red); border-radius: 8px; display: inline-flex; align-items: center; gap: 8px;">
-                <i class="fas fa-circle" style="font-size: 8px; animation: pulse 2s infinite;"></i>
-                <span style="font-weight: 600; color: white;">LIVE TRADING MODE</span>
+            <!-- Trading Mode Status (Dynamic) -->
+            <div id="tradingModeStatus" style="padding: 8px 16px; background: var(--bg-tertiary); border-radius: 8px; display: inline-flex; align-items: center; gap: 8px;">
+                <i class="fas fa-circle" id="tradingModeIcon" style="font-size: 8px;"></i>
+                <span id="tradingModeText" style="font-weight: 600; color: var(--text-secondary);">MANUAL MODE</span>
             </div>
 
             <!-- Kill Switch Controls -->
@@ -1606,7 +1631,7 @@
                 </div>
 
                 <div class="webhook-url-container">
-                    <div class="webhook-url" id="webhookUrl">Loading...</div>
+                    <div class="webhook-url" id="webhookUrl">http://localhost:8000/webhook/tradingview</div>
                     <button class="copy-btn" onclick="copyWebhookUrl()">
                         <i class="fas fa-copy"></i>
                     </button>
@@ -1894,11 +1919,8 @@
                     <button class="btn btn-sm" onclick="saveTradeConfig()" style="background: var(--accent-green); padding: 6px 12px; font-size: 12px;">
                         <i class="fas fa-save"></i> Save Config
                     </button>
-                    <button class="btn btn-sm" onclick="loadTradeConfig()" style="background: var(--accent-blue); padding: 6px 12px; font-size: 12px;">
-                        <i class="fas fa-download"></i> Load Config
-                    </button>
                     <button class="btn btn-sm" onclick="resetTradeConfig()" style="background: var(--accent-orange); padding: 6px 12px; font-size: 12px;">
-                        <i class="fas fa-undo"></i> Reset
+                        <i class="fas fa-undo"></i> Reset to Defaults
                     </button>
                 </div>
             </div>
@@ -1914,7 +1936,7 @@
                         <select class="form-control" id="numLots" required>
                             <option value="1">1 lot</option>
                             <option value="5">5 lots</option>
-                            <option value="10" selected>10 lots</option>
+                            <option value="10">10 lots</option>
                             <option value="15">15 lots</option>
                             <option value="20">20 lots</option>
                             <option value="25">25 lots</option>
@@ -1924,7 +1946,7 @@
                     <div class="form-group">
                         <label class="form-label">Entry Timing</label>
                         <select class="form-control" id="entryTiming">
-                            <option value="immediate" selected>Immediate</option>
+                            <option value="immediate">Immediate</option>
                             <option value="next_candle">Next Candle (11:15)</option>
                             <option value="custom">Custom Delay</option>
                         </select>
@@ -1952,7 +1974,7 @@
                             <select id="expiryMonday" class="form-control" style="flex: 1;">
                                 <option value="current">Current Week (This Tuesday)</option>
                                 <option value="next">Next Week Tuesday</option>
-                                <option value="monthend">Month End Tuesday</option>
+                                <option value="month_end">Month End Tuesday</option>
                             </select>
                             <div id="mondayExpiryDate" style="flex: 0 0 150px; font-size: 11px; color: var(--text-secondary);"></div>
                         </div>
@@ -1965,7 +1987,7 @@
                             <select id="expiryTuesday" class="form-control" style="flex: 1;">
                                 <option value="current">Current Week (Today)</option>
                                 <option value="next">Next Week Tuesday</option>
-                                <option value="monthend">Month End Tuesday</option>
+                                <option value="month_end">Month End Tuesday</option>
                             </select>
                             <div id="tuesdayExpiryDate" style="flex: 0 0 150px; font-size: 11px; color: var(--text-secondary);"></div>
                         </div>
@@ -1975,7 +1997,7 @@
                             <div style="flex: 0 0 120px; font-weight: 600; font-size: 13px;">Wednesday</div>
                             <select id="expiryWednesday" class="form-control" style="flex: 1;">
                                 <option value="next">Next Week Tuesday</option>
-                                <option value="monthend">Month End Tuesday</option>
+                                <option value="month_end">Month End Tuesday</option>
                             </select>
                             <div id="wednesdayExpiryDate" style="flex: 0 0 150px; font-size: 11px; color: var(--text-secondary);"></div>
                         </div>
@@ -1985,7 +2007,7 @@
                             <div style="flex: 0 0 120px; font-weight: 600; font-size: 13px;">Thursday</div>
                             <select id="expiryThursday" class="form-control" style="flex: 1;">
                                 <option value="next">Next Week Tuesday</option>
-                                <option value="monthend">Month End Tuesday</option>
+                                <option value="month_end">Month End Tuesday</option>
                             </select>
                             <div id="thursdayExpiryDate" style="flex: 0 0 150px; font-size: 11px; color: var(--text-secondary);"></div>
                         </div>
@@ -1995,7 +2017,7 @@
                             <div style="flex: 0 0 120px; font-weight: 600; font-size: 13px;">Friday</div>
                             <select id="expiryFriday" class="form-control" style="flex: 1;">
                                 <option value="next">Next Week Tuesday</option>
-                                <option value="monthend">Month End Tuesday</option>
+                                <option value="month_end">Month End Tuesday</option>
                             </select>
                             <div id="fridayExpiryDate" style="flex: 0 0 150px; font-size: 11px; color: var(--text-secondary);"></div>
                         </div>
@@ -2054,7 +2076,7 @@
                             <select class="form-control" id="exitDayOffset" onchange="updateExitPreview(); saveExitTiming();">
                                 <option value="0">Expiry Day</option>
                                 <option value="1">T+1 (Next trading day)</option>
-                                <option value="2" selected>T+2 (2 trading days)</option>
+                                <option value="2">T+2 (2 trading days)</option>
                                 <option value="3">T+3 (3 trading days)</option>
                                 <option value="4">T+4 (4 trading days)</option>
                                 <option value="5">T+5 (5 trading days)</option>
@@ -2069,7 +2091,7 @@
                                 <option value="10:15">10:15 AM</option>
                                 <option value="12:15">12:15 PM</option>
                                 <option value="14:15">2:15 PM</option>
-                                <option value="15:15" selected>3:15 PM</option>
+                                <option value="15:15">3:15 PM</option>
                             </select>
                         </div>
                     </div>
@@ -2107,7 +2129,7 @@
                                 Fixed points from main strike
                             </div>
                         </label>
-                        <input type="number" class="form-control" style="margin-top: 10px;" value="200" id="hedgeOffset" disabled>
+                        <input type="number" class="form-control" style="margin-top: 10px;" value="" id="hedgeOffset" placeholder="Enter hedge offset" disabled>
                     </div>
 
                     <div class="hedge-preview">
@@ -2214,7 +2236,7 @@
                             <input type="text" id="telegramChatId" placeholder="Chat ID" class="form-control" style="height: 32px;" readonly>
                             <div style="background: rgba(76, 175, 80, 0.1); border-radius: 4px; padding: 8px; margin: 8px 0; border-left: 3px solid var(--accent-green);">
                                 <div style="font-size: 12px; color: var(--accent-green); font-weight: 600;">✅ Configured for Naveen</div>
-                                <div style="font-size: 11px; color: var(--text-secondary);">Chat ID: 992005734 | Bot: @Alphaone_alertbot</div>
+                                <div style="font-size: 11px; color: var(--text-secondary);">Chat ID: Not configured | Bot: @Alphaone_alertbot</div>
                             </div>
                             <button class="btn btn-sm btn-secondary" onclick="testTelegram()" style="margin-top: 8px;">Test Telegram</button>
                         </div>
@@ -2279,8 +2301,8 @@
 
             <div class="breakeven-display">
                 <div style="font-size: 14px; color: var(--text-muted);">Current Breakeven Point</div>
-                <div class="breakeven-value">25,070</div>
-                <div style="font-size: 13px; color: var(--text-secondary);">Net P&L: <span style="color: var(--accent-green);">+₹525</span></div>
+                <div class="breakeven-value">--</div>
+                <div style="font-size: 13px; color: var(--text-secondary);">Net P&L: <span style="color: var(--text-muted);">₹0</span></div>
             </div>
 
             <div class="position-legs" id="positionLegsDisplay">
@@ -2528,7 +2550,10 @@
         
         // Helper function to get API base URL
         function getApiUrl(endpoint) {
-            const baseUrl = window.location.protocol === 'file:' ? 'http://localhost:8000' : '';
+            // Always use full URL to ensure API calls work
+            const baseUrl = window.location.protocol === 'file:' 
+                ? 'http://localhost:8000' 
+                : window.location.origin;
             return baseUrl + endpoint;
         }
         
@@ -2582,6 +2607,51 @@
                 apiStatus.querySelector('.status-dot').style.background = '#ff3366';
             }
         }
+        
+        // Simple direct save function for testing
+        window.directSaveConfig = async function() {
+            console.log('[DIRECT] Starting direct save...');
+            
+            const config = {
+                num_lots: parseInt(document.getElementById('numLots').value) || 10,
+                entry_timing: document.getElementById('entryTiming').value || 'immediate',
+                exit_day_offset: parseInt(document.getElementById('exitDayOffset').value) || 2,
+                exit_time: document.getElementById('exitTime').value || '15:15',
+                weekday_config: {
+                    monday: document.getElementById('expiryMonday').value || 'current',
+                    tuesday: document.getElementById('expiryTuesday').value || 'current',
+                    wednesday: document.getElementById('expiryWednesday').value || 'next',
+                    thursday: document.getElementById('expiryThursday').value || 'next',
+                    friday: document.getElementById('expiryFriday').value || 'next'
+                }
+            };
+            
+            try {
+                // Use original fetch if available to bypass interceptor
+                const fetchFn = window.originalFetch || fetch;
+                const response = await fetchFn('http://localhost:8000/api/trade-config/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        config: config,
+                        config_name: 'default',
+                        user_id: 'default'
+                    })
+                });
+                
+                const result = await response.json();
+                console.log('[DIRECT] Save result:', result);
+                
+                if (result.success) {
+                    alert('Configuration saved successfully!');
+                } else {
+                    alert('Save failed: ' + (result.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('[DIRECT] Save error:', error);
+                alert('Error saving: ' + error.message);
+            }
+        };
         
         // Trade Configuration Management Functions
         async function saveTradeConfig() {
@@ -2645,20 +2715,38 @@
                     return;
                 }
                 
-                // Save to backend
-                const response = await fetch(getApiUrl('/api/trade-config/save'), {
+                // Save to backend - using direct fetch to avoid circuit breaker
+                const apiUrl = getApiUrl('/api/trade-config/save');
+                console.log('[CONFIG] Saving to API URL:', apiUrl);
+                console.log('[CONFIG] Payload:', JSON.stringify({
+                    config: config,
+                    config_name: 'default',
+                    user_id: 'default'
+                }));
+                
+                // Add throwOnError: false to bypass error handler interceptor
+                const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         config: config,
                         config_name: 'default',
                         user_id: 'default'
-                    })
+                    }),
+                    throwOnError: false  // This bypasses the error handler
                 });
                 
-                const result = await response.json();
+                let result;
+                try {
+                    result = await response.json();
+                } catch (e) {
+                    console.error('[CONFIG] Failed to parse response:', e);
+                    result = { success: false, message: 'Invalid response from server' };
+                }
                 
-                if (result.success) {
+                console.log('[CONFIG] Save response:', result);
+                
+                if (result && result.success) {
                     // Also save to localStorage for offline access
                     localStorage.setItem('tradeConfig', JSON.stringify(config));
                     localStorage.setItem('tradeConfigTimestamp', new Date().toISOString());
@@ -2670,11 +2758,54 @@
                 }
             } catch (error) {
                 console.error('[CONFIG] Error saving configuration:', error);
+                console.error('[CONFIG] Error details:', error.message, error.stack);
+                
                 // Fallback to localStorage only
                 const config = collectTradeConfig();
                 localStorage.setItem('tradeConfig', JSON.stringify(config));
-                showNotification('Configuration saved locally (offline mode)', 'warning');
+                localStorage.setItem('tradeConfigTimestamp', new Date().toISOString());
+                
+                // More informative error message
+                if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+                    showNotification('Cannot connect to API. Configuration saved locally only.', 'warning');
+                } else if (error.message.includes('CORS')) {
+                    showNotification('CORS error - check API settings. Saved locally.', 'warning');
+                } else {
+                    showNotification(`Configuration saved locally (Error: ${error.message})`, 'warning');
+                }
             }
+        }
+        
+        function updateWeekdayExpiryDates() {
+            // Update the date displays for each weekday based on selected expiry
+            const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+            const today = new Date();
+            
+            weekdays.forEach(day => {
+                const select = document.getElementById(`expiry${day}`);
+                const dateDisplay = document.getElementById(`${day.toLowerCase()}ExpiryDate`);
+                
+                if (select && dateDisplay) {
+                    const selectedValue = select.value;
+                    let expiryDate = '';
+                    
+                    // Calculate expiry date based on selection
+                    // This is a placeholder - actual logic would calculate based on current date
+                    switch(selectedValue) {
+                        case 'current':
+                            expiryDate = 'This Tuesday';
+                            break;
+                        case 'next':
+                            expiryDate = 'Next Tuesday';
+                            break;
+                        case 'month_end':
+                            expiryDate = 'Month End Tuesday';
+                            break;
+                    }
+                    
+                    dateDisplay.textContent = expiryDate;
+                }
+            });
         }
         
         async function loadTradeConfig() {
@@ -2884,28 +3015,9 @@
                 console.log('[CONFIG] Set selected_expiry to:', config.selected_expiry);
             }
             
-            // Apply Exit Timing Settings - but don't override localStorage settings
-            const savedExitConfig = localStorage.getItem('exitTimingConfig');
-            if (savedExitConfig) {
-                // If we have localStorage settings, use those instead
-                console.log('[CONFIG] Preserving exit timing from localStorage');
-                const exitConfig = JSON.parse(savedExitConfig);
-                if (document.getElementById('exitDayOffset')) {
-                    document.getElementById('exitDayOffset').value = exitConfig.exit_day_offset !== undefined ? exitConfig.exit_day_offset : 2;
-                }
-                if (document.getElementById('exitTime')) {
-                    document.getElementById('exitTime').value = exitConfig.exit_time || '15:15';
-                }
-                if (document.getElementById('autoSquareOffEnabled')) {
-                    document.getElementById('autoSquareOffEnabled').checked = exitConfig.auto_square_off_enabled !== false;
-                    // Show/hide config without triggering save
-                    const exitTimingConfigDiv = document.getElementById('exitTimingConfig');
-                    if (exitTimingConfigDiv) {
-                        exitTimingConfigDiv.style.display = exitConfig.auto_square_off_enabled !== false ? 'flex' : 'none';
-                    }
-                }
-            } else if (config.exit_day_offset !== undefined || config.exit_time || config.auto_square_off_enabled !== undefined) {
-                // Only apply from config if no localStorage exists
+            // Apply Exit Timing Settings from server config (server is source of truth)
+            if (config.exit_day_offset !== undefined || config.exit_time || config.auto_square_off_enabled !== undefined) {
+                // Apply from server config
                 if (document.getElementById('exitDayOffset')) {
                     document.getElementById('exitDayOffset').value = config.exit_day_offset !== undefined ? config.exit_day_offset : 2;
                     console.log('[CONFIG] Set exitDayOffset to:', config.exit_day_offset);
@@ -2925,8 +3037,23 @@
                 }
             }
             
-            // Skip weekday settings - they're loaded by immediate script to avoid conflicts
-            console.log('[CONFIG] Weekday settings handled by immediate load script, skipping...');
+            // Apply weekday configuration from server
+            if (config.weekday_config) {
+                console.log('[CONFIG] Applying weekday configuration:', config.weekday_config);
+                const weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+                weekdays.forEach(day => {
+                    const elementId = 'expiry' + day.charAt(0).toUpperCase() + day.slice(1);
+                    const element = document.getElementById(elementId);
+                    if (element && config.weekday_config[day]) {
+                        element.value = config.weekday_config[day];
+                        console.log(`[CONFIG] Set ${elementId} to:`, config.weekday_config[day]);
+                    } else if (!element) {
+                        console.warn(`[CONFIG] Element ${elementId} not found`);
+                    }
+                });
+                // Update the preview after loading
+                updateWeekdayExpiryDates();
+            }
             
             // Update exit preview after loading settings
             if (typeof updateExitPreview === 'function') {
@@ -2935,11 +3062,13 @@
         }
         
         // Auto-load configuration on page load
-        // Single load on DOMContentLoaded - weekday settings already loaded by immediate script
+        // Single load on DOMContentLoaded
         window.addEventListener('DOMContentLoaded', () => {
-            console.log('[CONFIG] DOM loaded, loading trade configuration (except weekday settings)...');
-            // Load config once - weekday settings are already loaded by immediate script
-            loadTradeConfig();
+            console.log('[CONFIG] DOM loaded, loading trade configuration...');
+            // Add a small delay to ensure all elements are ready
+            setTimeout(() => {
+                loadTradeConfig();
+            }, 500);
         });
         
         // Auto-save configuration on changes (debounced)
@@ -3192,6 +3321,8 @@
                 console.log('[INIT] setTradingMode not ready, using fallback');
             }
             
+            // Don't call loadTradeConfig here as it's already called in DOMContentLoaded
+            
             // Set initial mode button state
             document.querySelectorAll('.mode-btn').forEach(btn => {
                 btn.classList.remove('active');
@@ -3232,7 +3363,51 @@
             startBreakevenMonitoring();
             start1HourCandleMonitor();
             updateNextCandleTime();
+            
+            // Force an immediate update of candle monitor
+            console.log('[INIT] Forcing immediate candle monitor update...');
+            setTimeout(() => {
+                update1HCandleMonitor();
+            }, 2000);
+            
+            // Failsafe: Direct API call and display
+            setTimeout(async () => {
+                console.log('[FAILSAFE] Attempting direct API update...');
+                try {
+                    // Direct spot fetch
+                    const spotRes = await fetch('http://localhost:8000/api/live/nifty-spot');
+                    const spotData = await spotRes.json();
+                    console.log('[FAILSAFE] Spot data:', spotData);
+                    
+                    if (spotData.success && spotData.data && spotData.data.ltp) {
+                        const el = document.getElementById('candleCurrentNifty');
+                        if (el) {
+                            el.textContent = spotData.data.ltp.toFixed(2);
+                            el.style.color = '#28a745';
+                            console.log('[FAILSAFE] Updated Current NIFTY to:', spotData.data.ltp);
+                        }
+                    }
+                    
+                    // Direct candle fetch
+                    const candleRes = await fetch('http://localhost:8000/api/breeze/hourly-candle');
+                    const candleData = await candleRes.json();
+                    console.log('[FAILSAFE] Candle data:', candleData);
+                    
+                    if (candleData.success && candleData.candle && candleData.candle.close) {
+                        const el = document.getElementById('candleLastClose');
+                        if (el) {
+                            el.textContent = candleData.candle.close.toFixed(2);
+                            el.style.color = '#28a745';
+                            console.log('[FAILSAFE] Updated Last 1H Close to:', candleData.candle.close);
+                        }
+                    }
+                } catch (e) {
+                    console.error('[FAILSAFE] Error:', e);
+                }
+            }, 5000);
             loadSavedConfiguration();
+            
+            // Trade configuration is already loaded in DOMContentLoaded event
             
             // Initialize signal card toggles
             initializeSignalToggles();
@@ -3794,9 +3969,10 @@
                     // Update Win Rate - today's live trades
                     const winRate = document.getElementById('winRate');
                     if (winRate) {
-                        const rate = risk.win_rate || 0;
+                        // Calculate win rate from positions if available
+                        const rate = positions.win_rate || 0;
                         if (rate === 0) {
-                            winRate.textContent = 'N/A';
+                            winRate.textContent = '0%';
                             winRate.className = 'stat-value';
                         } else {
                             winRate.textContent = `${rate.toFixed(1)}%`;
@@ -3897,6 +4073,25 @@
                 
             } catch (error) {
                 console.error('Error updating header stats:', error);
+                // Set default values if error occurs
+                const todayPnl = document.getElementById('todayPnL');
+                if (todayPnl) {
+                    todayPnl.textContent = '₹0';
+                    todayPnl.className = 'stat-value';
+                }
+                const openPos = document.getElementById('openPositions');
+                if (openPos) {
+                    openPos.textContent = '0';
+                }
+                const winRate = document.getElementById('winRate');
+                if (winRate) {
+                    winRate.textContent = '0%';
+                    winRate.className = 'stat-value';
+                }
+                const activeSignals = document.getElementById('activeSignals');
+                if (activeSignals) {
+                    activeSignals.textContent = '0';
+                }
             }
         }
         
@@ -4894,38 +5089,9 @@
         
         // Initialize auto trade status indicator
         function initializeAutoTradeStatus() {
-            // Create or update status indicator
-            let statusEl = document.getElementById('autoTradeStatusIndicator');
-            if (!statusEl) {
-                statusEl = document.createElement('div');
-                statusEl.id = 'autoTradeStatusIndicator';
-                statusEl.style.cssText = `
-                    display: inline-block;
-                    margin-left: 10px;
-                    padding: 3px 10px;
-                    border-radius: 4px;
-                    font-size: 11px;
-                    font-weight: 600;
-                    transition: all 0.3s ease;
-                `;
-                const toggleContainer = document.querySelector('.auto-trade-toggle');
-                if (toggleContainer) {
-                    toggleContainer.appendChild(statusEl);
-                }
-            }
-            
-            // Update status based on current state
-            if (autoTradeEnabled) {
-                statusEl.textContent = 'LIVE MODE - AUTO EXECUTION';
-                statusEl.style.background = 'var(--accent-red)';
-                statusEl.style.color = 'white';
-                statusEl.style.animation = 'pulse 2s infinite';
-            } else {
-                statusEl.textContent = 'MANUAL MODE';
-                statusEl.style.background = 'var(--bg-tertiary)';
-                statusEl.style.color = 'var(--text-secondary)';
-                statusEl.style.animation = 'none';
-            }
+            // Use the existing updateTradingModeDisplay function instead of creating duplicate
+            // This prevents showing "MANUAL MODE" twice
+            updateTradingModeDisplay(autoTradeEnabled);
         }
         
         // Generate test alert for demonstration
@@ -4934,7 +5100,7 @@
             const randomSignal = signals[Math.floor(Math.random() * signals.length)];
             const isBullish = ['S1', 'S2', 'S4', 'S7'].includes(randomSignal);
             const optionType = isBullish ? 'PE' : 'CE';
-            const strikeBase = Math.floor(25000 / 50) * 50; // Round to nearest 50
+            const strikeBase = currentSpot ? Math.floor(currentSpot / 50) * 50 : null; // Round to nearest 50
             const strikeOffset = (Math.floor(Math.random() * 5) - 2) * 50; // -100 to +100
             const strike = strikeBase + strikeOffset;
             
@@ -5310,6 +5476,13 @@
         // Function to update 1H Candle Monitor with real data
         async function update1HCandleMonitor() {
             console.log('🔄 [CANDLE MONITOR] Starting update...');
+            
+            // Debug: Show we're actually running
+            const debugEl = document.getElementById('candleCurrentNifty');
+            if (debugEl) {
+                debugEl.style.border = '2px solid yellow';
+            }
+            
             try {
                 let currentSpot = 0;
                 let lastHourlyClose = 0;
@@ -5344,10 +5517,12 @@
                         
                         // Try Breeze API - look for the actual working endpoint
                         const spotResponse = await fetch(getApiUrl('/api/live/nifty-spot'));
+                        console.log('[DEBUG] Spot API URL:', getApiUrl('/api/live/nifty-spot'));
                         if (spotResponse.ok) {
                             const spotData = await spotResponse.json();
-                            // CRITICAL: Reject ANY mock data
-                            if (spotData.success && spotData.data && !spotData.data.is_mock && !spotData.error) {
+                            console.log('[DEBUG] Spot API Response:', spotData);
+                            // CRITICAL: Reject ANY mock data - check both is_real and is_mock
+                            if (spotData.success && spotData.data && (spotData.data.is_real || !spotData.data.is_mock) && !spotData.error) {
                                 const ltp = spotData.data.ltp;
                                 // Validate realistic value
                                 if (ltp && ltp > 15000 && ltp < 35000) {
@@ -5357,7 +5532,7 @@
                                     console.error('[CANDLE MONITOR] Invalid LTP value:', ltp);
                                     currentSpot = 0;
                                 }
-                            } else if (spotData.data && spotData.data.is_mock) {
+                            } else if (spotData.data && (spotData.data.is_mock || spotData.data.is_real === false)) {
                                 console.error('[CANDLE MONITOR] REJECTED MOCK DATA from API');
                                 currentSpot = 0;
                             } else {
@@ -5417,9 +5592,11 @@
                             try {
                                 console.log('[CANDLE MONITOR] Fetching Breeze hourly candle data...');
                                 const candleRes = await fetch(getApiUrl('/api/breeze/hourly-candle'));
+                                console.log('[DEBUG] Candle API URL:', getApiUrl('/api/breeze/hourly-candle'));
                                 
                                 if (candleRes.ok) {
                                     const candleData = await candleRes.json();
+                                    console.log('[DEBUG] Candle API Response:', candleData);
                                     if (candleData.success && candleData.candle) {
                                         // Only accept data from real sources, not live_spot fallback
                                         const validSources = ['breeze_1min', 'breeze_5min', 'breeze_5min_approx', 'tradingview_realtime', 'tradingview_webhook', 'aggregated_from_5min'];
@@ -5453,8 +5630,20 @@
                             }
                         }
                     } else {
-                        console.log('[CANDLE MONITOR] Outside market hours');
-                        lastHourlyClose = 0;
+                        console.log('[CANDLE MONITOR] Outside market hours - trying to fetch last available candle');
+                        // Still try to fetch the last available candle even outside market hours
+                        try {
+                            const candleRes = await fetch(getApiUrl('/api/breeze/hourly-candle'));
+                            if (candleRes.ok) {
+                                const candleData = await candleRes.json();
+                                if (candleData.success && candleData.candle) {
+                                    lastHourlyClose = candleData.candle.close;
+                                    console.log('[CANDLE MONITOR] Got last available candle:', lastHourlyClose);
+                                }
+                            }
+                        } catch (e) {
+                            console.log('[CANDLE MONITOR] Could not fetch last candle:', e);
+                        }
                     }
                 } catch (e) {
                     console.log('[CANDLE MONITOR] Error getting hourly candle:', e);
@@ -6233,6 +6422,25 @@
             }
         }
         
+        // Update trading mode status display
+        function updateTradingModeDisplay(isEnabled) {
+            const statusDiv = document.getElementById('tradingModeStatus');
+            const statusText = document.getElementById('tradingModeText');
+            const statusIcon = document.getElementById('tradingModeIcon');
+            
+            if (isEnabled) {
+                statusDiv.style.background = 'var(--accent-red)';
+                statusText.textContent = 'LIVE TRADING MODE';
+                statusText.style.color = 'white';
+                statusIcon.style.animation = 'pulse 2s infinite';
+            } else {
+                statusDiv.style.background = 'var(--bg-tertiary)';
+                statusText.textContent = 'MANUAL MODE';
+                statusText.style.color = 'var(--text-secondary)';
+                statusIcon.style.animation = 'none';
+            }
+        }
+        
         // Toggle auto trade with custom modal and strict API checking
         window.toggleAutoTrade = async function() {
             const isEnabled = document.getElementById('autoTradeToggle').checked;
@@ -6291,6 +6499,9 @@
                 if (result.success === true) { // Remove fallback - require explicit success
                     autoTradeEnabled = isEnabled;
                     
+                    // Update the trading mode display
+                    updateTradingModeDisplay(isEnabled);
+                    
                     // Update UI with status - No second confirmation needed since we used custom modal
                     if (isEnabled) {
                         showNotification('Auto trading enabled - Real execution active!', 'success');
@@ -6309,6 +6520,7 @@
                     // Revert toggle
                     document.getElementById('autoTradeToggle').checked = !isEnabled;
                     autoTradeEnabled = !isEnabled;
+                    updateTradingModeDisplay(!isEnabled);
                     
                     // Show error modal with details
                     ModalManager.show({
@@ -6327,6 +6539,7 @@
                 // Revert toggle on connection error
                 document.getElementById('autoTradeToggle').checked = !isEnabled;
                 autoTradeEnabled = !isEnabled;
+                updateTradingModeDisplay(!isEnabled);
                 
                 // Show connection error modal
                 ModalManager.show({
@@ -6352,33 +6565,8 @@
                     // Update toggle state
                     document.getElementById('autoTradeToggle').checked = status.enabled;
                     autoTradeEnabled = status.enabled;
-                    
-                    // Add status indicator near toggle
-                    let statusEl = document.getElementById('autoTradeStatusIndicator');
-                    if (!statusEl) {
-                        statusEl = document.createElement('div');
-                        statusEl.id = 'autoTradeStatusIndicator';
-                        statusEl.style.cssText = `
-                            display: inline-block;
-                            margin-left: 10px;
-                            padding: 2px 8px;
-                            border-radius: 4px;
-                            font-size: 11px;
-                            font-weight: 600;
-                        `;
-                        document.querySelector('.auto-trade-toggle').appendChild(statusEl);
-                    }
-                    
-                    // Update status display - Always show LIVE since paper is removed
-                    if (status.enabled) {
-                        statusEl.textContent = `LIVE | ${status.open_positions || 0} positions | P&L: ₹${status.daily_pnl || 0}`;
-                        statusEl.style.background = 'var(--accent-red)'; // Always red for LIVE
-                        statusEl.style.color = 'white';
-                    } else {
-                        statusEl.textContent = 'DISABLED';
-                        statusEl.style.background = 'var(--bg-tertiary)';
-                        statusEl.style.color = 'var(--text-muted)';
-                    }
+                    // Just update the display using the existing function - no duplicate elements
+                    updateTradingModeDisplay(status.enabled);
                     
                     // Show broker connection status
                     if (!status.connected.kite && status.mode === 'LIVE') {
@@ -6582,6 +6770,10 @@
         // Update connection status
         function updateConnectionStatus(elementId, connected) {
             const element = document.getElementById(elementId);
+            if (!element) {
+                // Element doesn't exist, skip update
+                return;
+            }
             if (connected) {
                 element.classList.remove('disconnected');
             } else {
@@ -6669,6 +6861,7 @@
                         const autoTrade = serverSettings.auto_trade_enabled === 'true';
                         document.getElementById('autoTradeToggle').checked = autoTrade;
                         autoTradeEnabled = autoTrade;
+                        updateTradingModeDisplay(autoTrade);
                     }
                     
                     if (serverSettings.trading_mode) {
@@ -6707,8 +6900,10 @@
             // Load auto trade setting
             const savedAutoTrade = localStorage.getItem('autoTradeEnabled');
             if (savedAutoTrade !== null) {
-                document.getElementById('autoTradeToggle').checked = savedAutoTrade === 'true';
-                autoTradeEnabled = savedAutoTrade === 'true';
+                const isEnabled = savedAutoTrade === 'true';
+                document.getElementById('autoTradeToggle').checked = isEnabled;
+                autoTradeEnabled = isEnabled;
+                updateTradingModeDisplay(isEnabled);
             }
             
             // Initialize status indicator immediately
@@ -6884,7 +7079,7 @@
             try {
                 // Direct Telegram API test for Naveen
                 const botToken = "8268902303:AAFy8t0gARt0iWGech3mlIfrOZ9S4Jrt3WM";
-                const chatId = "992005734";
+                const chatId = null  // Configure chat ID in settings;
                 
                 const testMessage = {
                     chat_id: chatId,
@@ -6954,7 +7149,7 @@
             const navenConfig = {
                 telegram_enabled: true,
                 telegram_bot_token: "8268902303:AAFy8t0gARt0iWGech3mlIfrOZ9S4Jrt3WM",
-                telegram_chat_id: "992005734"
+                telegram_chat_id: null  // Configure chat ID in settings
             };
             
             // Wait a bit for DOM to be fully ready
@@ -7240,10 +7435,11 @@
         window.resetPaperPortfolio = resetPaperPortfolio;
         
         // Load paper trading data on page load
-        loadPaperPortfolio();
-        loadPaperTrades();
-        setInterval(loadPaperPortfolio, 30000); // Refresh every 30 seconds
-        setInterval(loadPaperTrades, 60000); // Refresh every minute
+        // Commented out - paper trading elements not present in UI
+        // loadPaperPortfolio();
+        // loadPaperTrades();
+        // setInterval(loadPaperPortfolio, 30000); // Refresh every 30 seconds
+        // setInterval(loadPaperTrades, 60000); // Refresh every minute
 
         // Add more event listeners as needed
     
@@ -7416,7 +7612,7 @@ async function fetchCurrentSpotPrice() {
     } catch (e) {
         console.warn('Could not fetch spot price, using default');
     }
-    return 25000; // Default fallback
+    return null; // No data available
 }
 
 // Show trade confirmation dialog with full details
@@ -7924,7 +8120,7 @@ async function fetchCurrentSpotPrice() {
     } catch (e) {
         console.warn('Could not fetch spot price, using default');
     }
-    return 25000; // Default fallback
+    return null; // No data available
 }
 
 // Show trade confirmation dialog with full details
@@ -8432,7 +8628,7 @@ async function fetchCurrentSpotPrice() {
     } catch (e) {
         console.warn('Could not fetch spot price, using default');
     }
-    return 25000; // Default fallback
+    return null; // No data available
 }
 
 // Show trade confirmation dialog with full details

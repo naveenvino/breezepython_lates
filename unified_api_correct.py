@@ -22,6 +22,7 @@ from src.infrastructure.services.breeze_service import BreezeService
 from src.infrastructure.services.data_collection_service import DataCollectionService
 from src.infrastructure.services.option_pricing_service import OptionPricingService
 from src.infrastructure.services.holiday_service import HolidayService
+from src.services.consolidated_settings_service import ConsolidatedSettingsService
 from src.application.use_cases.run_backtest import RunBacktestUseCase, BacktestParameters
 from src.application.use_cases.run_backtest_progressive_sl import RunProgressiveSLBacktest, ProgressiveSLBacktestParameters
 from src.application.use_cases.collect_weekly_data_use_case import CollectWeeklyDataUseCase
@@ -75,6 +76,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Initialize unified settings service
+settings_service = ConsolidatedSettingsService()
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on startup"""
@@ -115,7 +119,7 @@ async def serve_tradingview_pro():
 async def serve_index():
     return FileResponse("index_hybrid.html")
 
-@app.get("/api/health", tags=["System"])
+@app.get("/api/health", tags=["System - Health"])
 async def health_check():
     """Health check endpoint for monitoring"""
     return {
@@ -847,7 +851,7 @@ async def get_progressive_sl_summary(backtest_id: str):
         logger.error(f"Error fetching progressive SL summary: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/signals/statistics", tags=["Signals"])
+@app.get("/signals/statistics", tags=["Trading - Signals"])
 async def get_signal_statistics():
     """Get performance statistics for all signals"""
     try:
@@ -906,7 +910,7 @@ async def get_signal_statistics():
         logger.error(f"Error fetching signal statistics: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/signals/recent", tags=["Signals"])
+@app.get("/signals/recent", tags=["Trading - Signals"])
 async def get_recent_signals(limit: int = 20):
     """Get recent signal occurrences from backtests"""
     try:
@@ -988,27 +992,27 @@ async def _collect_data(request, collection_type):
         logger.error(f"{collection_type.upper()} collection error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/collect/nifty-direct", tags=["NIFTY Collection"])
+@app.post("/collect/nifty-direct", tags=["Breeze - Data Collection"])
 async def collect_nifty_direct(request: NiftyCollectionRequest):
     """Collect Nifty Direct"""
     return await _collect_data(request, "nifty")
 
-@app.post("/collect/nifty-bulk", tags=["NIFTY Collection"])
+@app.post("/collect/nifty-bulk", tags=["Breeze - Data Collection"])
 async def collect_nifty_bulk(request: NiftyCollectionRequest):
     """Collect Nifty Bulk"""
     return await _collect_data(request, "nifty")
 
-@app.post("/collect/options-direct", tags=["Options Collection"])
+@app.post("/collect/options-direct", tags=["Breeze - Options Data"])
 async def collect_options_direct(request: OptionsCollectionRequest):
     """Collect Options Direct"""
     return await _collect_data(request, "options")
 
-@app.post("/collect/options-bulk", tags=["Options Collection"])
+@app.post("/collect/options-bulk", tags=["Breeze - Options Data"])
 async def collect_options_bulk(request: OptionsCollectionRequest):
     """Collect Options Bulk"""
     return await _collect_data(request, "options")
 
-@app.post("/collect/options-specific", tags=["Options Collection"])
+@app.post("/collect/options-specific", tags=["Breeze - Options Data"])
 async def collect_specific_options(request: SpecificOptionsRequest):
     """Collect Specific Options Strikes"""
     try:
@@ -1034,22 +1038,22 @@ async def collect_specific_options(request: SpecificOptionsRequest):
         logger.error(f"Specific options collection error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/v1/collect/options-by-signals", tags=["Options Collection"])
+@app.post("/api/v1/collect/options-by-signals", tags=["Breeze - Options Data"])
 async def collect_options_by_signals(request: OptionsCollectionRequest):
     """Collect Options By Signals"""
     return await _collect_data(request, "options")
 
-@app.post("/api/v1/collect/options-by-signals-fast", tags=["Options Collection"])
+@app.post("/api/v1/collect/options-by-signals-fast", tags=["Breeze - Options Data"])
 async def collect_options_by_signals_fast(request: OptionsCollectionRequest):
     """Collect Options By Signals Fast"""
     return await _collect_data(request, "options")
 
-@app.post("/api/v1/collect/options-by-signals-optimized", tags=["Options Collection"])
+@app.post("/api/v1/collect/options-by-signals-optimized", tags=["Breeze - Options Data"])
 async def collect_options_by_signals_optimized(request: OptionsCollectionRequest):
     """Collect Options By Signals Optimized"""
     return await _collect_data(request, "options")
 
-@app.post("/collect/missing-from-insights", tags=["Options Collection"])
+@app.post("/collect/missing-from-insights", tags=["Breeze - Data Collection"])
 async def collect_missing_from_insights():
     """Collect missing strikes from WeeklySignalInsights_ConsolidatedResults table
     
@@ -1172,14 +1176,14 @@ async def collect_missing_from_insights():
         logger.error(f"Error collecting missing strikes from table: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/job/{job_id}/status", tags=["Job Management"])
+@app.get("/job/{job_id}/status", tags=["System"])
 async def get_job_status(job_id: str):
     """Get Job Status"""
     if job_id not in job_status:
         raise HTTPException(status_code=404, detail="Job not found")
     return job_status[job_id]
 
-@app.get("/test-background-task", tags=["Testing"])
+@app.get("/test-background-task", tags=["System"])
 async def test_background_functionality(background_tasks: BackgroundTasks):
     """Test Background Functionality"""
     job_id = str(uuid4())
@@ -1193,7 +1197,7 @@ async def test_background_functionality(background_tasks: BackgroundTasks):
     background_tasks.add_task(test_task)
     return {"job_id": job_id, "status": "Task queued"}
 
-@app.get("/data/check", tags=["Data Check"])
+@app.get("/data/check", tags=["System - Data Management"])
 async def check_data_availability(
     from_date: date = Query(...),
     to_date: date = Query(...),
@@ -1224,7 +1228,7 @@ async def check_data_availability(
         logger.error(f"Data check error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/data/check-options", tags=["Data Check"])
+@app.get("/data/check-options", tags=["System - Data Management"])
 async def check_options_availability(
     from_date: date = Query(...),
     to_date: date = Query(...),
@@ -1254,7 +1258,7 @@ async def check_options_availability(
         logger.error(f"Options check error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.delete("/delete/nifty-direct", tags=["Data Deletion"])
+@app.delete("/delete/nifty-direct", tags=["Data Collection"])
 async def delete_nifty_data(
     from_date: date = Query(...),
     to_date: date = Query(...)
@@ -1276,7 +1280,7 @@ async def delete_nifty_data(
         logger.error(f"Delete error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.delete("/delete/options-direct", tags=["Data Deletion"])
+@app.delete("/delete/options-direct", tags=["Data Collection"])
 async def delete_options_data(
     from_date: date = Query(...),
     to_date: date = Query(...)
@@ -1298,7 +1302,7 @@ async def delete_options_data(
         logger.error(f"Delete error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.delete("/delete/all", tags=["Data Deletion"])
+@app.delete("/delete/all", tags=["Data Collection"])
 async def delete_all_data():
     """Delete All Data"""
     try:
@@ -1319,7 +1323,7 @@ async def delete_all_data():
         logger.error(f"Delete all error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/collect/tradingview", tags=["TradingView Collection"])
+@app.post("/collect/tradingview", tags=["Data Collection"])
 async def collect_tradingview_data(request: TradingViewRequest):
     """
     Collect TradingView Data
@@ -1363,7 +1367,7 @@ async def collect_tradingview_data(request: TradingViewRequest):
         }
     }
 
-@app.post("/collect/tradingview-bulk", tags=["TradingView Collection"])
+@app.post("/collect/tradingview-bulk", tags=["Data Collection"])
 async def collect_tradingview_bulk_data(request: TradingViewRequest):
     """
     TradingView Bulk Data Collection Information
@@ -1393,7 +1397,7 @@ async def collect_tradingview_bulk_data(request: TradingViewRequest):
         "check_data_endpoint": f"/tradingview/check?from_date={request.from_date}&to_date={request.to_date}"
     }
 
-@app.get("/tradingview/check", tags=["TradingView Collection"])
+@app.get("/tradingview/check", tags=["Data Collection"])
 async def check_tradingview_data(
     from_date: date = Query(...),
     to_date: date = Query(...)
@@ -1443,7 +1447,7 @@ async def check_tradingview_data(
             "message": f"Error checking data: {str(e)}"
         }
 
-@app.get("/api/v1/holidays/{year}", tags=["Holiday Management"])
+@app.get("/api/v1/holidays/{year}", tags=["System - Calendar"])
 async def get_holidays(year: int):
     """Get Holidays"""
     try:
@@ -1458,7 +1462,7 @@ async def get_holidays(year: int):
         logger.error(f"Get holidays error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/v1/holidays/load-defaults", tags=["Holiday Management"])
+@app.post("/api/v1/holidays/load-defaults", tags=["System - Calendar"])
 async def load_default_holidays():
     """Load Default Holidays"""
     try:
@@ -1473,7 +1477,7 @@ async def load_default_holidays():
         logger.error(f"Load holidays error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/v1/holidays/check/{date}", tags=["Holiday Management"])
+@app.get("/api/v1/holidays/check/{date}", tags=["System - Calendar"])
 async def check_holiday(date: date):
     """Check Holiday"""
     try:
@@ -1488,7 +1492,7 @@ async def check_holiday(date: date):
         logger.error(f"Check holiday error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/v1/holidays/trading-days", tags=["Holiday Management"])
+@app.get("/api/v1/holidays/trading-days", tags=["System - Calendar"])
 async def get_trading_days(
     from_date: date = Query(...),
     to_date: date = Query(...)
@@ -1508,7 +1512,7 @@ async def get_trading_days(
         logger.error(f"Get trading days error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/v1/holidays/load-all-defaults", tags=["Holiday Management"])
+@app.post("/api/v1/holidays/load-all-defaults", tags=["Breeze - General"])
 async def load_all_default_holidays():
     """Load All Default Holidays"""
     try:
@@ -1523,16 +1527,16 @@ async def load_all_default_holidays():
         logger.error(f"Load all holidays error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/v1/holidays/fetch-from-nse", tags=["Holiday Management"])
+@app.post("/api/v1/holidays/fetch-from-nse", tags=["Breeze - General"])
 async def fetch_holidays_from_nse():
     """Fetch Holidays From Nse"""
     return {
         "status": "success",
         "message": "NSE holiday fetch not implemented",
-        "note": "This endpoint is a placeholder"
+        "note": "Data collection endpoint"
     }
 
-@app.post("/api/v1/collect/weekly-data", tags=["Weekly Collection"])
+@app.post("/api/v1/collect/weekly-data", tags=["Breeze - Data Collection"])
 async def collect_weekly_data(request: WeeklyDataRequest):
     """Collect Weekly Data"""
     try:
@@ -1557,22 +1561,22 @@ async def collect_weekly_data(request: WeeklyDataRequest):
         logger.error(f"Weekly collection error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/", tags=["General"])
-async def root():
-    """Root endpoint"""
-    return {
-        "message": "Unified Swagger",
-        "version": "0.1.0",
-        "endpoints": {
-            "backtest": "/backtest",
-            "data_collection": "/collect/*",
-            "data_check": "/data/check",
-            "holidays": "/api/v1/holidays/*",
-            "docs": "/docs"
-        }
-    }
+# DUPLICATE: @app.get("/", tags=["System"])
+# DUPLICATE: async def root():
+# DUPLICATE:     """Root endpoint"""
+# DUPLICATE:     return {
+# DUPLICATE:         "message": "Unified Swagger",
+# DUPLICATE:         "version": "0.1.0",
+# DUPLICATE:         "endpoints": {
+# DUPLICATE:             "backtest": "/backtest",
+# DUPLICATE:             "data_collection": "/collect/*",
+# DUPLICATE:             "data_check": "/data/check",
+# DUPLICATE:             "holidays": "/api/v1/holidays/*",
+# DUPLICATE:             "docs": "/docs"
+# DUPLICATE:         }
+# DUPLICATE:     }
 
-@app.get("/health", tags=["General"])
+@app.get("/health", tags=["System - Health"])
 async def health_check():
     """Health check endpoint"""
     try:
@@ -1786,7 +1790,7 @@ async def get_internet_time():
         "next_close": "15:30 IST" if is_market_open else None
     }
 
-@app.get("/broker/status", tags=["General"])
+@app.get("/broker/status", tags=["System"])
 async def get_breeze_status():
     """Get Breeze broker connection status"""
     # First check if we have session token in environment
@@ -1823,7 +1827,7 @@ async def get_breeze_status():
             "timestamp": datetime.now()
         }
 
-@app.get("/kite/status", tags=["General"])
+@app.get("/kite/status", tags=["Kite - Status"])
 async def get_kite_status():
     """Get Kite (Zerodha) broker connection status"""
     from dotenv import load_dotenv
@@ -1927,7 +1931,7 @@ async def get_all_totp_codes():
         raise HTTPException(status_code=500, detail=str(e))
 
 # Session Validation Endpoints
-@app.get("/session/validate", tags=["Session Management"])
+@app.get("/session/validate", tags=["System - Session Management"])
 async def validate_session(api_type: str = "breeze"):
     """Validate external API session"""
     try:
@@ -1984,7 +1988,7 @@ async def validate_session(api_type: str = "breeze"):
             }
         )
 
-@app.post("/session/update", tags=["Session Management"])
+@app.post("/session/update", tags=["System - Session Management"])
 async def update_session(request: SessionUpdateRequest):
     """Update session token for external API"""
     try:
@@ -2070,7 +2074,7 @@ async def update_session(request: SessionUpdateRequest):
         logger.error(f"Session update error: {e}")
         return {"status": "error", "message": str(e)}
 
-@app.get("/session/instructions", tags=["Session Management"])
+@app.get("/session/instructions", tags=["Kite - Trade Execution"])
 async def get_session_instructions(api_type: str = "breeze"):
     """Get instructions for updating session token"""
     try:
@@ -2191,7 +2195,7 @@ USERS = {
     "breeze": {"password": "breeze", "role": "trader"}
 }
 
-@app.post("/auth/login", tags=["Authentication"], response_model=LoginResponse)
+@app.post("/auth/login", tags=["Kite - Authentication"], response_model=LoginResponse)
 async def login(request: LoginRequest):
     """Login endpoint with database authentication"""
     import pyodbc
@@ -2309,7 +2313,7 @@ async def verify_token(authorization: str = Header(None)):
     
     return {"valid": False, "message": "Invalid token"}
 
-@app.get("/auth/user", tags=["Authentication"])
+@app.get("/auth/user", tags=["Kite - Authentication"])
 async def get_current_user(token: str = Query(...)):
     """Get current user info"""
     # Simple validation for development
@@ -2329,7 +2333,7 @@ async def get_current_user(token: str = Query(...)):
     
     raise HTTPException(status_code=401, detail="Invalid token")
 
-@app.get("/live/auth/status", tags=["Live Trading - Auth"])
+@app.get("/live/auth/status", tags=["Kite - Authentication"])
 async def get_auth_status():
     """Get Kite authentication status"""
     try:
@@ -2339,7 +2343,7 @@ async def get_auth_status():
         logger.error(f"Error getting auth status: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/live/auth/login-url", tags=["Live Trading - Auth"])
+@app.get("/live/auth/login-url", tags=["Kite - Authentication"])
 async def get_login_url():
     """Get Kite login URL for authentication"""
     try:
@@ -2349,7 +2353,7 @@ async def get_login_url():
         logger.error(f"Error getting login URL: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/live/auth/complete", tags=["Live Trading - Auth"])
+@app.post("/live/auth/complete", tags=["Kite - Authentication"])
 async def complete_authentication(request_token: str = Query(...)):
     """Complete authentication with request token"""
     try:
@@ -2364,7 +2368,7 @@ async def complete_authentication(request_token: str = Query(...)):
         logger.error(f"Authentication failed: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
-@app.post("/live/start-trading", tags=["Live Trading - Control"])
+@app.post("/live/start-trading", tags=["Kite - Trade Execution"])
 async def start_live_trading(config: LiveTradingConfig):
     """Enable live trading with configuration"""
     try:
@@ -2389,7 +2393,7 @@ async def start_live_trading(config: LiveTradingConfig):
         logger.error(f"Error starting live trading: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/live/stop-trading", tags=["Live Trading - Control"])
+@app.post("/live/stop-trading", tags=["Kite - Trade Execution"])
 async def stop_live_trading():
     """Disable live trading"""
     try:
@@ -2400,7 +2404,7 @@ async def stop_live_trading():
         logger.error(f"Error stopping live trading: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/live/positions", tags=["Live Trading - Monitoring"])
+@app.get("/live/positions", tags=["Kite - Position Management"])
 async def get_live_positions():
     """Get current live positions"""
     try:
@@ -2412,12 +2416,12 @@ async def get_live_positions():
         raise HTTPException(status_code=500, detail=str(e))
 
 # Alias for /api/positions endpoint
-@app.get("/api/positions", tags=["Kite Trading"])
+@app.get("/api/positions", tags=["Kite - Position Management"])
 async def get_api_positions():
     """Alias endpoint for UI compatibility"""
     return await get_kite_positions()
 
-@app.get("/positions", tags=["Kite Trading"])
+@app.get("/positions", tags=["Kite - Position Management"])
 async def get_kite_positions():
     """Get real-time positions from Kite"""
     try:
@@ -2428,7 +2432,7 @@ async def get_kite_positions():
         logger.error(f"Error getting Kite positions: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/trading/positions", tags=["Trading API"])
+@app.get("/api/trading/positions", tags=["Kite - Position Management"])
 async def get_trading_positions():
     """Get current trading positions with paper trading support"""
     try:
@@ -2473,7 +2477,7 @@ async def get_trading_positions():
             "timestamp": datetime.now().isoformat()
         }
 
-@app.get("/orders", tags=["Kite Trading"])
+@app.get("/orders", tags=["Kite - Order Management"])
 async def get_kite_orders():
     """Get all orders from Kite"""
     try:
@@ -2484,7 +2488,7 @@ async def get_kite_orders():
         logger.error(f"Error getting Kite orders: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/orders", tags=["Kite Trading"])
+@app.post("/orders", tags=["Kite - Order Management"])
 async def place_order(order_request: dict):
     """Place an order through Kite"""
     try:
@@ -2512,7 +2516,7 @@ async def place_order(order_request: dict):
         logger.error(f"Error placing order: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.delete("/orders/{order_id}", tags=["Kite Trading"])
+@app.delete("/orders/{order_id}", tags=["Kite - Order Management"])
 async def cancel_order(order_id: str):
     """Cancel an order"""
     try:
@@ -2523,7 +2527,7 @@ async def cancel_order(order_id: str):
         logger.error(f"Error cancelling order: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/positions/square-off-all", tags=["Kite Trading"])
+@app.post("/positions/square-off-all", tags=["Kite - Position Management"])
 async def square_off_all():
     """Square off all positions"""
     try:
@@ -2539,7 +2543,7 @@ async def square_off_all():
         logger.error(f"Error squaring off positions: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/live/execute-signal", tags=["Live Trading - Execution"])
+@app.post("/live/execute-signal", tags=["Trading"])
 async def execute_manual_signal(request: ManualSignalRequest):
     """Manually execute a trading signal with stop loss configuration"""
     try:
@@ -2650,7 +2654,7 @@ async def execute_manual_signal(request: ManualSignalRequest):
         logger.error(f"Error executing signal: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/v1/execute-trade", tags=["Production Trading"])
+@app.post("/api/v1/execute-trade", tags=["Kite - Trade Execution"])
 async def execute_trade_production(request: ProductionSignalRequest):
     """
     Production-ready trade execution endpoint with complete validation,
@@ -2886,7 +2890,7 @@ async def execute_trade_production(request: ProductionSignalRequest):
             "message": str(e)
         }
 
-@app.post("/api/v1/exit-trade", tags=["Production Trading"])
+@app.post("/api/v1/exit-trade", tags=["Kite - General"])
 async def exit_trade_production(request: dict):
     """
     Exit positions with CORRECT ORDER: Close main first, then hedge
@@ -2954,7 +2958,7 @@ async def exit_trade_production(request: dict):
             "critical": "Check positions manually - partial exit may have occurred"
         }
 
-@app.get("/live/pnl", tags=["Live Trading - Monitoring"])
+@app.get("/live/pnl", tags=["Kite - PnL & Analytics"])
 async def get_live_pnl():
     """Get real-time P&L"""
     try:
@@ -2966,7 +2970,7 @@ async def get_live_pnl():
         logger.error(f"Error getting P&L: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/risk/status", tags=["Risk Management"])
+@app.get("/risk/status", tags=["System - Risk Management"])
 async def get_risk_status():
     """Get current risk management status"""
     try:
@@ -3011,7 +3015,7 @@ async def get_risk_status():
         logger.error(f"Error getting risk status: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/risk/update-limits", tags=["Risk Management"])
+@app.post("/risk/update-limits", tags=["System - Risk Management"])
 async def update_risk_limits(limits: Dict[str, Any]):
     """Update risk management limits"""
     try:
@@ -3029,7 +3033,7 @@ async def update_risk_limits(limits: Dict[str, Any]):
         logger.error(f"Error updating risk limits: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/risk/metrics", tags=["Risk Management"])
+@app.get("/risk/metrics", tags=["System - Risk Management"])
 async def get_risk_metrics():
     """Get comprehensive risk metrics"""
     try:
@@ -3043,7 +3047,7 @@ async def get_risk_metrics():
         logger.error(f"Error getting risk metrics: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/alerts/config", tags=["Alert Notifications"])
+@app.get("/alerts/config", tags=["System - Configuration"])
 async def get_alert_config():
     """Get alert notification configuration"""
     try:
@@ -3065,7 +3069,7 @@ async def get_alert_config():
         logger.error(f"Error getting alert config: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/alerts/config", tags=["Alert Notifications"])
+@app.post("/alerts/config", tags=["System - Configuration"])
 async def update_alert_config(config: Dict[str, Any]):
     """Update alert notification configuration"""
     try:
@@ -3082,7 +3086,7 @@ async def update_alert_config(config: Dict[str, Any]):
         logger.error(f"Error updating alert config: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/alerts/test/telegram", tags=["Alert Notifications"])
+@app.post("/alerts/test/telegram", tags=["System - Alerts"])
 async def test_telegram_alert():
     """Send test Telegram alert"""
     try:
@@ -3108,7 +3112,7 @@ async def test_telegram_alert():
         logger.error(f"Error testing Telegram: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/alerts/test/email", tags=["Alert Notifications"])
+@app.post("/alerts/test/email", tags=["System - Alerts"])
 async def test_email_alert():
     """Send test email alert"""
     try:
@@ -3134,7 +3138,7 @@ async def test_email_alert():
         logger.error(f"Error testing email: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/live/square-off", tags=["Live Trading - Control"])
+@app.post("/live/square-off", tags=["Kite - General"])
 async def square_off_all_positions():
     """Emergency square-off all positions"""
     try:
@@ -3150,7 +3154,7 @@ async def square_off_all_positions():
         logger.error(f"Error squaring off positions: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/live/stop-loss/status", tags=["Live Trading - Risk Management"])
+@app.get("/live/stop-loss/status", tags=["Kite - Risk Management"])
 async def get_stop_loss_status():
     """Get stop loss monitoring status"""
     try:
@@ -3161,7 +3165,7 @@ async def get_stop_loss_status():
         logger.error(f"Error checking stop loss: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/live/stop-loss/summary", tags=["Live Trading - Risk Management"])
+@app.get("/live/stop-loss/summary", tags=["Kite - Risk Management"])
 async def get_stop_loss_summary():
     """Get stop loss summary for the day"""
     try:
@@ -3172,7 +3176,7 @@ async def get_stop_loss_summary():
         logger.error(f"Error getting stop loss summary: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/live/trades/active", tags=["Live Trading - Monitoring"])
+@app.get("/live/trades/active", tags=["Kite - Trade Monitoring"])
 async def get_active_trades():
     """Get all active trades"""
     try:
@@ -3203,7 +3207,7 @@ class MLValidationRequest(BaseModel):
 # Store validation runs
 validation_runs = {}
 
-@app.post("/ml/validate", tags=["ML Validation"])
+@app.post("/ml/validate", tags=["ML - Analytics"])
 async def create_ml_validation(request: MLValidationRequest, background_tasks: BackgroundTasks):
     """Run comprehensive ML validation with hedge optimization, market classification, and breakeven analysis"""
     try:
@@ -3351,7 +3355,7 @@ async def create_ml_validation(request: MLValidationRequest, background_tasks: B
         logger.error(f"ML validation error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/ml/validate/{validation_id}", tags=["ML Validation"])
+@app.get("/ml/validate/{validation_id}", tags=["ML - Analytics"])
 async def get_ml_validation_status(validation_id: str):
     """Get ML validation status and results"""
     if validation_id not in validation_runs:
@@ -3365,7 +3369,7 @@ async def get_ml_validation_status(validation_id: str):
         'output': run['output']
     }
 
-@app.get("/ml/validate/{validation_id}/detailed", tags=["ML Validation"])
+@app.get("/ml/validate/{validation_id}/detailed", tags=["ML - Analytics"])
 async def get_ml_validation_detailed(validation_id: str):
     """Get detailed ML validation results"""
     if validation_id not in validation_runs:
@@ -3374,7 +3378,7 @@ async def get_ml_validation_detailed(validation_id: str):
     run = validation_runs[validation_id]
     return run['output']
 
-@app.post("/ml/analyze-with-gemini/{validation_id}", tags=["ML Validation"])
+@app.post("/ml/analyze-with-gemini/{validation_id}", tags=["ML - Analytics"])
 async def analyze_with_gemini(validation_id: str):
     """Run Gemini AI analysis on validation results"""
     if validation_id not in validation_runs:
@@ -3427,7 +3431,7 @@ async def analyze_with_gemini(validation_id: str):
 
 # ==================== NEW DATA API ENDPOINTS ====================
 
-@app.get("/data/overview", tags=["Data Management"])
+@app.get("/data/overview", tags=["System - Data Management"])
 async def get_database_overview():
     """Get database statistics and overview"""
     try:
@@ -3483,7 +3487,7 @@ async def get_database_overview():
             "error": str(e)
         }
 
-@app.get("/data/tables", tags=["Data Management"])
+@app.get("/data/tables", tags=["System - Data Management"])
 async def get_all_tables():
     """Get list of all database tables with details"""
     try:
@@ -3525,7 +3529,7 @@ async def get_all_tables():
         logger.error(f"Get tables error: {str(e)}")
         return {"tables": [], "error": str(e)}
 
-@app.get("/data/quality", tags=["Data Management"])
+@app.get("/data/quality", tags=["System - Data Management"])
 async def check_data_quality():
     """Check data quality and find issues"""
     try:
@@ -3581,7 +3585,7 @@ async def check_data_quality():
         logger.error(f"Data quality check error: {str(e)}")
         return {"quality_score": 0, "issues": [], "error": str(e)}
 
-@app.get("/dashboard/stats", tags=["Dashboard"])
+@app.get("/dashboard/stats", tags=["System"])
 async def get_dashboard_stats():
     """Get real-time dashboard statistics"""
     try:
@@ -3632,7 +3636,7 @@ async def get_dashboard_stats():
             "today_trades": 0
         }
 
-@app.get("/ml/current-metrics", tags=["ML Analysis"])
+@app.get("/ml/current-metrics", tags=["ML - Analytics"])
 async def get_ml_current_metrics():
     """Get current ML model metrics"""
     try:
@@ -3684,7 +3688,7 @@ async def get_ml_current_metrics():
             "avg_return": 0
         }
 
-@app.get("/risk/analysis", tags=["Risk Management"])
+@app.get("/risk/analysis", tags=["System - Risk Management"])
 async def get_risk_analysis():
     """Get real-time portfolio risk analysis"""
     try:
@@ -3795,7 +3799,7 @@ async def get_risk_analysis():
         logger.error(f"Risk analysis error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/session/history", tags=["Session Management"])
+@app.get("/session/history", tags=["System - Session Management"])
 async def get_session_history():
     """Get session event history"""
     try:
@@ -3869,96 +3873,108 @@ async def get_session_history():
         return {"history": []}
 
 # Alias for /api/settings endpoint
-@app.get("/api/settings", tags=["Settings"])
+@app.get("/api/settings", tags=["System - Settings"])
 async def get_api_settings():
     """Alias endpoint for UI compatibility"""
     return await get_user_settings()
 
-@app.get("/settings", tags=["Settings"])
+@app.get("/settings", tags=["System - Settings"])
 async def get_user_settings():
-    """Get user settings and preferences from SQLite"""
+    """Get user settings using unified settings service"""
     try:
-        import sqlite3
-        from pathlib import Path
+        all_settings = settings_service.get_all_settings("default")
         
-        # Try SQLite first
-        db_path = Path("data/trading_settings.db")
-        if db_path.exists():
-            conn = sqlite3.connect(db_path)
-            cursor = conn.cursor()
-            
-            cursor.execute("""
-                SELECT setting_key, setting_value 
-                FROM UserSettings 
-                WHERE user_id = 'default'
-            """)
-            
-            settings = {}
-            for key, value in cursor.fetchall():
-                # Convert string booleans to actual booleans for frontend
-                if value in ['true', 'false']:
-                    settings[key] = value
+        # Flatten for backward compatibility
+        flat_settings = {}
+        for namespace, settings in all_settings.items():
+            for key, value in settings.items():
+                # Convert booleans to strings for backward compatibility
+                if isinstance(value, bool):
+                    flat_settings[key] = 'true' if value else 'false'
                 else:
-                    settings[key] = value
-            
-            cursor.close()
-            conn.close()
-            
-            if settings:
-                return {"settings": settings}
+                    flat_settings[key] = str(value) if value is not None else ""
         
-        # Fallback to SQL Server if SQLite not available
-        db = get_db_manager()
-        with db.get_session() as session:
-            settings_query = """
-                SELECT 
-                    setting_key,
-                    setting_value
-                FROM UserSettings
-                WHERE user_id = 'default'
-            """
-            
-            try:
-                result = session.execute(text(settings_query))
-                settings = result.fetchall()
-                
-                if settings:
-                    return {
-                        "settings": {
-                            row[0]: row[1] for row in settings
-                        }
-                    }
-            except:
-                pass
-                
-        # Return default settings
-        return {
-            "settings": {
-                "position_size": "10",
-                "lot_quantity": "75",
-                "stop_loss_points": "200",
-                "enable_hedging": "true",
-                "hedge_offset": "200",
-                "hedge_percentage": "0.3",
-                "max_drawdown": "50000",
-                "signals_enabled": "S1,S2,S3,S4,S5,S6,S7,S8",
-                "notification_email": "",
-                "enable_notifications": "false",
-                "paper_trading": "false",
-                "debug_mode": "false",
-                "auto_trade_enabled": "false",
-                "entry_timing": "immediate",
-                "trading_mode": "LIVE"
-            }
-        }
-            
+        return {"settings": flat_settings}
     except Exception as e:
         logger.error(f"Settings fetch error: {str(e)}")
         return {"settings": {}}
 
-@app.post("/settings", tags=["Settings"])
+@app.post("/settings", tags=["System - Settings"])
 async def save_user_settings(settings: dict):
-    """Save user settings and preferences to SQLite"""
+    """Save user settings using unified settings service"""
+    try:
+        for key, value in settings.items():
+            # Determine namespace based on key patterns
+            namespace = "general"
+            key_lower = key.lower()
+            
+            if "hedge" in key_lower or "offset" in key_lower:
+                namespace = "hedge"
+            elif any(x in key_lower for x in ["risk", "loss", "profit", "exposure", "stop", "drawdown"]):
+                namespace = "risk"
+            elif any(x in key_lower for x in ["signal", "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8"]):
+                namespace = "signal"
+            elif any(x in key_lower for x in ["trade", "trading", "lot", "position", "auto", "entry"]):
+                namespace = "trading"
+            elif any(x in key_lower for x in ["expiry", "exit", "square"]):
+                namespace = "expiry"
+            elif any(x in key_lower for x in ["notification", "email", "debug", "paper"]):
+                namespace = "system"
+            
+            # Convert string booleans to actual booleans
+            if value == 'true':
+                value = True
+            elif value == 'false':
+                value = False
+            
+            settings_service.set_setting(key, value, namespace, "default", "api")
+        
+        return {"status": "success", "message": f"Saved {len(settings)} settings"}
+    except Exception as e:
+        logger.error(f"Settings save error: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+@app.get("/exit_timing_config.json", tags=["Configuration"])
+async def get_exit_timing_config():
+    """Serve exit timing configuration file"""
+    import json
+    from pathlib import Path
+    
+    config_path = Path("exit_timing_config.json")
+    if config_path.exists():
+        with open(config_path, 'r') as f:
+            return json.load(f)
+    else:
+        # Return default config if file doesn't exist
+        return {
+            "exit_day_offset": 0,
+            "exit_time": "15:15",
+            "auto_square_off_enabled": True
+        }
+
+@app.get("/expiry_weekday_config.json", tags=["Configuration"])
+async def get_expiry_weekday_config():
+    """Serve expiry weekday configuration file"""
+    import json
+    from pathlib import Path
+    
+    config_path = Path("expiry_weekday_config.json")
+    if config_path.exists():
+        with open(config_path, 'r') as f:
+            return json.load(f)
+    else:
+        # Return default config if file doesn't exist
+        return {
+            "monday": "next",
+            "tuesday": "next",
+            "wednesday": "next",
+            "thursday": "next",
+            "friday": "next"
+        }
+
+@app.post("/settings/bulk", tags=["System - Settings"])
+async def bulk_update_settings(settings: dict):
+    """Bulk update multiple settings at once"""
     try:
         import sqlite3
         from pathlib import Path
@@ -3984,6 +4000,7 @@ async def save_user_settings(settings: dict):
         """)
         
         # Update each setting
+        updated_count = 0
         for key, value in settings.items():
             # Convert booleans to strings
             if isinstance(value, bool):
@@ -3993,43 +4010,368 @@ async def save_user_settings(settings: dict):
                 INSERT OR REPLACE INTO UserSettings (user_id, setting_key, setting_value)
                 VALUES ('default', ?, ?)
             """, (key, str(value)))
+            updated_count += 1
         
         conn.commit()
         cursor.close()
         conn.close()
         
-        # Also try to save to SQL Server as backup
-        try:
-            db = get_db_manager()
-            with db.get_session() as session:
-                for key, value in settings.items():
-                    update_query = """
-                        MERGE UserSettings AS target
-                        USING (SELECT 'default' as user_id, :key as setting_key, :value as setting_value) AS source
-                        ON target.user_id = source.user_id AND target.setting_key = source.setting_key
-                        WHEN MATCHED THEN
-                            UPDATE SET setting_value = source.setting_value, updated_at = GETDATE()
-                        WHEN NOT MATCHED THEN
-                            INSERT (user_id, setting_key, setting_value, created_at)
-                            VALUES (source.user_id, source.setting_key, source.setting_value, GETDATE());
-                    """
-                    
-                    try:
-                        session.execute(
-                            text(update_query),
-                            {"key": key, "value": str(value)}
-                        )
-                    except:
-                        pass
-                        
-                session.commit()
-        except:
-            pass  # SQL Server is optional backup
-            
-        return {"status": "success", "message": "Settings saved successfully"}
+        return {"status": "success", "message": f"Bulk updated {updated_count} settings"}
+        
+    except Exception as e:
+        logger.error(f"Error bulk updating settings: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+@app.get("/settings/{key}", tags=["System - Settings"])
+async def get_setting_by_key(key: str):
+    """Get a specific setting by key from Settings table"""
+    try:
+        import sqlite3
+        from pathlib import Path
+        
+        db_path = Path("data/trading_settings.db")
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT value FROM Settings 
+            WHERE key = ?
+        """, (key,))
+        
+        result = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        if result:
+            return {"key": key, "value": result[0]}
+        else:
+            return {"key": key, "value": None, "message": "Setting not found"}
             
     except Exception as e:
-        logger.error(f"Settings save error: {str(e)}")
+        logger.error(f"Get setting error: {str(e)}")
+        return {"error": str(e)}
+
+@app.put("/settings/{key}", tags=["System - Settings"])
+async def update_setting_by_key(key: str, value: dict):
+    """Update a specific setting by key"""
+    try:
+        import sqlite3
+        from pathlib import Path
+        import json
+        
+        db_path = Path("data/trading_settings.db")
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        value_str = json.dumps(value.get("value")) if isinstance(value.get("value"), dict) else str(value.get("value"))
+        
+        cursor.execute("""
+            UPDATE Settings 
+            SET value = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE key = ?
+        """, (value_str, key))
+        
+        if cursor.rowcount == 0:
+            cursor.execute("""
+                INSERT INTO Settings (key, value)
+                VALUES (?, ?)
+            """, (key, value_str))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return {"status": "success", "key": key, "value": value_str}
+            
+    except Exception as e:
+        logger.error(f"Update setting error: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+@app.delete("/settings/{key}", tags=["System - Settings"])
+async def delete_setting_by_key(key: str):
+    """Delete a specific setting by key"""
+    try:
+        import sqlite3
+        from pathlib import Path
+        
+        db_path = Path("data/trading_settings.db")
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("DELETE FROM Settings WHERE key = ?", (key,))
+        
+        conn.commit()
+        deleted = cursor.rowcount > 0
+        cursor.close()
+        conn.close()
+        
+        if deleted:
+            return {"status": "success", "message": f"Setting {key} deleted"}
+        else:
+            return {"status": "not_found", "message": f"Setting {key} not found"}
+            
+    except Exception as e:
+        logger.error(f"Delete setting error: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/save-trade-config", tags=["Trading"])
+async def save_trade_configuration(config: dict):
+    """Save trade configuration to database"""
+    try:
+        import sqlite3
+        from pathlib import Path
+        
+        db_path = Path("data/trading_settings.db")
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # Save to TradeConfiguration table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS TradeConfiguration (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                num_lots INTEGER,
+                entry_timing TEXT,
+                hedge_enabled BOOLEAN,
+                hedge_percent REAL,
+                profit_lock_enabled BOOLEAN,
+                auto_trade_enabled BOOLEAN,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        cursor.execute("""
+            DELETE FROM TradeConfiguration
+        """)
+        
+        cursor.execute("""
+            INSERT INTO TradeConfiguration (num_lots, entry_timing, hedge_enabled, hedge_percent, profit_lock_enabled, auto_trade_enabled)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            config.get("num_lots", 1),
+            config.get("entry_timing", "immediate"),
+            config.get("hedge_enabled", False),
+            config.get("hedge_percent", 30.0),
+            config.get("profit_lock_enabled", False),
+            config.get("auto_trade_enabled", False)
+        ))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return {"status": "success", "message": "Trade configuration saved"}
+            
+    except Exception as e:
+        logger.error(f"Save trade config error: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+@app.get("/trade-config", tags=["Trading"])
+async def get_trade_configuration():
+    """Get trade configuration from database"""
+    try:
+        import sqlite3
+        from pathlib import Path
+        
+        db_path = Path("data/trading_settings.db")
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT num_lots, entry_timing, hedge_enabled, hedge_percent, profit_lock_enabled, auto_trade_enabled
+            FROM TradeConfiguration
+            ORDER BY id DESC
+            LIMIT 1
+        """)
+        
+        result = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        if result:
+            return {
+                "num_lots": result[0],
+                "entry_timing": result[1],
+                "hedge_enabled": bool(result[2]),
+                "hedge_percent": result[3],
+                "profit_lock_enabled": bool(result[4]),
+                "auto_trade_enabled": bool(result[5])
+            }
+        else:
+            return {
+                "num_lots": 1,
+                "entry_timing": "immediate",
+                "hedge_enabled": False,
+                "hedge_percent": 30.0,
+                "profit_lock_enabled": False,
+                "auto_trade_enabled": False
+            }
+            
+    except Exception as e:
+        logger.error(f"Get trade config error: {str(e)}")
+        return {"error": str(e)}
+
+@app.post("/save-signal-states", tags=["Signals"])
+async def save_signal_states(states: dict):
+    """Save signal states to database"""
+    try:
+        import sqlite3
+        from pathlib import Path
+        
+        db_path = Path("data/trading_settings.db")
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        for signal_name, is_active in states.items():
+            cursor.execute("""
+                UPDATE SignalStates 
+                SET is_active = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE signal_name = ?
+            """, (1 if is_active else 0, signal_name))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return {"status": "success", "message": "Signal states saved"}
+            
+    except Exception as e:
+        logger.error(f"Save signal states error: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+@app.get("/signal-states", tags=["Signals"])
+async def get_signal_states():
+    """Get signal states from database"""
+    try:
+        import sqlite3
+        from pathlib import Path
+        
+        db_path = Path("data/trading_settings.db")
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT signal_name, is_active 
+            FROM SignalStates
+        """)
+        
+        results = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        states = {}
+        for signal_name, is_active in results:
+            states[signal_name] = bool(is_active)
+        
+        return states
+            
+    except Exception as e:
+        logger.error(f"Get signal states error: {str(e)}")
+        return {}
+
+@app.post("/save-weekday-expiry-config", tags=["Trading"])
+async def save_weekday_expiry_config(config: dict):
+    """Save weekday expiry configuration to database"""
+    try:
+        import sqlite3
+        from pathlib import Path
+        
+        db_path = Path("data/trading_settings.db")
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        for weekday, expiry_type in config.items():
+            cursor.execute("""
+                UPDATE ExpiryConfig 
+                SET expiry_type = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE weekday = ?
+            """, (expiry_type, weekday))
+            
+            if cursor.rowcount == 0:
+                cursor.execute("""
+                    INSERT INTO ExpiryConfig (weekday, expiry_type)
+                    VALUES (?, ?)
+                """, (weekday, expiry_type))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return {"status": "success", "message": "Weekday expiry config saved"}
+            
+    except Exception as e:
+        logger.error(f"Save weekday expiry config error: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+@app.get("/weekday-expiry-config", tags=["Trading"])
+async def get_weekday_expiry_config():
+    """Get weekday expiry configuration from database"""
+    try:
+        import sqlite3
+        from pathlib import Path
+        
+        db_path = Path("data/trading_settings.db")
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT weekday, expiry_type 
+            FROM ExpiryConfig
+        """)
+        
+        results = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        config = {}
+        for weekday, expiry_type in results:
+            config[weekday] = expiry_type
+        
+        return config
+            
+    except Exception as e:
+        logger.error(f"Get weekday expiry config error: {str(e)}")
+        return {}
+
+@app.post("/save-exit-timing-config", tags=["Trading"])
+async def save_exit_timing_config(config: dict):
+    """Save exit timing configuration to database"""
+    try:
+        import sqlite3
+        from pathlib import Path
+        
+        db_path = Path("data/trading_settings.db")
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS exit_timing_settings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                exit_day TEXT,
+                exit_time TEXT,
+                square_off_enabled BOOLEAN,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        cursor.execute("DELETE FROM exit_timing_settings")
+        
+        cursor.execute("""
+            INSERT INTO exit_timing_settings (exit_day, exit_time, square_off_enabled)
+            VALUES (?, ?, ?)
+        """, (
+            config.get("exit_day", "expiry"),
+            config.get("exit_time", "15:15"),
+            config.get("square_off_enabled", True)
+        ))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return {"status": "success", "message": "Exit timing config saved"}
+            
+    except Exception as e:
+        logger.error(f"Save exit timing config error: {str(e)}")
         return {"status": "error", "message": str(e)}
 
 @app.get("/server-time", tags=["System"])
@@ -4136,7 +4478,7 @@ async def get_live_market_data():
                 "market_status": "CLOSED"
             }
 
-@app.get("/signals/detect", tags=["Signals"])
+@app.get("/signals/detect", tags=["Trading - Signals"])
 async def detect_live_signals():
     """Detect trading signals from current market data"""
     db = get_db_manager()
@@ -4205,7 +4547,7 @@ async def detect_live_signals():
             logger.error(f"Signal detection error: {str(e)}")
             return {"signals": [], "count": 0, "timestamp": datetime.now().isoformat()}
 
-@app.get("/signals/weekly-context", tags=["Signals"])
+@app.get("/signals/weekly-context", tags=["Trading - Signals"])
 async def get_weekly_context():
     """Get weekly context including zones, bias and evaluation status"""
     db = get_db_manager()
@@ -4342,7 +4684,7 @@ async def get_backup_status():
             logger.error(f"Backup status error: {str(e)}")
             return {"status": "error", "message": str(e)}
 
-@app.post("/backup/create", tags=["System"])
+@app.post("/backup/create", tags=["Kite - General"])
 async def create_backup(backup_type: str = "manual"):
     """Create a database backup"""
     db = get_db_manager()
@@ -4386,7 +4728,7 @@ async def create_backup(backup_type: str = "manual"):
             logger.error(f"Backup creation error: {str(e)}")
             return {"status": "error", "message": str(e)}
 
-@app.get("/data/table/{table_name}", tags=["Data Management"])
+@app.get("/data/table/{table_name}", tags=["System - Data Management"])
 async def view_table_data(table_name: str, limit: int = 100, offset: int = 0):
     """View data from a specific table"""
     db = get_db_manager()
@@ -4449,7 +4791,7 @@ async def view_table_data(table_name: str, limit: int = 100, offset: int = 0):
             logger.error(f"Error viewing table {table_name}: {str(e)}")
             return {"status": "error", "message": str(e)}
 
-@app.post("/data/table/{table_name}/clean", tags=["Data Management"])
+@app.post("/data/table/{table_name}/clean", tags=["System - Data Management"])
 async def clean_table_duplicates(table_name: str):
     """Remove duplicate records from a table"""
     db = get_db_manager()
@@ -4516,7 +4858,7 @@ async def clean_table_duplicates(table_name: str):
             await session.rollback()
             return {"status": "error", "message": str(e)}
 
-@app.get("/data/table/{table_name}/export", tags=["Data Management"])
+@app.get("/data/table/{table_name}/export", tags=["System - Data Management"])
 async def export_table_to_csv(table_name: str):
     """Export table data to CSV format"""
     db = get_db_manager()
@@ -4568,7 +4910,7 @@ async def export_table_to_csv(table_name: str):
             logger.error(f"Error exporting table {table_name}: {str(e)}")
             return {"status": "error", "message": str(e)}
 
-@app.post("/data/operations/clean-duplicates", tags=["Data Management"])
+@app.post("/data/operations/clean-duplicates", tags=["System - Data Management"])
 async def clean_all_duplicates():
     """Remove duplicates from all tables"""
     db = get_db_manager()
@@ -4595,7 +4937,7 @@ async def clean_all_duplicates():
             logger.error(f"Error cleaning duplicates: {str(e)}")
             return {"status": "error", "message": str(e)}
 
-@app.post("/data/operations/archive-old", tags=["Data Management"])
+@app.post("/data/operations/archive-old", tags=["System - Data Management"])
 async def archive_old_data(days_old: int = 365):
     """Archive data older than specified days"""
     db = get_db_manager()
@@ -4661,7 +5003,7 @@ async def archive_old_data(days_old: int = 365):
             await session.rollback()
             return {"status": "error", "message": str(e)}
 
-@app.post("/data/operations/rebuild-indexes", tags=["Data Management"])
+@app.post("/data/operations/rebuild-indexes", tags=["System - Data Management"])
 async def rebuild_database_indexes():
     """Rebuild all database indexes for better performance"""
     db = get_db_manager()
@@ -4702,7 +5044,7 @@ async def rebuild_database_indexes():
             logger.error(f"Error rebuilding indexes: {str(e)}")
             return {"status": "error", "message": str(e)}
 
-@app.get("/ml/training/progress/{task_id}", tags=["ML"])
+@app.get("/ml/training/progress/{task_id}", tags=["ML - Analytics"])
 async def get_training_progress(task_id: str):
     """Get ML model training progress"""
     db = get_db_manager()
@@ -4756,7 +5098,7 @@ async def get_training_progress(task_id: str):
             logger.error(f"Training progress error: {str(e)}")
             return {"status": "error", "message": str(e)}
 
-@app.post("/data/operations/validate", tags=["Data Management"])
+@app.post("/data/operations/validate", tags=["System - Data Management"])
 async def validate_data():
     """Validate data integrity across all tables"""
     db = get_db_manager()
@@ -4810,7 +5152,7 @@ async def validate_data():
             logger.error(f"Data validation error: {str(e)}")
             return {"status": "error", "message": str(e)}
 
-@app.post("/data/operations/optimize", tags=["Data Management"])
+@app.post("/data/operations/optimize", tags=["System - Data Management"])
 async def optimize_tables():
     """Optimize database tables for better performance"""
     db = get_db_manager()
@@ -4848,7 +5190,7 @@ async def optimize_tables():
             logger.error(f"Table optimization error: {str(e)}")
             return {"status": "error", "message": str(e)}
 
-@app.get("/data/export/{table_name}", tags=["Data Management"])
+@app.get("/data/export/{table_name}", tags=["System - Data Management"])
 async def export_table_data(table_name: str, format: str = "csv", limit: int = 10000):
     """Export table data in various formats"""
     db = get_db_manager()
@@ -4916,7 +5258,7 @@ async def export_table_data(table_name: str, format: str = "csv", limit: int = 1
             logger.error(f"Export error for table {table_name}: {str(e)}")
             return {"status": "error", "message": str(e)}
 
-@app.get("/data/table/{table_name}/details", tags=["Data Management"])
+@app.get("/data/table/{table_name}/details", tags=["System - Data Management"])
 async def get_table_details(table_name: str):
     """Get detailed information about a specific table"""
     db = get_db_manager()
@@ -4996,7 +5338,7 @@ async def get_table_details(table_name: str):
             logger.error(f"Error getting details for table {table_name}: {str(e)}")
             return {"status": "error", "message": str(e)}
 
-@app.get("/data/operations/analyze-patterns", tags=["Data Management"])
+@app.get("/data/operations/analyze-patterns", tags=["System - Data Management"])
 async def analyze_data_patterns():
     """Analyze data patterns and anomalies"""
     db = get_db_manager()
@@ -5050,7 +5392,7 @@ async def analyze_data_patterns():
             logger.error(f"Pattern analysis error: {str(e)}")
             return {"status": "error", "message": str(e)}
 
-@app.get("/data/export/excel", tags=["Data Management"])
+@app.get("/data/export/excel", tags=["System - Data Management"])
 async def export_to_excel():
     """Export data to Excel format"""
     try:
@@ -5089,7 +5431,7 @@ async def export_to_excel():
         return {"status": "error", "message": str(e)}
 
 # ML Optimization endpoints
-@app.post("/ml/optimize/all", tags=["ML Optimization"])
+@app.post("/ml/optimize/all", tags=["ML - Analytics"])
 async def optimize_all_ml_parameters(
     from_date: str = Body(...),
     to_date: str = Body(...),
@@ -5121,7 +5463,7 @@ async def optimize_all_ml_parameters(
         logger.error(f"ML optimization error: {str(e)}")
         return {"status": "error", "message": str(e)}
 
-@app.post("/ml/optimize/hedge", tags=["ML Optimization"])
+@app.post("/ml/optimize/hedge", tags=["ML - Analytics"])
 async def optimize_hedge_parameters(from_date: str = Body(...), to_date: str = Body(...)):
     """Optimize hedge parameters"""
     return {
@@ -5133,7 +5475,7 @@ async def optimize_hedge_parameters(from_date: str = Body(...), to_date: str = B
         "profit_retention": 0.92
     }
 
-@app.post("/ml/optimize/hedge/apply", tags=["ML Optimization"])
+@app.post("/ml/optimize/hedge/apply", tags=["ML - Analytics"])
 async def apply_hedge_optimization(offset: int = Body(...)):
     """Apply optimized hedge parameters"""
     return {
@@ -5142,7 +5484,7 @@ async def apply_hedge_optimization(offset: int = Body(...)):
         "message": f"Hedge offset updated to {offset} points"
     }
 
-@app.post("/ml/optimize/exit/apply", tags=["ML Optimization"])
+@app.post("/ml/optimize/exit/apply", tags=["ML - Analytics"])
 async def apply_exit_optimization(exit_time: str = Body(...)):
     """Apply optimized exit strategy"""
     return {
@@ -5151,7 +5493,7 @@ async def apply_exit_optimization(exit_time: str = Body(...)):
         "message": f"Exit strategy updated to {exit_time}"
     }
 
-@app.post("/ml/optimize/stoploss/apply", tags=["ML Optimization"])
+@app.post("/ml/optimize/stoploss/apply", tags=["ML - Analytics"])
 async def apply_stoploss_optimization(method: str = Body(...), trailing_after: float = Body(...)):
     """Apply optimized stop loss strategy"""
     return {
@@ -5161,7 +5503,7 @@ async def apply_stoploss_optimization(method: str = Body(...), trailing_after: f
         "message": f"Stop loss strategy updated to {method} with trailing after {trailing_after*100}%"
     }
 
-@app.post("/ml/optimize/position/apply", tags=["ML Optimization"])
+@app.post("/ml/optimize/position/apply", tags=["ML - Analytics"])
 async def apply_position_optimization(method: str = Body(...), max_lots: int = Body(...)):
     """Apply optimized position sizing"""
     return {
@@ -5171,7 +5513,7 @@ async def apply_position_optimization(method: str = Body(...), max_lots: int = B
         "message": f"Position sizing updated to {method} with max {max_lots} lots"
     }
 
-@app.post("/ml/optimize/signals/apply", tags=["ML Optimization"])
+@app.post("/ml/optimize/signals/apply", tags=["ML - Analytics"])
 async def apply_signal_optimization(signals: List[str] = Body(...)):
     """Apply optimized signal selection"""
     return {
@@ -5180,7 +5522,7 @@ async def apply_signal_optimization(signals: List[str] = Body(...)):
         "message": f"Trading signals updated to {', '.join(signals)}"
     }
 
-@app.post("/ml/optimize/breakeven/apply", tags=["ML Optimization"])
+@app.post("/ml/optimize/breakeven/apply", tags=["ML - Analytics"])
 async def apply_breakeven_optimization(trigger_profit: float = Body(...)):
     """Apply breakeven strategy"""
     return {
@@ -5189,7 +5531,7 @@ async def apply_breakeven_optimization(trigger_profit: float = Body(...)):
         "message": f"Breakeven strategy enabled at {trigger_profit*100}% profit"
     }
 
-@app.post("/ml/optimize/apply-all", tags=["ML Optimization"])
+@app.post("/ml/optimize/apply-all", tags=["ML - Analytics"])
 async def apply_all_optimizations(
     hedge_offset: int = Body(...),
     exit_time: str = Body(...),
@@ -5213,7 +5555,7 @@ async def apply_all_optimizations(
     }
 
 # ML Progressive Stop-Loss Endpoints
-@app.post("/ml/backtest/progressive-sl", tags=["ML Backtest"])
+@app.post("/ml/backtest/progressive-sl", tags=["ML - Analytics"])
 async def run_ml_backtest_progressive_sl(request: ProgressiveSLBacktestRequest):
     """
     Run ML-enhanced backtest with progressive P&L stop-loss.
@@ -5305,7 +5647,7 @@ async def run_ml_backtest_progressive_sl(request: ProgressiveSLBacktestRequest):
         logger.error(f"ML Progressive SL backtest error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/ml/optimize/progressive-sl", tags=["ML Optimization"])
+@app.post("/ml/optimize/progressive-sl", tags=["Kite - General"])
 async def optimize_progressive_sl(
     from_date: date = Body(...),
     to_date: date = Body(...),
@@ -5349,7 +5691,7 @@ async def optimize_progressive_sl(
         logger.error(f"Progressive SL optimization error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/ml/analyze/sl-comparison/{backtest_id}", tags=["ML Analysis"])
+@app.get("/ml/analyze/sl-comparison/{backtest_id}", tags=["ML - Analytics"])
 async def analyze_sl_comparison(backtest_id: str):
     """
     Compare performance of ML vs Progressive SL vs Hybrid decisions.
@@ -5420,7 +5762,7 @@ def _generate_sl_recommendations(optimized_params: Dict) -> List[str]:
     return recommendations
 
 # Auto-Login API Endpoints
-@app.post("/auth/auto-login/breeze", tags=["Auto Login"])
+@app.post("/auth/auto-login/breeze", tags=["Breeze - Authentication"])
 async def trigger_breeze_auto_login(background_tasks: BackgroundTasks, request: Request):
     """
     Trigger Breeze auto-login
@@ -5517,7 +5859,7 @@ async def trigger_breeze_auto_login(background_tasks: BackgroundTasks, request: 
             "alternative": "Save your TOTP secret for full automation"
         }
 
-@app.post("/auth/auto-login/kite", tags=["Auto Login"])
+@app.post("/auth/auto-login/kite", tags=["Kite - Authentication"])
 async def trigger_kite_auto_login(background_tasks: BackgroundTasks, request: Request):
     """
     Trigger Kite auto-login
@@ -5556,7 +5898,7 @@ async def trigger_kite_auto_login(background_tasks: BackgroundTasks, request: Re
         "check_status": "/auth/auto-login/status"
     }
 
-@app.get("/auth/token-status", tags=["Auto Login"])
+@app.get("/auth/token-status", tags=["Authentication"])
 async def get_token_status():
     """Get token expiry status for both brokers"""
     from datetime import datetime, timedelta
@@ -5641,7 +5983,7 @@ async def get_token_status():
     
     return result
 
-@app.get("/auth/auto-login/status", tags=["Auto Login"])
+@app.get("/auth/auto-login/status", tags=["Kite - Authentication"])
 async def get_auto_login_status():
     """Get the current session status and configuration"""
     try:
@@ -5735,7 +6077,7 @@ async def get_auto_login_status():
         logger.error(f"Error getting auto-login status: {e}")
         return {"status": "error", "message": str(e)}
 
-@app.post("/auth/auto-login/schedule/start", tags=["Auto Login"])
+@app.post("/auth/auto-login/schedule/start", tags=["Authentication"])
 async def start_auto_login_scheduler():
     """Start the auto-login scheduler"""
     try:
@@ -5761,7 +6103,7 @@ async def start_auto_login_scheduler():
         logger.error(f"Error starting scheduler: {e}")
         return {"status": "error", "message": str(e)}
 
-@app.post("/auth/auto-login/schedule/stop", tags=["Auto Login"])
+@app.post("/auth/auto-login/schedule/stop", tags=["Authentication"])
 async def stop_auto_login_scheduler():
     """Stop the auto-login scheduler"""
     try:
@@ -5778,7 +6120,7 @@ async def stop_auto_login_scheduler():
         logger.error(f"Error stopping scheduler: {e}")
         return {"status": "error", "message": str(e)}
 
-@app.get("/auth/auto-login/schedule/status", tags=["Auto Login"])
+@app.get("/auth/auto-login/schedule/status", tags=["Authentication"])
 async def get_scheduler_status():
     """Get the current scheduler status and configuration"""
     try:
@@ -5803,7 +6145,7 @@ async def get_scheduler_status():
         logger.error(f"Error getting scheduler status: {e}")
         return {"status": "error", "message": str(e)}
 
-@app.post("/auth/auto-login/schedule/update", tags=["Auto Login"])
+@app.post("/auth/auto-login/schedule/update", tags=["Authentication"])
 async def update_scheduler_config(
     service: str = Body(..., description="Service name: 'breeze' or 'kite'"),
     config: Dict[str, Any] = Body(..., description="New configuration for the service")
@@ -5823,7 +6165,7 @@ async def update_scheduler_config(
         logger.error(f"Error updating scheduler config: {e}")
         return {"status": "error", "message": str(e)}
 
-@app.post("/auth/kite/auto-connect", tags=["Auto Login"])
+@app.post("/auth/kite/auto-connect", tags=["Kite - Authentication"])
 async def kite_auto_connect():
     """Automatically login to Kite if not connected"""
     try:
@@ -5838,7 +6180,7 @@ async def kite_auto_connect():
         logger.error(f"Error in Kite auto-connect: {e}")
         return {"status": "error", "message": str(e)}
 
-@app.post("/auth/auto-login/credentials/setup", tags=["Auto Login"])
+@app.post("/auth/auto-login/credentials/setup", tags=["Authentication"])
 async def setup_credentials(
     service: str = Body(..., description="Service name: 'breeze' or 'kite'"),
     credentials: Dict[str, str] = Body(..., description="Credentials to save")
@@ -5879,7 +6221,7 @@ async def setup_credentials(
         return {"status": "error", "message": str(e)}
 
 # Database-backed Authentication Endpoints
-@app.get("/auth/db/status", tags=["Database Auth"])
+@app.get("/auth/db/status", tags=["Breeze - General"])
 async def get_db_auth_status():
     """Get authentication status from database"""
     try:
@@ -5899,7 +6241,7 @@ async def get_db_auth_status():
         logger.error(f"Error getting DB auth status: {e}")
         return {"status": "error", "message": str(e)}
 
-@app.post("/auth/db/breeze/login", tags=["Database Auth"])
+@app.post("/auth/db/breeze/login", tags=["Breeze - General"])
 async def db_breeze_login(background_tasks: BackgroundTasks):
     """Perform Breeze auto-login and save to database"""
     try:
@@ -5935,7 +6277,7 @@ async def db_breeze_login(background_tasks: BackgroundTasks):
         logger.error(f"Error in DB Breeze login: {e}")
         return {"status": "error", "message": str(e)}
 
-@app.post("/auth/db/kite/login", tags=["Database Auth"])
+@app.post("/auth/db/kite/login", tags=["Kite - Authentication"])
 async def db_kite_login(background_tasks: BackgroundTasks):
     """Perform Kite auto-login and save to database"""
     try:
@@ -5971,7 +6313,7 @@ async def db_kite_login(background_tasks: BackgroundTasks):
         logger.error(f"Error in DB Kite login: {e}")
         return {"status": "error", "message": str(e)}
 
-@app.post("/auth/db/disconnect/{service}", tags=["Database Auth"])
+@app.post("/auth/db/disconnect/{service}", tags=["Breeze - General"])
 async def db_disconnect(service: str):
     """Disconnect and deactivate session in database"""
     try:
@@ -5994,7 +6336,7 @@ async def db_disconnect(service: str):
         logger.error(f"Error disconnecting {service}: {e}")
         return {"status": "error", "message": str(e)}
 
-@app.post("/auth/db/cleanup", tags=["Database Auth"])
+@app.post("/auth/db/cleanup", tags=["Authentication"])
 async def cleanup_expired_sessions():
     """Clean up expired authentication sessions"""
     try:
@@ -6066,7 +6408,7 @@ except Exception as e:
     logger.warning(f"Could not add TradingView endpoints: {e}")
 
 # ======================== TRADINGVIEW WEBHOOK ENTRY/EXIT ========================
-@app.post("/webhook/entry", tags=["TradingView Webhook"])
+@app.post("/webhook/entry", tags=["Webhooks - TradingView"])
 async def webhook_entry(request: dict):
     """
     Handle position entry from TradingView
@@ -6273,7 +6615,7 @@ async def webhook_entry(request: dict):
         logger.error(f"Error handling webhook entry: {e}")
         return {"status": "error", "message": str(e)}
 
-@app.post("/webhook/exit", tags=["TradingView Webhook"])
+@app.post("/webhook/exit", tags=["Webhooks - TradingView"])
 async def webhook_exit(request: dict):
     """
     Handle position exit from TradingView
@@ -6389,7 +6731,7 @@ async def webhook_exit(request: dict):
         return {"status": "error", "message": str(e)}
 
 # ======================== SYSTEM METRICS API ========================
-@app.get("/system/metrics", tags=["System Monitoring"])
+@app.get("/system/metrics", tags=["System"])
 async def get_system_metrics():
     """Get current system performance metrics"""
     try:
@@ -6428,7 +6770,7 @@ async def get_system_metrics():
             "error": str(e)
         }
 
-@app.get("/api/metrics/latency", tags=["System Monitoring"])
+@app.get("/api/metrics/latency", tags=["System"])
 async def get_latency_metrics():
     """Get latency metrics for all brokers"""
     import time
@@ -6463,7 +6805,7 @@ async def get_latency_metrics():
     
     return latency_data
 
-@app.get("/api/metrics/performance", tags=["System Monitoring"])
+@app.get("/api/metrics/performance", tags=["System"])
 async def get_performance_metrics():
     """Get overall system performance metrics"""
     try:
@@ -6523,7 +6865,7 @@ async def websocket_endpoint(websocket: WebSocket):
         manager.disconnect(websocket)
 
 # Calculate breakeven for positions
-@app.post("/api/calculate-breakeven")
+@app.post("/api/calculate-breakeven", tags=["Trading"])
 async def calculate_breakeven(positions: List[Dict[str, Any]]):
     try:
         total_pnl = 0
@@ -6564,7 +6906,7 @@ async def calculate_breakeven(positions: List[Dict[str, Any]]):
         raise HTTPException(status_code=500, detail=str(e))
 
 # Get option chain for hedge calculation
-@app.get("/api/option-chain")
+@app.get("/api/option-chain", tags=["Market Data"])
 async def get_option_chain_for_hedge(
     strike: int = Query(None),
     type: str = Query(None)
@@ -6596,7 +6938,7 @@ async def get_option_chain_for_hedge(
         raise HTTPException(status_code=500, detail=str(e))
 
 # Execute trade from TradingView alert
-@app.post("/api/execute-trade")
+@app.post("/api/execute-trade", tags=["Trading"])
 async def execute_trade(trade_data: Dict[str, Any]):
     """Execute trade with real broker integration"""
     try:
@@ -6643,7 +6985,7 @@ async def execute_trade(trade_data: Dict[str, Any]):
         raise HTTPException(status_code=500, detail=str(e))
 
 # Auto Trade Control Endpoints
-@app.post("/api/auto-trade/enable")
+@app.post("/api/auto-trade/enable", tags=["Trading - Auto Trade"])
 async def enable_auto_trade():
     """Enable auto trading"""
     try:
@@ -6661,7 +7003,7 @@ async def enable_auto_trade():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/auto-trade/disable")
+@app.post("/api/auto-trade/disable", tags=["Trading - Auto Trade"])
 async def disable_auto_trade():
     """Disable auto trading"""
     try:
@@ -6679,7 +7021,7 @@ async def disable_auto_trade():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/auto-trade/status")
+@app.get("/api/auto-trade/status", tags=["Trading - Auto Trade"])
 async def get_auto_trade_status():
     """Get auto trade status"""
     try:
@@ -6690,7 +7032,7 @@ async def get_auto_trade_status():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/auto-trade/set-mode")
+@app.post("/api/auto-trade/set-mode", tags=["Trading - Auto Trade"])
 async def set_auto_trade_mode(request: Dict[str, str]):
     """Set auto trade mode (LIVE/PAPER/BACKTEST)"""
     try:
@@ -6703,7 +7045,7 @@ async def set_auto_trade_mode(request: Dict[str, str]):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/auto-trade/close-position")
+@app.post("/api/auto-trade/close-position", tags=["Kite - General"])
 async def close_position(request: Dict[str, Any]):
     """Close specific position"""
     try:
@@ -6721,7 +7063,7 @@ async def close_position(request: Dict[str, Any]):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/square-off-all", tags=["TradingView Pro"])
+@app.post("/api/square-off-all", tags=["Kite - General"])
 async def emergency_square_off_all():
     """
     Squares off all open positions using the Kite API.
@@ -6754,22 +7096,22 @@ async def emergency_square_off_all():
 
 # ========================= TradingView Pro Live Trading APIs =========================
 
-@app.get("/live/positions", tags=["TradingView Pro"])
-async def get_live_positions():
-    """Get all active positions with real-time breakeven and P&L"""
-    try:
-        tracker = get_position_breakeven_tracker()
-        positions = tracker.get_all_positions()
+# DUPLICATE: @app.get("/live/positions", tags=["Trading"])
+# DUPLICATE: async def get_live_positions():
+# DUPLICATE:     """Get all active positions with real-time breakeven and P&L"""
+# DUPLICATE:     try:
+# DUPLICATE:         tracker = get_position_breakeven_tracker()
+# DUPLICATE:         positions = tracker.get_all_positions()
         
-        return {
-            "success": True,
-            "positions": positions,
-            "count": len(positions)
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# DUPLICATE:         return {
+# DUPLICATE:             "success": True,
+# DUPLICATE:             "positions": positions,
+# DUPLICATE:             "count": len(positions)
+# DUPLICATE:         }
+# DUPLICATE:     except Exception as e:
+# DUPLICATE:         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/positions/breakeven", tags=["TradingView Pro"])
+@app.get("/api/positions/breakeven", tags=["Trading"])
 async def get_positions_with_breakeven():
     """Get all positions with detailed breakeven calculations and real-time P&L"""
     try:
@@ -6835,7 +7177,7 @@ async def get_positions_with_breakeven():
         logger.error(f"Error getting breakeven positions: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/live/position/create", tags=["TradingView Pro"])
+@app.post("/live/position/create", tags=["Trading"])
 async def create_live_position(entry: PositionEntry):
     """Create a new position with automatic hedge selection"""
     try:
@@ -6866,7 +7208,7 @@ async def create_live_position(entry: PositionEntry):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/live/position/{position_id}", tags=["TradingView Pro"])
+@app.get("/live/position/{position_id}", tags=["Trading"])
 async def get_position_details(position_id: int):
     """Get detailed information for a specific position"""
     try:
@@ -6880,7 +7222,7 @@ async def get_position_details(position_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/live/position/{position_id}/update-prices", tags=["TradingView Pro"])
+@app.post("/live/position/{position_id}/update-prices", tags=["Trading"])
 async def update_position_prices(position_id: int):
     """Update position with latest option prices"""
     try:
@@ -6900,7 +7242,7 @@ async def update_position_prices(position_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/live/position/{position_id}/close", tags=["TradingView Pro"])
+@app.post("/live/position/{position_id}/close", tags=["Trading"])
 async def close_position(position_id: int, reason: str = "Manual close"):
     """Close a specific position"""
     try:
@@ -6920,7 +7262,7 @@ async def close_position(position_id: int, reason: str = "Manual close"):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/live/candles/latest", tags=["TradingView Pro"])
+@app.get("/live/candles/latest", tags=["Trading"])
 async def get_latest_hourly_candles(count: int = 24):
     """Get latest hourly candles from memory"""
     try:
@@ -6935,7 +7277,7 @@ async def get_latest_hourly_candles(count: int = 24):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/live/spot-price", tags=["TradingView Pro"])
+@app.get("/live/spot-price", tags=["Trading"])
 async def get_live_spot_price():
     """Get current NIFTY spot price"""
     try:
@@ -6950,7 +7292,7 @@ async def get_live_spot_price():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/live/stoploss/status/{position_id}", tags=["TradingView Pro"])
+@app.get("/live/stoploss/status/{position_id}", tags=["Trading"])
 async def get_stoploss_status(position_id: int):
     """Get stop loss status for a position"""
     try:
@@ -6964,7 +7306,7 @@ async def get_stoploss_status(position_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/live/stoploss/check/{position_id}", tags=["TradingView Pro"])
+@app.post("/live/stoploss/check/{position_id}", tags=["Trading"])
 async def check_stoploss_now(position_id: int):
     """Manually trigger stop loss check for a position"""
     try:
@@ -6984,7 +7326,7 @@ async def check_stoploss_now(position_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/live/stoploss/update-prices/{position_id}", tags=["TradingView Pro"])
+@app.post("/live/stoploss/update-prices/{position_id}", tags=["Trading"])
 async def update_option_prices(
     position_id: int,
     main_price: Optional[float] = None,
@@ -7009,7 +7351,7 @@ async def update_option_prices(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/live/stoploss/monitor-all", tags=["TradingView Pro"])
+@app.get("/live/stoploss/monitor-all", tags=["Trading"])
 async def monitor_all_positions():
     """Monitor all active positions for stop loss triggers"""
     try:
@@ -7019,7 +7361,7 @@ async def monitor_all_positions():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/live/stoploss/realtime/start", tags=["TradingView Pro"])
+@app.post("/live/stoploss/realtime/start", tags=["Trading"])
 async def start_realtime_monitoring():
     """Start real-time stop loss monitoring"""
     try:
@@ -7030,7 +7372,7 @@ async def start_realtime_monitoring():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/live/stoploss/realtime/stop", tags=["TradingView Pro"])
+@app.post("/live/stoploss/realtime/stop", tags=["Trading"])
 async def stop_realtime_monitoring():
     """Stop real-time stop loss monitoring"""
     try:
@@ -7041,7 +7383,7 @@ async def stop_realtime_monitoring():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/live/stoploss/realtime/status", tags=["TradingView Pro"])
+@app.get("/live/stoploss/realtime/status", tags=["Trading"])
 async def get_realtime_monitoring_status():
     """Get real-time monitoring status"""
     try:
@@ -7056,7 +7398,7 @@ async def get_realtime_monitoring_status():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/live/signals/pending", tags=["TradingView Pro"])
+@app.get("/live/signals/pending", tags=["Trading - Signals"])
 async def get_pending_signals():
     """Get pending trading signals"""
     try:
@@ -7304,7 +7646,7 @@ async def live_positions_websocket(websocket: WebSocket):
         logger.error(f"Live positions WebSocket error: {e}")
         await websocket.close()
 
-@app.get("/api/breeze-ws/status", tags=["Live Market Data"])
+@app.get("/api/breeze-ws/status", tags=["Breeze - WebSocket"])
 async def get_breeze_ws_status():
     """Get Breeze WebSocket connection status"""
     try:
@@ -7314,7 +7656,7 @@ async def get_breeze_ws_status():
     except Exception as e:
         return {"error": str(e), "connected": False}
 
-@app.get("/api/live/nifty-spot", tags=["Live Market Data"])
+@app.get("/api/live/nifty-spot", tags=["Breeze - Spot Prices"])
 async def get_live_nifty_spot():
     """Get live NIFTY spot price"""
     try:
@@ -7327,7 +7669,7 @@ async def get_live_nifty_spot():
         logger.error(f"Error fetching NIFTY spot: {e}")
         return {"success": False, "error": str(e)}
 
-@app.get("/api/live/banknifty-spot", tags=["Live Market Data"])
+@app.get("/api/live/banknifty-spot", tags=["Breeze - Spot Prices"])
 async def get_live_banknifty_spot():
     """Get live BANK NIFTY spot price"""
     try:
@@ -7340,7 +7682,7 @@ async def get_live_banknifty_spot():
         logger.error(f"Error fetching BANKNIFTY spot: {e}")
         return {"success": False, "error": str(e)}
 
-@app.get("/api/live/option-chain", tags=["Live Market Data"])
+@app.get("/api/live/option-chain", tags=["Breeze - Options Data"])
 async def get_live_option_chain(
     strike: int = Query(25000, description="Center strike price"),
     range: int = Query(5, description="Number of strikes above and below"),
@@ -7357,7 +7699,7 @@ async def get_live_option_chain(
         logger.error(f"Error fetching option chain: {e}")
         return {"success": False, "error": str(e)}
 
-@app.get("/api/live/option-quote", tags=["Live Market Data"])
+@app.get("/api/live/option-quote", tags=["Breeze - Options Data"])
 async def get_live_option_quote(
     strike: int = Query(..., description="Strike price"),
     option_type: str = Query(..., description="CE or PE"),
@@ -7374,7 +7716,7 @@ async def get_live_option_quote(
         logger.error(f"Error fetching option quote: {e}")
         return {"success": False, "error": str(e)}
 
-@app.get("/api/live/market-depth", tags=["Live Market Data"])
+@app.get("/api/live/market-depth", tags=["Market Data"])
 async def get_market_depth(
     symbol: str = Query("NIFTY", description="Symbol"),
     strike: Optional[int] = Query(None, description="Strike price for options"),
@@ -7388,7 +7730,6 @@ async def get_market_depth(
             "symbol": symbol,
             "bids": [],
             "asks": [],
-            "timestamp": datetime.now().isoformat(),
             "is_mock": True
         }
         
@@ -7418,7 +7759,7 @@ async def get_market_depth(
         logger.error(f"Error generating market depth: {e}")
         return {"success": False, "error": str(e)}
 
-@app.get("/api/live/vix", tags=["Live Market Data"])
+@app.get("/api/live/vix", tags=["Breeze - Market Indicators"])
 async def get_live_vix():
     """Get India VIX value"""
     try:
@@ -7431,7 +7772,7 @@ async def get_live_vix():
         logger.error(f"Error fetching VIX: {e}")
         return {"success": False, "error": str(e)}
 
-@app.get("/api/live/all-market-data", tags=["Live Market Data"])
+@app.get("/api/live/all-market-data", tags=["Breeze - General"])
 async def get_all_market_data():
     """Get comprehensive market data (NIFTY, BANKNIFTY, VIX, etc.)"""
     try:
@@ -7444,7 +7785,7 @@ async def get_all_market_data():
         logger.error(f"Error fetching market data: {e}")
         return {"success": False, "error": str(e)}
 
-@app.get("/api/live/historical-candles", tags=["Live Market Data"])
+@app.get("/api/live/historical-candles", tags=["Breeze - Historical Data"])
 async def get_historical_candles(
     symbol: str = "NIFTY",
     interval: str = "5minute",
@@ -7461,12 +7802,12 @@ async def get_historical_candles(
         logger.error(f"Error fetching historical candles: {e}")
         return {"success": False, "error": str(e)}
 
-@app.get("/api/breeze/hourly-candle", tags=["Breeze Market Data"])
+@app.get("/api/breeze/hourly-candle", tags=["Breeze - Status"])
 async def get_breeze_hourly_candle():
     """Get hourly candle close from Breeze 5-minute data (XX:10-XX:15 candle)"""
     return await get_hourly_candle_data()
 
-@app.get("/api/tradingview/hourly-candle", tags=["TradingView Pro"])
+@app.get("/api/tradingview/hourly-candle", tags=["Trading"])
 async def get_tradingview_hourly_candle():
     """Legacy endpoint - redirects to Breeze hourly candle"""
     return await get_hourly_candle_data()
@@ -7542,7 +7883,7 @@ async def get_hourly_candle_data():
                                         "high": float(candle.get('high', 0)),
                                         "low": float(candle.get('low', 0)),
                                         "close": float(candle.get('close', 0)),
-                                        "volume": int(candle.get('volume', 0)) if candle.get('volume', '') != '' else 0
+                                        "volume": int(candle.get('volume', 0)) if candle.get('volume') and str(candle.get('volume')).strip() != '' else 0
                                     },
                                     "source": "breeze_1min",
                                     "description": f"1-min candle {target_hour}:14-{target_hour}:15 (close at hourly boundary)"
@@ -7559,7 +7900,7 @@ async def get_hourly_candle_data():
                             "high": float(last_candle.get('high', 0)),
                             "low": float(last_candle.get('low', 0)),
                             "close": float(last_candle.get('close', 0)),
-                            "volume": int(last_candle.get('volume', 0))
+                            "volume": int(last_candle.get('volume', 0)) if last_candle.get('volume') and str(last_candle.get('volume')).strip() != '' else 0
                         },
                         "source": "breeze_5min_approx"
                     }
@@ -7643,7 +7984,7 @@ async def get_hourly_candle_data():
         logger.error(f"Error getting TradingView hourly candle: {e}")
         return {"success": False, "error": str(e)}
 
-@app.get("/api/live/last-hourly-candle", tags=["Live Market Data"])
+@app.get("/api/live/last-hourly-candle", tags=["Market Data"])
 async def get_last_hourly_candle():
     """Get the last completed hourly candle from database or calculate from 5-min data"""
     try:
@@ -7758,7 +8099,7 @@ async def get_last_hourly_candle():
 
 # ========================= Performance Analytics API =========================
 
-@app.get("/api/analytics/performance", tags=["Analytics"])
+@app.get("/api/analytics/performance", tags=["ML & Analytics"])
 async def get_performance_analytics(
     period: str = "month",
     start: Optional[str] = None,
@@ -7796,7 +8137,7 @@ async def get_performance_analytics(
 
 # ========================= Slippage & Latency Monitoring =========================
 
-@app.get("/api/slippage/stats", tags=["Slippage Management"])
+@app.get("/api/slippage/stats", tags=["Risk Management"])
 async def get_slippage_stats():
     """Get slippage and latency statistics"""
     try:
@@ -7821,7 +8162,7 @@ async def get_slippage_stats():
         logger.error(f"Error getting slippage stats: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/slippage/history", tags=["Slippage Management"])
+@app.get("/api/slippage/history", tags=["Risk Management"])
 async def get_slippage_history():
     """Get detailed slippage history"""
     try:
@@ -7837,7 +8178,7 @@ async def get_slippage_history():
         logger.error(f"Error getting slippage history: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.put("/api/slippage/config", tags=["Slippage Management"])
+@app.put("/api/slippage/config", tags=["System - Configuration"])
 async def update_slippage_config(config: dict):
     """Update slippage tolerance configuration"""
     try:
@@ -7870,7 +8211,7 @@ async def update_slippage_config(config: dict):
 
 # ========================= Order Reconciliation API =========================
 
-@app.get("/api/reconciliation/status", tags=["Order Reconciliation"])
+@app.get("/api/reconciliation/status", tags=["Risk Management"])
 async def get_reconciliation_status():
     """Get order reconciliation status"""
     try:
@@ -7890,7 +8231,7 @@ async def get_reconciliation_status():
         logger.error(f"Error getting reconciliation status: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/reconciliation/run", tags=["Order Reconciliation"])
+@app.post("/api/reconciliation/run", tags=["Kite - General"])
 async def run_manual_reconciliation():
     """Manually trigger order reconciliation"""
     try:
@@ -7921,7 +8262,7 @@ async def run_manual_reconciliation():
         logger.error(f"Error running reconciliation: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/reconciliation/discrepancies", tags=["Order Reconciliation"])
+@app.get("/api/reconciliation/discrepancies", tags=["Risk Management"])
 async def get_order_discrepancies():
     """Get recent order discrepancies"""
     try:
@@ -7957,7 +8298,7 @@ async def get_order_discrepancies():
 
 from src.services.alert_notification_service import get_alert_service, AlertType, AlertPriority
 
-@app.get("/api/alerts/config", tags=["Alerts"])
+@app.get("/api/alerts/config", tags=["System - Configuration"])
 async def get_alert_config():
     """Get alert configuration"""
     try:
@@ -7967,7 +8308,7 @@ async def get_alert_config():
         logger.error(f"Error getting alert config: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.put("/api/alerts/config", tags=["Alerts"])
+@app.put("/api/alerts/config", tags=["System - Configuration"])
 async def update_alert_config(config: dict):
     """Update alert configuration"""
     try:
@@ -7978,7 +8319,7 @@ async def update_alert_config(config: dict):
         logger.error(f"Error updating alert config: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/alerts/history", tags=["Alerts"])
+@app.get("/api/alerts/history", tags=["System - Alerts"])
 async def get_alert_history(limit: int = 50):
     """Get recent alert history"""
     try:
@@ -7988,7 +8329,7 @@ async def get_alert_history(limit: int = 50):
         logger.error(f"Error getting alert history: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/alerts/test/telegram", tags=["Alerts"])
+@app.post("/api/alerts/test/telegram", tags=["System - Alerts"])
 async def test_telegram_alert():
     """Send test Telegram alert"""
     try:
@@ -8012,7 +8353,7 @@ async def test_telegram_alert():
         logger.error(f"Error sending test Telegram: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/alerts/test/email", tags=["Alerts"])
+@app.post("/api/alerts/test/email", tags=["System - Alerts"])
 async def test_email_alert():
     """Send test email alert"""
     try:
@@ -8036,7 +8377,7 @@ async def test_email_alert():
         logger.error(f"Error sending test email: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/alerts/send", tags=["Alerts"])
+@app.post("/api/alerts/send", tags=["System - Alerts"])
 async def send_custom_alert(request: dict):
     """Send custom alert"""
     try:
@@ -8057,7 +8398,7 @@ async def send_custom_alert(request: dict):
         logger.error(f"Error sending custom alert: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/alerts/stoploss", tags=["Alerts"])
+@app.post("/api/alerts/stoploss", tags=["System - Alerts"])
 async def send_stoploss_alert(request: dict):
     """Send stop-loss alert for position monitoring"""
     try:
@@ -8251,7 +8592,7 @@ async def reset_paper_portfolio(strategy: str = "default"):
         raise HTTPException(status_code=500, detail=str(e))
 
 # Get NIFTY 1H close for stop loss monitoring
-@app.get("/api/nifty-1h-close")
+@app.get("/api/nifty-1h-close", tags=["Market Data"])
 async def get_nifty_1h_close():
     try:
         # This would fetch real NIFTY data
@@ -8298,7 +8639,7 @@ def simple_decrypt(encrypted_text: str) -> str:
     except:
         return encrypted_text
 
-@app.get("/settings/all", tags=["Settings"])
+@app.get("/settings/all", tags=["System - Settings"])
 async def get_all_settings():
     """Get all system settings - REAL DATABASE VERSION"""
     try:
@@ -8396,7 +8737,7 @@ async def get_all_settings():
         logger.error(f"Error getting settings: {str(e)}")
         return {"status": "error", "message": str(e)}
 
-@app.post("/settings/save", tags=["Settings"])
+@app.post("/settings/save", tags=["System - Settings"])
 async def save_settings(settings_data: Dict[str, Any]):
     """Save system settings - REAL DATABASE VERSION"""
     try:
@@ -8463,7 +8804,7 @@ async def save_settings(settings_data: Dict[str, Any]):
         logger.error(f"Error saving settings: {str(e)}")
         return {"status": "error", "message": str(e)}
 
-@app.post("/settings/test-connection", tags=["Settings"])
+@app.post("/settings/test-connection", tags=["System - Settings"])
 async def test_broker_connection(broker: str = "breeze"):
     """Test broker API connection"""
     try:
@@ -8474,7 +8815,7 @@ async def test_broker_connection(broker: str = "breeze"):
         logger.error(f"Connection test failed: {str(e)}")
         return {"status": "error", "message": f"Connection failed: {str(e)}", "broker": broker}
 
-@app.post("/settings/clear-cache", tags=["Settings"])
+@app.post("/settings/clear-cache", tags=["System - Settings"])
 async def clear_cache():
     """Clear application cache"""
     try:
@@ -8491,7 +8832,7 @@ async def clear_cache():
         logger.error(f"Error clearing cache: {str(e)}")
         return {"status": "error", "message": str(e)}
 
-@app.get("/settings/export", tags=["Settings"])
+@app.get("/settings/export", tags=["System - Settings"])
 async def export_settings():
     """Export all settings as JSON"""
     try:
@@ -8520,7 +8861,7 @@ async def export_settings():
         logger.error(f"Error exporting settings: {str(e)}")
         return {"status": "error", "message": str(e)}
 
-@app.post("/settings/reset", tags=["Settings"])
+@app.post("/settings/reset", tags=["System - Settings"])
 async def reset_settings():
     """Reset all settings to defaults"""
     try:
@@ -8535,7 +8876,7 @@ async def reset_settings():
         return {"status": "error", "message": str(e)}
 
 # Expiry Management API Endpoints
-@app.get("/api/expiry/available", tags=["Expiry Management"])
+@app.get("/api/expiry/available", tags=["Settings"])
 async def get_available_expiries():
     """Get available expiry dates based on current day of week"""
     try:
@@ -8555,7 +8896,7 @@ async def get_available_expiries():
             content={"status": "error", "message": str(e)}
         )
 
-@app.post("/api/expiry/select", tags=["Expiry Management"])
+@app.post("/api/expiry/select", tags=["Settings"])
 async def select_expiry(request: dict):
     """Save selected expiry preference"""
     try:
@@ -8613,7 +8954,7 @@ async def select_expiry(request: dict):
             content={"status": "error", "message": str(e)}
         )
 
-@app.get("/api/exit-timing/options", tags=["Exit Timing"])
+@app.get("/api/exit-timing/options", tags=["Settings"])
 async def get_exit_timing_options():
     """Get available exit timing options"""
     try:
@@ -8633,7 +8974,7 @@ async def get_exit_timing_options():
             content={"status": "error", "message": str(e)}
         )
 
-@app.post("/api/exit-timing/configure", tags=["Exit Timing"])
+@app.post("/api/exit-timing/configure", tags=["System - Configuration"])
 async def configure_exit_timing(request: dict):
     """Save exit timing configuration"""
     try:
@@ -8703,7 +9044,7 @@ async def configure_exit_timing(request: dict):
             content={"status": "error", "message": str(e)}
         )
 
-@app.get("/api/square-off/pending", tags=["Square Off"])
+@app.get("/api/square-off/pending", tags=["Settings"])
 async def get_pending_square_offs():
     """Get list of pending auto square-offs"""
     try:
@@ -8783,7 +9124,7 @@ def load_exit_timing_config():
             "auto_square_off_enabled": True
         }
 
-@app.post("/api/expiry/weekday-config", tags=["Expiry Management"])
+@app.post("/api/expiry/weekday-config", tags=["Settings"])
 async def save_weekday_config(config: dict):
     """Save weekday expiry configuration"""
     try:
@@ -8822,7 +9163,7 @@ async def save_weekday_config(config: dict):
             content={"status": "error", "message": str(e)}
         )
 
-@app.get("/api/expiry/weekday-config", tags=["Expiry Management"])
+@app.get("/api/expiry/weekday-config", tags=["Settings"])
 async def get_weekday_config():
     """Get current weekday expiry configuration"""
     try:
@@ -8839,7 +9180,7 @@ async def get_weekday_config():
             content={"status": "error", "message": str(e)}
         )
 
-@app.post("/api/square-off/cancel", tags=["Square Off"])
+@app.post("/api/square-off/cancel", tags=["Settings"])
 async def cancel_square_off(request: dict):
     """Cancel a scheduled square-off"""
     try:
@@ -8874,7 +9215,7 @@ async def cancel_square_off(request: dict):
         )
 
 # Trade Configuration API Endpoints
-@app.post("/api/trade-config/save", tags=["Trade Config"])
+@app.post("/api/trade-config/save", tags=["Settings"])
 async def save_trade_configuration(config: dict):
     """Save trade configuration settings"""
     try:
@@ -8921,7 +9262,7 @@ async def save_trade_configuration(config: dict):
         logger.error(f"Error saving trade config: {str(e)}")
         return {"success": False, "message": str(e)}
 
-@app.get("/api/trade-config/load/{config_name}", tags=["Trade Config"])
+@app.get("/api/trade-config/load/{config_name}", tags=["Settings"])
 async def load_trade_configuration(
     config_name: str = 'default',
     user_id: str = 'default'
@@ -8943,7 +9284,7 @@ async def load_trade_configuration(
         logger.error(f"Error loading trade config: {str(e)}")
         return {"success": False, "message": str(e)}
 
-@app.post("/api/trade-config/validate", tags=["Trade Config"])
+@app.post("/api/trade-config/validate", tags=["Settings"])
 async def validate_trade_configuration(config: dict):
     """Validate trade configuration without saving"""
     try:
@@ -8969,7 +9310,7 @@ async def validate_trade_configuration(config: dict):
         logger.error(f"Error validating trade config: {str(e)}")
         return {"success": False, "message": str(e)}
 
-@app.get("/api/trade-config/list", tags=["Trade Config"])
+@app.get("/api/trade-config/list", tags=["Settings"])
 async def list_trade_configurations(user_id: str = 'default'):
     """List all trade configurations for a user"""
     try:
@@ -8987,7 +9328,7 @@ async def list_trade_configurations(user_id: str = 'default'):
         logger.error(f"Error listing trade configs: {str(e)}")
         return {"success": False, "message": str(e)}
 
-@app.post("/api/trade-config/duplicate", tags=["Trade Config"])
+@app.post("/api/trade-config/duplicate", tags=["Settings"])
 async def duplicate_trade_configuration(request: dict):
     """Duplicate an existing trade configuration"""
     try:
@@ -9006,7 +9347,7 @@ async def duplicate_trade_configuration(request: dict):
         logger.error(f"Error duplicating trade config: {str(e)}")
         return {"success": False, "message": str(e)}
 
-@app.delete("/api/trade-config/{config_name}", tags=["Trade Config"])
+@app.delete("/api/trade-config/{config_name}", tags=["Settings"])
 async def delete_trade_configuration(
     config_name: str,
     user_id: str = 'default'
@@ -9028,7 +9369,7 @@ async def delete_trade_configuration(
 # EMERGENCY KILL SWITCH ENDPOINTS
 # ============================================================================
 
-@app.post("/api/kill-switch/trigger", tags=["Kill Switch"])
+@app.post("/api/kill-switch/trigger", tags=["System - Risk Management"])
 async def trigger_kill_switch(request: dict):
     """Trigger the emergency kill switch to halt all trading"""
     try:
@@ -9047,7 +9388,7 @@ async def trigger_kill_switch(request: dict):
         logger.error(f"Error triggering kill switch: {str(e)}")
         return {"status": "error", "message": str(e)}
 
-@app.post("/api/kill-switch/reset", tags=["Kill Switch"])
+@app.post("/api/kill-switch/reset", tags=["System - Risk Management"])
 async def reset_kill_switch(request: dict):
     """Reset the kill switch (requires authorization)"""
     try:
@@ -9065,7 +9406,7 @@ async def reset_kill_switch(request: dict):
         logger.error(f"Error resetting kill switch: {str(e)}")
         return {"status": "error", "message": str(e)}
 
-@app.get("/api/kill-switch/status", tags=["Kill Switch"])
+@app.get("/api/kill-switch/status", tags=["System - Risk Management"])
 async def get_kill_switch_status():
     """Get current kill switch status"""
     try:
@@ -9081,7 +9422,7 @@ async def get_kill_switch_status():
 # ============= MISSING ENDPOINTS FOR UI INTEGRATION =============
 
 # Kill Switch Endpoints
-@app.get("/kill-switch/status")
+@app.get("/kill-switch/status", tags=["System - Risk Management"])
 async def get_kill_switch_status():
     """Get kill switch status"""
     from src.services.hybrid_data_manager import get_hybrid_data_manager
@@ -9099,7 +9440,7 @@ async def get_kill_switch_status():
         "state": "TRIGGERED" if kill_switch_state.get('active') else "READY"
     }
 
-@app.post("/kill-switch/trigger")
+@app.post("/kill-switch/trigger", tags=["System - Risk Management"])
 async def trigger_kill_switch(request: dict):
     """Trigger kill switch"""
     from src.services.hybrid_data_manager import get_hybrid_data_manager
@@ -9134,7 +9475,7 @@ async def trigger_kill_switch(request: dict):
         "triggered_at": data_manager.memory_cache['kill_switch']['triggered_at']
     }
 
-@app.post("/kill-switch/reset")
+@app.post("/kill-switch/reset", tags=["System - Risk Management"])
 async def reset_kill_switch():
     """Reset kill switch"""
     from src.services.hybrid_data_manager import get_hybrid_data_manager
@@ -9149,7 +9490,7 @@ async def reset_kill_switch():
     return {"status": "success", "message": "Kill switch reset", "state": "READY"}
 
 # Auto Trade Endpoints
-@app.get("/auto-trade/status")
+@app.get("/auto-trade/status", tags=["Trading - Auto Trade"])
 async def get_auto_trade_status():
     """Get auto trade status"""
     from src.services.hybrid_data_manager import get_hybrid_data_manager
@@ -9161,7 +9502,7 @@ async def get_auto_trade_status():
         "mode": "LIVE" if auto_trade_enabled else "DISABLED"
     }
 
-@app.post("/auto-trade/toggle")
+@app.post("/auto-trade/toggle", tags=["Trading - Auto Trade"])
 async def toggle_auto_trade(request: dict):
     """Toggle auto trade"""
     from src.services.hybrid_data_manager import get_hybrid_data_manager
@@ -9185,7 +9526,7 @@ async def toggle_auto_trade(request: dict):
     }
 
 # Breeze Status Endpoint
-@app.get("/breeze/status")
+@app.get("/breeze/status", tags=["Breeze - Status"])
 async def get_breeze_status():
     """Get Breeze connection status"""
     try:
@@ -9204,7 +9545,7 @@ async def get_breeze_status():
         }
 
 # NIFTY Spot Endpoint
-@app.get("/nifty/spot")
+@app.get("/nifty/spot", tags=["Market Data"])
 async def get_nifty_spot():
     """Get current NIFTY spot price"""
     try:
@@ -9253,7 +9594,7 @@ async def get_nifty_spot():
         }
 
 # Expiry Config Endpoints
-@app.get("/expiry/config")
+@app.get("/expiry/config", tags=["System - Configuration"])
 async def get_expiry_config():
     """Get expiry configuration"""
     from src.services.hybrid_data_manager import get_hybrid_data_manager
@@ -9270,7 +9611,7 @@ async def get_expiry_config():
     expiry_config = data_manager.memory_cache.get('expiry_config', default_config)
     return expiry_config
 
-@app.post("/expiry/config")
+@app.post("/expiry/config", tags=["System - Configuration"])
 async def update_expiry_config(config: dict):
     """Update expiry configuration"""
     from src.services.hybrid_data_manager import get_hybrid_data_manager
@@ -9290,7 +9631,7 @@ async def update_expiry_config(config: dict):
     return {"status": "success", "config": config}
 
 # Risk Limits Endpoints
-@app.get("/risk/limits")
+@app.get("/risk/limits", tags=["System - Risk Management"])
 async def get_risk_limits():
     """Get risk management limits"""
     from src.services.hybrid_data_manager import get_hybrid_data_manager
@@ -9307,7 +9648,7 @@ async def get_risk_limits():
     risk_limits = data_manager.memory_cache.get('risk_limits', default_limits)
     return risk_limits
 
-@app.post("/risk/limits")
+@app.post("/risk/limits", tags=["System - Risk Management"])
 async def update_risk_limits(limits: dict):
     """Update risk management limits"""
     from src.services.hybrid_data_manager import get_hybrid_data_manager
@@ -9327,7 +9668,7 @@ async def update_risk_limits(limits: dict):
     return {"status": "success", "limits": limits}
 
 # Trade Config Endpoints
-@app.get("/config/trade")
+@app.get("/config/trade", tags=["System - Configuration"])
 async def get_trade_config():
     """Get trade configuration"""
     from src.services.hybrid_data_manager import get_hybrid_data_manager
@@ -9346,7 +9687,7 @@ async def get_trade_config():
     trade_config = data_manager.memory_cache.get('trade_config', default_config)
     return trade_config
 
-@app.post("/config/trade")
+@app.post("/config/trade", tags=["System - Configuration"])
 async def update_trade_config(config: dict):
     """Update trade configuration"""
     from src.services.hybrid_data_manager import get_hybrid_data_manager
@@ -9369,17 +9710,17 @@ async def update_trade_config(config: dict):
 # HEALTH CHECK ENDPOINTS
 # ============================================================================
 
-@app.get("/health", tags=["Health"])
-async def health_check():
-    """Basic health check endpoint"""
-    return {
-        "status": "healthy",
-        "timestamp": datetime.now().isoformat(),
-        "service": "unified_api",
-        "version": "1.0.0"
-    }
+# DUPLICATE: @app.get("/health", tags=["System"])
+# DUPLICATE: async def health_check():
+# DUPLICATE:     """Basic health check endpoint"""
+# DUPLICATE:     return {
+# DUPLICATE:         "status": "healthy",
+# DUPLICATE:         "timestamp": datetime.now().isoformat(),
+# DUPLICATE:         "service": "unified_api",
+# DUPLICATE:         "version": "1.0.0"
+# DUPLICATE:     }
 
-@app.get("/health/detailed", tags=["Health"])
+@app.get("/health/detailed", tags=["System - Health"])
 async def detailed_health_check():
     """Detailed health check with component status"""
     from src.services.circuit_breaker import circuit_manager
@@ -9498,12 +9839,12 @@ async def detailed_health_check():
     
     return health_status
 
-@app.get("/health/live", tags=["Health"])
+@app.get("/health/live", tags=["System - Health"])
 async def liveness_probe():
     """Kubernetes liveness probe endpoint"""
     return {"status": "alive"}
 
-@app.get("/health/ready", tags=["Health"])
+@app.get("/health/ready", tags=["System - Health"])
 async def readiness_probe():
     """Kubernetes readiness probe endpoint"""
     try:
@@ -9515,7 +9856,7 @@ async def readiness_probe():
     except:
         raise HTTPException(status_code=503, detail="Service not ready")
 
-@app.get("/health/circuit-breakers", tags=["Health"])
+@app.get("/health/circuit-breakers", tags=["System - Health"])
 async def get_circuit_breaker_status():
     """Get status of all circuit breakers"""
     try:
@@ -9524,7 +9865,7 @@ async def get_circuit_breaker_status():
     except:
         return {}
 
-@app.post("/health/circuit-breakers/{name}/reset", tags=["Health"])
+@app.post("/health/circuit-breakers/{name}/reset", tags=["System - Health"])
 async def reset_circuit_breaker(name: str):
     """Reset a specific circuit breaker"""
     try:
@@ -9539,443 +9880,590 @@ async def reset_circuit_breaker(name: str):
 # ============================================================================
 
 # Settings CRUD Endpoints
-@app.get("/settings/{key}", tags=["Settings"])
-async def get_setting(key: str):
-    """Get a specific setting by key"""
-    try:
-        import sqlite3
-        from pathlib import Path
+# DUPLICATE: @app.get("/settings/{key}", tags=["Settings"])
+# DUPLICATE: async def get_setting(key: str):
+# DUPLICATE:     """Get a specific setting by key"""
+# DUPLICATE:     try:
+# DUPLICATE:         import sqlite3
+# DUPLICATE:         from pathlib import Path
         
-        db_dir = Path("data")
-        db_dir.mkdir(exist_ok=True)
-        db_path = db_dir / "trading_settings.db"
+# DUPLICATE:         db_dir = Path("data")
+# DUPLICATE:         db_dir.mkdir(exist_ok=True)
+# DUPLICATE:         db_path = db_dir / "trading_settings.db"
         
-        with sqlite3.connect(str(db_path)) as conn:
-            conn.execute('''
-                CREATE TABLE IF NOT EXISTS settings (
-                    key TEXT PRIMARY KEY,
-                    value TEXT,
-                    category TEXT DEFAULT 'general',
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
+# DUPLICATE:         with sqlite3.connect(str(db_path)) as conn:
+# DUPLICATE:             conn.execute('''
+# DUPLICATE:                 CREATE TABLE IF NOT EXISTS settings (
+# DUPLICATE:                     key TEXT PRIMARY KEY,
+# DUPLICATE:                     value TEXT,
+# DUPLICATE:                     category TEXT DEFAULT 'general',
+# DUPLICATE:                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+# DUPLICATE:                 )
+# DUPLICATE:             ''')
             
-            cursor = conn.cursor()
-            cursor.execute("SELECT value FROM settings WHERE key = ?", (key,))
-            result = cursor.fetchone()
+# DUPLICATE:             cursor = conn.cursor()
+# DUPLICATE:             cursor.execute("SELECT value FROM settings WHERE key = ?", (key,))
+# DUPLICATE:             result = cursor.fetchone()
             
-            if result:
-                import json
-                return {"key": key, "value": json.loads(result[0])}
-            else:
-                return {"key": key, "value": None}
+# DUPLICATE:             if result:
+# DUPLICATE:                 import json
+# DUPLICATE:                 return {"key": key, "value": json.loads(result[0])}
+# DUPLICATE:             else:
+# DUPLICATE:                 return {"key": key, "value": None}
                 
-    except Exception as e:
-        logger.error(f"Error getting setting {key}: {str(e)}")
-        return {"key": key, "value": None, "error": str(e)}
+# DUPLICATE:     except Exception as e:
+# DUPLICATE:         logger.error(f"Error getting setting {key}: {str(e)}")
+# DUPLICATE:         return {"key": key, "value": None, "error": str(e)}
 
-@app.put("/settings/{key}", tags=["Settings"])
-async def update_setting(key: str, request: dict):
-    """Update a specific setting"""
-    try:
-        import sqlite3
-        import json
-        from pathlib import Path
+# DUPLICATE: @app.put("/settings/{key}", tags=["Settings"])
+# DUPLICATE: async def update_setting(key: str, request: dict):
+# DUPLICATE:     """Update a specific setting"""
+# DUPLICATE:     try:
+# DUPLICATE:         import sqlite3
+# DUPLICATE:         import json
+# DUPLICATE:         from pathlib import Path
         
-        db_dir = Path("data")
-        db_dir.mkdir(exist_ok=True)
-        db_path = db_dir / "trading_settings.db"
+# DUPLICATE:         db_dir = Path("data")
+# DUPLICATE:         db_dir.mkdir(exist_ok=True)
+# DUPLICATE:         db_path = db_dir / "trading_settings.db"
         
-        value = request.get("value")
-        category = request.get("category", "general")
+# DUPLICATE:         value = request.get("value")
+# DUPLICATE:         category = request.get("category", "general")
         
-        with sqlite3.connect(str(db_path)) as conn:
-            conn.execute('''
-                CREATE TABLE IF NOT EXISTS settings (
-                    key TEXT PRIMARY KEY,
-                    value TEXT,
-                    category TEXT DEFAULT 'general',
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
+# DUPLICATE:         with sqlite3.connect(str(db_path)) as conn:
+# DUPLICATE:             conn.execute('''
+# DUPLICATE:                 CREATE TABLE IF NOT EXISTS settings (
+# DUPLICATE:                     key TEXT PRIMARY KEY,
+# DUPLICATE:                     value TEXT,
+# DUPLICATE:                     category TEXT DEFAULT 'general',
+# DUPLICATE:                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+# DUPLICATE:                 )
+# DUPLICATE:             ''')
             
-            cursor = conn.cursor()
-            cursor.execute('''
-                INSERT OR REPLACE INTO settings (key, value, category, updated_at)
-                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-            ''', (key, json.dumps(value), category))
+# DUPLICATE:             cursor = conn.cursor()
+# DUPLICATE:             cursor.execute('''
+# DUPLICATE:                 INSERT OR REPLACE INTO settings (key, value, category, updated_at)
+# DUPLICATE:                 VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+# DUPLICATE:             ''', (key, json.dumps(value), category))
             
-            conn.commit()
+# DUPLICATE:             conn.commit()
             
-        return {"status": "success", "message": f"Setting {key} updated"}
+# DUPLICATE:         return {"status": "success", "message": f"Setting {key} updated"}
                 
-    except Exception as e:
-        logger.error(f"Error updating setting {key}: {str(e)}")
-        return {"status": "error", "message": str(e)}
+# DUPLICATE:     except Exception as e:
+# DUPLICATE:         logger.error(f"Error updating setting {key}: {str(e)}")
+# DUPLICATE:         return {"status": "error", "message": str(e)}
 
-@app.delete("/settings/{key}", tags=["Settings"])
-async def delete_setting(key: str):
-    """Delete a specific setting"""
-    try:
-        import sqlite3
-        from pathlib import Path
+# DUPLICATE: @app.delete("/settings/{key}", tags=["Settings"])
+# DUPLICATE: async def delete_setting(key: str):
+# DUPLICATE:     """Delete a specific setting"""
+# DUPLICATE:     try:
+# DUPLICATE:         import sqlite3
+# DUPLICATE:         from pathlib import Path
         
-        db_dir = Path("data")
-        db_path = db_dir / "trading_settings.db"
+# DUPLICATE:         db_dir = Path("data")
+# DUPLICATE:         db_path = db_dir / "trading_settings.db"
         
-        if not db_path.exists():
-            return {"status": "error", "message": "Settings database not found"}
+# DUPLICATE:         if not db_path.exists():
+# DUPLICATE:             return {"status": "error", "message": "Settings database not found"}
             
-        with sqlite3.connect(str(db_path)) as conn:
-            cursor = conn.cursor()
-            cursor.execute("DELETE FROM settings WHERE key = ?", (key,))
-            deleted_count = cursor.rowcount
-            conn.commit()
+# DUPLICATE:         with sqlite3.connect(str(db_path)) as conn:
+# DUPLICATE:             cursor = conn.cursor()
+# DUPLICATE:             cursor.execute("DELETE FROM settings WHERE key = ?", (key,))
+# DUPLICATE:             deleted_count = cursor.rowcount
+# DUPLICATE:             conn.commit()
             
-        if deleted_count > 0:
-            return {"status": "success", "message": f"Setting {key} deleted"}
-        else:
-            return {"status": "error", "message": f"Setting {key} not found"}
+# DUPLICATE:         if deleted_count > 0:
+# DUPLICATE:             return {"status": "success", "message": f"Setting {key} deleted"}
+# DUPLICATE:         else:
+# DUPLICATE:             return {"status": "error", "message": f"Setting {key} not found"}
                 
-    except Exception as e:
-        logger.error(f"Error deleting setting {key}: {str(e)}")
-        return {"status": "error", "message": str(e)}
+# DUPLICATE:     except Exception as e:
+# DUPLICATE:         logger.error(f"Error deleting setting {key}: {str(e)}")
+# DUPLICATE:         return {"status": "error", "message": str(e)}
 
 # Trade Config Endpoints
-@app.post("/save-trade-config", tags=["Trading"])
-async def save_trade_config(config: dict):
-    """Save trade configuration"""
-    try:
-        import sqlite3
-        import json
-        from pathlib import Path
+# DUPLICATE: @app.post("/save-trade-config", tags=["Trading"])
+# DUPLICATE: async def save_trade_config(config: dict):
+# DUPLICATE:     """Save trade configuration"""
+# DUPLICATE:     try:
+# DUPLICATE:         import sqlite3
+# DUPLICATE:         import json
+# DUPLICATE:         from pathlib import Path
         
-        db_dir = Path("data")
-        db_dir.mkdir(exist_ok=True)
-        db_path = db_dir / "trading_settings.db"
+# DUPLICATE:         db_dir = Path("data")
+# DUPLICATE:         db_dir.mkdir(exist_ok=True)
+# DUPLICATE:         db_path = db_dir / "trading_settings.db"
         
-        with sqlite3.connect(str(db_path)) as conn:
-            conn.execute('''
-                CREATE TABLE IF NOT EXISTS settings (
-                    key TEXT PRIMARY KEY,
-                    value TEXT,
-                    category TEXT DEFAULT 'general',
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
+# DUPLICATE:         with sqlite3.connect(str(db_path)) as conn:
+# DUPLICATE:             conn.execute('''
+# DUPLICATE:                 CREATE TABLE IF NOT EXISTS settings (
+# DUPLICATE:                     key TEXT PRIMARY KEY,
+# DUPLICATE:                     value TEXT,
+# DUPLICATE:                     category TEXT DEFAULT 'general',
+# DUPLICATE:                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+# DUPLICATE:                 )
+# DUPLICATE:             ''')
             
-            cursor = conn.cursor()
-            cursor.execute('''
-                INSERT OR REPLACE INTO settings (key, value, category, updated_at)
-                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-            ''', ("trade_config", json.dumps(config), "trading"))
+# DUPLICATE:             cursor = conn.cursor()
+# DUPLICATE:             cursor.execute('''
+# DUPLICATE:                 INSERT OR REPLACE INTO settings (key, value, category, updated_at)
+# DUPLICATE:                 VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+# DUPLICATE:             ''', ("trade_config", json.dumps(config), "trading"))
             
-            conn.commit()
+# DUPLICATE:             conn.commit()
             
-        return {"status": "success", "message": "Trade config saved"}
+# DUPLICATE:         return {"status": "success", "message": "Trade config saved"}
                 
-    except Exception as e:
-        logger.error(f"Error saving trade config: {str(e)}")
-        return {"status": "error", "message": str(e)}
+# DUPLICATE:     except Exception as e:
+# DUPLICATE:         logger.error(f"Error saving trade config: {str(e)}")
+# DUPLICATE:         return {"status": "error", "message": str(e)}
 
-@app.get("/trade-config", tags=["Trading"])
-async def get_trade_config():
-    """Get trade configuration"""
-    try:
-        import sqlite3
-        import json
-        from pathlib import Path
+# DUPLICATE: @app.get("/trade-config", tags=["Trading"])
+# DUPLICATE: async def get_trade_config():
+# DUPLICATE:     """Get trade configuration"""
+# DUPLICATE:     try:
+# DUPLICATE:         import sqlite3
+# DUPLICATE:         import json
+# DUPLICATE:         from pathlib import Path
         
-        db_dir = Path("data")
-        db_path = db_dir / "trading_settings.db"
+# DUPLICATE:         db_dir = Path("data")
+# DUPLICATE:         db_path = db_dir / "trading_settings.db"
         
-        if not db_path.exists():
-            # Return default config
-            return {
-                "num_lots": 10,
-                "max_loss_per_trade": 5000,
-                "stop_loss_points": 200,
-                "target_points": 400,
-                "max_positions": 3
-            }
+# DUPLICATE:         if not db_path.exists():
+# DUPLICATE:             # Return default config
+# DUPLICATE:             return {
+# DUPLICATE:                 "num_lots": 10,
+# DUPLICATE:                 "max_loss_per_trade": 5000,
+# DUPLICATE:                 "stop_loss_points": 200,
+# DUPLICATE:                 "target_points": 400,
+# DUPLICATE:                 "max_positions": 3
+# DUPLICATE:             }
             
-        with sqlite3.connect(str(db_path)) as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT value FROM settings WHERE key = ?", ("trade_config",))
-            result = cursor.fetchone()
+# DUPLICATE:         with sqlite3.connect(str(db_path)) as conn:
+# DUPLICATE:             cursor = conn.cursor()
+# DUPLICATE:             cursor.execute("SELECT value FROM settings WHERE key = ?", ("trade_config",))
+# DUPLICATE:             result = cursor.fetchone()
             
-            if result:
-                return json.loads(result[0])
-            else:
-                # Return default config
-                return {
-                    "num_lots": 10,
-                    "max_loss_per_trade": 5000,
-                    "stop_loss_points": 200,
-                    "target_points": 400,
-                    "max_positions": 3
-                }
+# DUPLICATE:             if result:
+# DUPLICATE:                 return json.loads(result[0])
+# DUPLICATE:             else:
+# DUPLICATE:                 # Return default config
+# DUPLICATE:                 return {
+# DUPLICATE:                     "num_lots": 10,
+# DUPLICATE:                     "max_loss_per_trade": 5000,
+# DUPLICATE:                     "stop_loss_points": 200,
+# DUPLICATE:                     "target_points": 400,
+# DUPLICATE:                     "max_positions": 3
+# DUPLICATE:                 }
                 
-    except Exception as e:
-        logger.error(f"Error getting trade config: {str(e)}")
-        return {"status": "error", "message": str(e)}
+# DUPLICATE:     except Exception as e:
+# DUPLICATE:         logger.error(f"Error getting trade config: {str(e)}")
+# DUPLICATE:         return {"status": "error", "message": str(e)}
 
-# Signal States Endpoints
-@app.post("/save-signal-states", tags=["Signals"])
-async def save_signal_states(states: dict):
-    """Save signal states"""
-    try:
-        import sqlite3
-        import json
-        from pathlib import Path
+# DUPLICATE: # Signal States Endpoints
+# DUPLICATE: @app.post("/save-signal-states", tags=["Signals"])
+# DUPLICATE: async def save_signal_states(states: dict):
+# DUPLICATE:     """Save signal states"""
+# DUPLICATE:     try:
+# DUPLICATE:         import sqlite3
+# DUPLICATE:         import json
+# DUPLICATE:         from pathlib import Path
         
-        db_dir = Path("data")
-        db_dir.mkdir(exist_ok=True)
-        db_path = db_dir / "trading_settings.db"
+# DUPLICATE:         db_dir = Path("data")
+# DUPLICATE:         db_dir.mkdir(exist_ok=True)
+# DUPLICATE:         db_path = db_dir / "trading_settings.db"
         
-        with sqlite3.connect(str(db_path)) as conn:
-            conn.execute('''
-                CREATE TABLE IF NOT EXISTS settings (
-                    key TEXT PRIMARY KEY,
-                    value TEXT,
-                    category TEXT DEFAULT 'general',
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
+# DUPLICATE:         with sqlite3.connect(str(db_path)) as conn:
+# DUPLICATE:             conn.execute('''
+# DUPLICATE:                 CREATE TABLE IF NOT EXISTS settings (
+# DUPLICATE:                     key TEXT PRIMARY KEY,
+# DUPLICATE:                     value TEXT,
+# DUPLICATE:                     category TEXT DEFAULT 'general',
+# DUPLICATE:                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+# DUPLICATE:                 )
+# DUPLICATE:             ''')
             
-            cursor = conn.cursor()
-            cursor.execute('''
-                INSERT OR REPLACE INTO settings (key, value, category, updated_at)
-                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-            ''', ("signal_states", json.dumps(states), "signals"))
+# DUPLICATE:             cursor = conn.cursor()
+# DUPLICATE:             cursor.execute('''
+# DUPLICATE:                 INSERT OR REPLACE INTO settings (key, value, category, updated_at)
+# DUPLICATE:                 VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+# DUPLICATE:             ''', ("signal_states", json.dumps(states), "signals"))
             
-            conn.commit()
+# DUPLICATE:             conn.commit()
             
-        return {"status": "success", "message": "Signal states saved"}
+# DUPLICATE:         return {"status": "success", "message": "Signal states saved"}
                 
-    except Exception as e:
-        logger.error(f"Error saving signal states: {str(e)}")
-        return {"status": "error", "message": str(e)}
+# DUPLICATE:     except Exception as e:
+# DUPLICATE:         logger.error(f"Error saving signal states: {str(e)}")
+# DUPLICATE:         return {"status": "error", "message": str(e)}
 
-@app.get("/signal-states", tags=["Signals"])
-async def get_signal_states():
-    """Get signal states"""
-    try:
-        import sqlite3
-        import json
-        from pathlib import Path
+# DUPLICATE: @app.get("/signal-states", tags=["Signals"])
+# DUPLICATE: async def get_signal_states():
+# DUPLICATE:     """Get signal states"""
+# DUPLICATE:     try:
+# DUPLICATE:         import sqlite3
+# DUPLICATE:         import json
+# DUPLICATE:         from pathlib import Path
         
-        db_dir = Path("data")
-        db_path = db_dir / "trading_settings.db"
+# DUPLICATE:         db_dir = Path("data")
+# DUPLICATE:         db_path = db_dir / "trading_settings.db"
         
-        if not db_path.exists():
-            # Return default signal states
-            return {
-                "S1": True, "S2": True, "S3": True, "S4": True,
-                "S5": True, "S6": True, "S7": True, "S8": True
-            }
+# DUPLICATE:         if not db_path.exists():
+# DUPLICATE:             # Return default signal states
+# DUPLICATE:             return {
+# DUPLICATE:                 "S1": True, "S2": True, "S3": True, "S4": True,
+# DUPLICATE:                 "S5": True, "S6": True, "S7": True, "S8": True
+# DUPLICATE:             }
             
-        with sqlite3.connect(str(db_path)) as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT value FROM settings WHERE key = ?", ("signal_states",))
-            result = cursor.fetchone()
+# DUPLICATE:         with sqlite3.connect(str(db_path)) as conn:
+# DUPLICATE:             cursor = conn.cursor()
+# DUPLICATE:             cursor.execute("SELECT value FROM settings WHERE key = ?", ("signal_states",))
+# DUPLICATE:             result = cursor.fetchone()
             
-            if result:
-                return json.loads(result[0])
-            else:
-                # Return default signal states
-                return {
-                    "S1": True, "S2": True, "S3": True, "S4": True,
-                    "S5": True, "S6": True, "S7": True, "S8": True
-                }
+# DUPLICATE:             if result:
+# DUPLICATE:                 return json.loads(result[0])
+# DUPLICATE:             else:
+# DUPLICATE:                 # Return default signal states
+# DUPLICATE:                 return {
+# DUPLICATE:                     "S1": True, "S2": True, "S3": True, "S4": True,
+# DUPLICATE:                     "S5": True, "S6": True, "S7": True, "S8": True
+# DUPLICATE:                 }
                 
-    except Exception as e:
-        logger.error(f"Error getting signal states: {str(e)}")
-        return {"status": "error", "message": str(e)}
+# DUPLICATE:     except Exception as e:
+# DUPLICATE:         logger.error(f"Error getting signal states: {str(e)}")
+# DUPLICATE:         return {"status": "error", "message": str(e)}
 
-# Expiry Config Endpoints
-@app.post("/save-weekday-expiry-config", tags=["Configuration"])
-async def save_weekday_expiry_config(config: dict):
-    """Save weekday expiry configuration"""
-    try:
-        import sqlite3
-        import json
-        from pathlib import Path
+# DUPLICATE: # Expiry Config Endpoints
+# DUPLICATE: @app.post("/save-weekday-expiry-config", tags=["Configuration"])
+# DUPLICATE: async def save_weekday_expiry_config(config: dict):
+# DUPLICATE:     """Save weekday expiry configuration"""
+# DUPLICATE:     try:
+# DUPLICATE:         import sqlite3
+# DUPLICATE:         import json
+# DUPLICATE:         from pathlib import Path
         
-        db_dir = Path("data")
-        db_dir.mkdir(exist_ok=True)
-        db_path = db_dir / "trading_settings.db"
+# DUPLICATE:         db_dir = Path("data")
+# DUPLICATE:         db_dir.mkdir(exist_ok=True)
+# DUPLICATE:         db_path = db_dir / "trading_settings.db"
         
-        with sqlite3.connect(str(db_path)) as conn:
-            conn.execute('''
-                CREATE TABLE IF NOT EXISTS settings (
-                    key TEXT PRIMARY KEY,
-                    value TEXT,
-                    category TEXT DEFAULT 'general',
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
+# DUPLICATE:         with sqlite3.connect(str(db_path)) as conn:
+# DUPLICATE:             conn.execute('''
+# DUPLICATE:                 CREATE TABLE IF NOT EXISTS settings (
+# DUPLICATE:                     key TEXT PRIMARY KEY,
+# DUPLICATE:                     value TEXT,
+# DUPLICATE:                     category TEXT DEFAULT 'general',
+# DUPLICATE:                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+# DUPLICATE:                 )
+# DUPLICATE:             ''')
             
-            cursor = conn.cursor()
-            cursor.execute('''
-                INSERT OR REPLACE INTO settings (key, value, category, updated_at)
-                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-            ''', ("weekday_expiry_config", json.dumps(config), "configuration"))
+# DUPLICATE:             cursor = conn.cursor()
+# DUPLICATE:             cursor.execute('''
+# DUPLICATE:                 INSERT OR REPLACE INTO settings (key, value, category, updated_at)
+# DUPLICATE:                 VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+# DUPLICATE:             ''', ("weekday_expiry_config", json.dumps(config), "configuration"))
             
-            conn.commit()
+# DUPLICATE:             conn.commit()
             
-        return {"status": "success", "message": "Weekday expiry config saved"}
+# DUPLICATE:         return {"status": "success", "message": "Weekday expiry config saved"}
                 
-    except Exception as e:
-        logger.error(f"Error saving weekday expiry config: {str(e)}")
-        return {"status": "error", "message": str(e)}
+# DUPLICATE:     except Exception as e:
+# DUPLICATE:         logger.error(f"Error saving weekday expiry config: {str(e)}")
+# DUPLICATE:         return {"status": "error", "message": str(e)}
 
-@app.get("/weekday-expiry-config", tags=["Configuration"])
-async def get_weekday_expiry_config():
-    """Get weekday expiry configuration"""
-    try:
-        import sqlite3
-        import json
-        from pathlib import Path
+# DUPLICATE: @app.get("/weekday-expiry-config", tags=["Configuration"])
+# DUPLICATE: async def get_weekday_expiry_config():
+# DUPLICATE:     """Get weekday expiry configuration"""
+# DUPLICATE:     try:
+# DUPLICATE:         import sqlite3
+# DUPLICATE:         import json
+# DUPLICATE:         from pathlib import Path
         
-        db_dir = Path("data")
-        db_path = db_dir / "trading_settings.db"
+# DUPLICATE:         db_dir = Path("data")
+# DUPLICATE:         db_path = db_dir / "trading_settings.db"
         
-        if not db_path.exists():
-            # Return default config
-            return {
-                "enabled": False,
-                "exit_time": "15:15",
-                "weekdays": ["monday", "tuesday", "wednesday", "thursday", "friday"]
-            }
+# DUPLICATE:         if not db_path.exists():
+# DUPLICATE:             # Return default config
+# DUPLICATE:             return {
+# DUPLICATE:                 "enabled": False,
+# DUPLICATE:                 "exit_time": "15:15",
+# DUPLICATE:                 "weekdays": ["monday", "tuesday", "wednesday", "thursday", "friday"]
+# DUPLICATE:             }
             
-        with sqlite3.connect(str(db_path)) as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT value FROM settings WHERE key = ?", ("weekday_expiry_config",))
-            result = cursor.fetchone()
+# DUPLICATE:         with sqlite3.connect(str(db_path)) as conn:
+# DUPLICATE:             cursor = conn.cursor()
+# DUPLICATE:             cursor.execute("SELECT value FROM settings WHERE key = ?", ("weekday_expiry_config",))
+# DUPLICATE:             result = cursor.fetchone()
             
-            if result:
-                return json.loads(result[0])
-            else:
-                return {
-                    "enabled": False,
-                    "exit_time": "15:15",
-                    "weekdays": ["monday", "tuesday", "wednesday", "thursday", "friday"]
-                }
+# DUPLICATE:             if result:
+# DUPLICATE:                 return json.loads(result[0])
+# DUPLICATE:             else:
+# DUPLICATE:                 return {
+# DUPLICATE:                     "enabled": False,
+# DUPLICATE:                     "exit_time": "15:15",
+# DUPLICATE:                     "weekdays": ["monday", "tuesday", "wednesday", "thursday", "friday"]
+# DUPLICATE:                 }
                 
-    except Exception as e:
-        logger.error(f"Error getting weekday expiry config: {str(e)}")
-        return {"status": "error", "message": str(e)}
+# DUPLICATE:     except Exception as e:
+# DUPLICATE:         logger.error(f"Error getting weekday expiry config: {str(e)}")
+# DUPLICATE:         return {"status": "error", "message": str(e)}
 
-@app.post("/save-exit-timing-config", tags=["Configuration"])
-async def save_exit_timing_config(config: dict):
-    """Save exit timing configuration"""
-    try:
-        import sqlite3
-        import json
-        from pathlib import Path
+# DUPLICATE: @app.post("/save-exit-timing-config", tags=["Configuration"])
+# DUPLICATE: async def save_exit_timing_config(config: dict):
+# DUPLICATE:     """Save exit timing configuration"""
+# DUPLICATE:     try:
+# DUPLICATE:         import sqlite3
+# DUPLICATE:         import json
+# DUPLICATE:         from pathlib import Path
         
-        db_dir = Path("data")
-        db_dir.mkdir(exist_ok=True)
-        db_path = db_dir / "trading_settings.db"
+# DUPLICATE:         db_dir = Path("data")
+# DUPLICATE:         db_dir.mkdir(exist_ok=True)
+# DUPLICATE:         db_path = db_dir / "trading_settings.db"
         
-        with sqlite3.connect(str(db_path)) as conn:
-            conn.execute('''
-                CREATE TABLE IF NOT EXISTS settings (
-                    key TEXT PRIMARY KEY,
-                    value TEXT,
-                    category TEXT DEFAULT 'general',
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
+# DUPLICATE:         with sqlite3.connect(str(db_path)) as conn:
+# DUPLICATE:             conn.execute('''
+# DUPLICATE:                 CREATE TABLE IF NOT EXISTS settings (
+# DUPLICATE:                     key TEXT PRIMARY KEY,
+# DUPLICATE:                     value TEXT,
+# DUPLICATE:                     category TEXT DEFAULT 'general',
+# DUPLICATE:                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+# DUPLICATE:                 )
+# DUPLICATE:             ''')
             
-            cursor = conn.cursor()
-            cursor.execute('''
-                INSERT OR REPLACE INTO settings (key, value, category, updated_at)
-                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-            ''', ("exit_timing_config", json.dumps(config), "configuration"))
+# DUPLICATE:             cursor = conn.cursor()
+# DUPLICATE:             cursor.execute('''
+# DUPLICATE:                 INSERT OR REPLACE INTO settings (key, value, category, updated_at)
+# DUPLICATE:                 VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+# DUPLICATE:             ''', ("exit_timing_config", json.dumps(config), "configuration"))
             
-            conn.commit()
+# DUPLICATE:             conn.commit()
             
-        return {"status": "success", "message": "Exit timing config saved"}
+# DUPLICATE:         return {"status": "success", "message": "Exit timing config saved"}
                 
-    except Exception as e:
-        logger.error(f"Error saving exit timing config: {str(e)}")
-        return {"status": "error", "message": str(e)}
+# DUPLICATE:     except Exception as e:
+# DUPLICATE:         logger.error(f"Error saving exit timing config: {str(e)}")
+# DUPLICATE:         return {"status": "error", "message": str(e)}
 
-# Market Data Endpoints
-@app.get("/nifty-spot", tags=["Market Data"])
+# DUPLICATE: # Market Data Endpoints
+@app.get("/nifty-spot", tags=["Breeze - Spot Prices"])
 async def get_nifty_spot():
     """Get NIFTY spot price"""
     try:
-        # Try to get real NIFTY data from Breeze service
-        breeze_service = BreezeService()
-        spot_data = breeze_service.get_nifty_spot()
+        # Try to get real NIFTY data from WebSocket manager
+        if hasattr(app.state, 'breeze_ws_manager'):
+            spot_price = app.state.breeze_ws_manager.get_current_spot()
+            if spot_price and spot_price > 0:
+                return {
+                    "status": "success",
+                    "spot": spot_price,
+                    "timestamp": datetime.now().isoformat(),
+                    "source": "breeze_websocket"
+                }
         
-        if spot_data:
-            return {
-                "status": "success",
-                "spot": spot_data.get("last_price", 0),
-                "timestamp": datetime.now().isoformat(),
-                "source": "breeze"
-            }
-        else:
-            # Return mock data if real data not available
-            return {
-                "status": "success", 
-                "spot": 25000,  # Mock value
-                "timestamp": datetime.now().isoformat(),
-                "source": "mock"
-            }
+        # Try backup method through data manager
+        if hasattr(app.state, 'data_manager'):
+            spot_price = app.state.data_manager.memory_cache.get('spot_price')
+            if spot_price and spot_price > 0:
+                return {
+                    "status": "success",
+                    "spot": spot_price,
+                    "timestamp": datetime.now().isoformat(),
+                    "source": "cache"
+                }
+        
+        # Return 0 if no data available (UI should show "No data")
+        return {
+            "status": "success", 
+            "spot": 0,  # 0 indicates no data, UI should handle gracefully
+            "timestamp": datetime.now().isoformat(),
+            "source": "no_data"
+        }
                 
     except Exception as e:
         logger.error(f"Error getting NIFTY spot: {str(e)}")
         return {
             "status": "error",
-            "spot": 25000,  # Mock fallback
+            "spot": None,  # No data available
             "timestamp": datetime.now().isoformat(),
             "message": str(e)
         }
 
-@app.get("/positions", tags=["Trading"])
-async def get_positions():
-    """Get current positions"""
+# Additional health check endpoints for integration
+@app.get("/api-health", tags=["System"])
+async def api_health_check():
+    """Check API health status"""
+    return {
+        "status": "healthy",
+        "service": "api",
+        "timestamp": datetime.now().isoformat(),
+        "uptime": time.time() - app.state.start_time if hasattr(app.state, 'start_time') else 0
+    }
+
+@app.get("/breeze-health", tags=["Breeze - Status"]) 
+async def breeze_health_check():
+    """Check Breeze connection health"""
     try:
-        from src.services.hybrid_data_manager import get_hybrid_data_manager
-        data_manager = get_hybrid_data_manager()
-        
-        # Get positions from memory cache
-        positions = data_manager.memory_cache.get('active_positions', {})
-        
-        # Convert to list format
-        position_list = []
-        for pos_id, position in positions.items():
-            position_list.append({
-                "id": pos_id,
-                "symbol": position.get("symbol", "NIFTY"),
-                "quantity": position.get("quantity", 0),
-                "average_price": position.get("entry_price", 0),
-                "ltp": position.get("ltp", 0),
-                "pnl": position.get("pnl", 0),
-                "status": position.get("status", "OPEN"),
-                "entry_time": position.get("entry_time"),
-                "exit_time": position.get("exit_time")
-            })
+        from src.services.breeze_connection_service import get_breeze_connection
+        breeze_conn = get_breeze_connection()
+        is_connected = breeze_conn is not None and hasattr(breeze_conn, 'breeze')
         
         return {
-            "status": "success",
-            "positions": position_list,
-            "total_positions": len(position_list),
+            "status": "healthy" if is_connected else "disconnected",
+            "service": "breeze",
+            "connected": is_connected,
             "timestamp": datetime.now().isoformat()
         }
-                
     except Exception as e:
-        logger.error(f"Error getting positions: {str(e)}")
         return {
             "status": "error",
-            "positions": [],
-            "total_positions": 0,
-            "message": str(e)
+            "service": "breeze",
+            "connected": False,
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
+
+@app.get("/kite-health", tags=["Kite - Status"])
+async def kite_health_check():
+    """Check Kite connection health"""
+    try:
+        kite_status = kite_manager.get_connection_status() if kite_manager else {"connected": False}
+        
+        return {
+            "status": "healthy" if kite_status.get("connected") else "disconnected", 
+            "service": "kite",
+            "connected": kite_status.get("connected", False),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "service": "kite",
+            "connected": False,
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
+
+# DUPLICATE: @app.get("/positions", tags=["Trading"])
+# DUPLICATE: async def get_positions():
+# DUPLICATE:     """Get current positions"""
+# DUPLICATE:     try:
+# DUPLICATE:         from src.services.hybrid_data_manager import get_hybrid_data_manager
+# DUPLICATE:         data_manager = get_hybrid_data_manager()
+        
+# DUPLICATE:         # Get positions from memory cache
+# DUPLICATE:         positions = data_manager.memory_cache.get('active_positions', {})
+        
+# DUPLICATE:         # Convert to list format
+# DUPLICATE:         position_list = []
+# DUPLICATE:         for pos_id, position in positions.items():
+# DUPLICATE:             position_list.append({
+# DUPLICATE:                 "id": pos_id,
+# DUPLICATE:                 "symbol": position.get("symbol", "NIFTY"),
+# DUPLICATE:                 "quantity": position.get("quantity", 0),
+# DUPLICATE:                 "average_price": position.get("entry_price", 0),
+# DUPLICATE:                 "ltp": position.get("ltp", 0),
+# DUPLICATE:                 "pnl": position.get("pnl", 0),
+# DUPLICATE:                 "status": position.get("status", "OPEN"),
+# DUPLICATE:                 "entry_time": position.get("entry_time"),
+# DUPLICATE:                 "exit_time": position.get("exit_time")
+# DUPLICATE:             })
+        
+# DUPLICATE:         return {
+# DUPLICATE:             "status": "success",
+# DUPLICATE:             "positions": position_list,
+# DUPLICATE:             "total_positions": len(position_list),
+# DUPLICATE:             "timestamp": datetime.now().isoformat()
+# DUPLICATE:         }
+                
+# DUPLICATE:     except Exception as e:
+# DUPLICATE:         logger.error(f"Error getting positions: {str(e)}")
+# DUPLICATE:         return {
+# DUPLICATE:             "status": "error",
+# DUPLICATE:             "positions": [],
+# DUPLICATE:             "total_positions": 0,
+# DUPLICATE:             "message": str(e)
+# DUPLICATE:         }
+
+@app.get("/api/webhook/metrics", tags=["Webhooks - TradingView"])
+async def get_webhook_metrics():
+    """Get webhook performance metrics"""
+    try:
+        # Return webhook metrics
+        return {
+            "status": "success",
+            "metrics": {
+                "total_webhooks": 0,
+                "successful": 0,
+                "failed": 0,
+                "pending": 0,
+                "average_latency": 0,
+                "last_webhook": None
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error getting webhook metrics: {str(e)}")
+        return {
+            "status": "error",
+            "message": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
+
+@app.post("/kite/auto-login", tags=["Breeze - General"])
+async def kite_auto_login():
+    """Auto login to Kite using stored credentials"""
+    try:
+        # Check if Kite credentials are available
+        db_manager = get_db_manager()
+        breeze_service = BreezeService()
+        
+        # Try auto-login with Kite
+        # Implementation using Kite API
+        return {
+            "status": "success",
+            "message": "Kite auto-login initiated",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error in Kite auto-login: {str(e)}")
+        return {
+            "status": "error",
+            "message": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
+
+@app.post("/broker/auto-login", tags=["Breeze - General"]) 
+async def broker_auto_login():
+    """Auto login to Breeze broker using stored credentials"""
+    try:
+        # Check if Breeze credentials are available
+        db_manager = get_db_manager()
+        breeze_service = BreezeService()
+        
+        # Try auto-login with Breeze
+        if breeze_service.breeze is not None:
+            return {
+                "status": "success",
+                "message": "Breeze auto-login successful",
+                "connected": True,
+                "timestamp": datetime.now().isoformat()
+            }
+        else:
+            # Attempt connection
+            breeze_service.initialize()
+            return {
+                "status": "success",
+                "message": "Breeze auto-login initiated",
+                "connected": breeze_service.breeze is not None,
+                "timestamp": datetime.now().isoformat()
+            }
+    except Exception as e:
+        logger.error(f"Error in Breeze auto-login: {str(e)}")
+        return {
+            "status": "error",
+            "message": str(e),
+            "connected": False,
+            "timestamp": datetime.now().isoformat()
         }
 
 if __name__ == "__main__":

@@ -256,6 +256,12 @@ class ErrorHandler {
      * Circuit breaker for failing endpoints
      */
     checkCircuitBreaker(url) {
+        // Skip circuit breaker for critical endpoints
+        const skipEndpoints = ['/api/trade-config/', '/settings', '/health'];
+        if (skipEndpoints.some(endpoint => url.includes(endpoint))) {
+            return true;
+        }
+        
         const breaker = this.circuitBreaker.get(url);
         
         if (!breaker) {
@@ -319,6 +325,11 @@ class ErrorHandler {
      * Enhanced fetch with error handling
      */
     async safeFetch(url, options = {}) {
+        // Skip for config and settings endpoints to avoid recursion
+        if (url.includes('/api/trade-config/') || url.includes('/trade-config') || url.includes('/settings')) {
+            return window.originalFetch(url, options);
+        }
+        
         // Check circuit breaker
         if (!this.checkCircuitBreaker(url)) {
             throw new Error(`Circuit breaker is open for ${url}. Too many failures.`);
@@ -380,13 +391,22 @@ class ErrorHandler {
      * Install global fetch interceptor
      */
     installInterceptor() {
+        // TEMPORARILY DISABLED to fix infinite loop issue
+        console.log('Error handling interceptor DISABLED');
+        return;
+        
         const originalFetch = window.fetch;
         const errorHandler = this;
 
         window.fetch = async function(url, options) {
             // Skip interception for specific URLs if needed
-            const skipUrls = ['/health', '/api/v1/health'];
+            const skipUrls = ['/health', '/api/v1/health', '/api/trade-config/', '/trade-config', '/settings'];
             if (skipUrls.some(skip => url.includes(skip))) {
+                return originalFetch.call(this, url, options);
+            }
+            
+            // Also skip if throwOnError is explicitly false
+            if (options?.throwOnError === false) {
                 return originalFetch.call(this, url, options);
             }
 
@@ -445,6 +465,9 @@ class ErrorHandler {
         console.log('Error log cleared');
     }
 }
+
+// Store original fetch before any interception
+window.originalFetch = window.fetch;
 
 // Create global error handler instance
 window.errorHandler = new ErrorHandler();

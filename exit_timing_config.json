@@ -1,0 +1,6 @@
+{
+  "exit_day_offset": 0,
+  "exit_time": "15:15",
+  "auto_square_off_enabled": true,
+  "description": "Exit timing configuration for trading positions"
+}
