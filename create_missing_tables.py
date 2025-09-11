@@ -69,7 +69,7 @@ def create_missing_tables():
         print(f"[OK] Inserted {len(signals)} default signal states")
         
         # Insert default expiry config for weekdays
-        weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+        weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Tuesday', 'Friday']
         for weekday in weekdays:
             cursor.execute("""
                 INSERT OR IGNORE INTO ExpiryConfig (weekday, expiry_type)

@@ -47,7 +47,7 @@ driver.execute_script("""
         const config = JSON.parse(saved);
         console.log('[TEST] Config found:', config);
         
-        const weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+        const weekdays = ['monday', 'tuesday', 'wednesday', 'tuesday', 'friday'];
         weekdays.forEach(day => {
             const select = document.getElementById('expiry' + day.charAt(0).toUpperCase() + day.slice(1));
             if (select && config[day]) {

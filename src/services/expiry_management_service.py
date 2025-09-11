@@ -68,8 +68,12 @@ class ExpiryManagementService:
             return False
         
         # Check if holiday
-        if date.date() in [h.date() for h in self.holidays]:
-            return False
+        # Handle both datetime and date objects in holidays set
+        date_to_check = date.date() if hasattr(date, 'date') else date
+        for h in self.holidays:
+            holiday_date = h.date() if hasattr(h, 'date') else h
+            if date_to_check == holiday_date:
+                return False
         
         return True
     
@@ -233,41 +237,72 @@ class ExpiryManagementService:
         }
     
     def get_current_week_expiry(self, reference_date: datetime = None) -> datetime:
-        """Get current week's expiry date (Tuesday)"""
+        """Get current week's actual expiry date (checking Mon-Fri for NSE expiry)"""
         if reference_date is None:
             reference_date = datetime.now()
         
-        # Calculate current week's Tuesday
-        days_ahead = 1 - reference_date.weekday()  # Tuesday is 1
-        if days_ahead <= 0:  # Target day already happened this week
-            days_ahead += 7
+        # Get Monday of current week
+        days_since_monday = reference_date.weekday()
+        monday_this_week = reference_date - timedelta(days=days_since_monday)
         
-        current_tuesday = reference_date + timedelta(days=days_ahead)
+        # Check each day of the week for expiry (Mon-Fri)
+        # Default is Tuesday, but adjust if holiday
+        for day_offset in range(5):  # Monday to Friday
+            potential_expiry = monday_this_week + timedelta(days=day_offset)
+            
+            # For current week, skip if date has already passed
+            if potential_expiry.date() < reference_date.date():
+                continue
+                
+            # Tuesday (day_offset=1) is the standard expiry day
+            if day_offset == 1:  # Tuesday
+                if self.is_trading_day(potential_expiry):
+                    return potential_expiry
+                # If Tuesday is holiday, continue checking other days
+            
+            # Check if this could be an alternate expiry day (Mon/Wed/Thu/Fri)
+            # This happens when Tuesday is a holiday
+            if day_offset in [0, 2, 3, 4]:  # Mon, Wed, Thu, Fri
+                # Check if Tuesday was a holiday
+                tuesday = monday_this_week + timedelta(days=1)
+                if not self.is_trading_day(tuesday) and self.is_trading_day(potential_expiry):
+                    # This is likely the adjusted expiry day
+                    return potential_expiry
         
-        # Check if Tuesday is a holiday
-        if current_tuesday.date() in self.holidays:
-            # Move to Wednesday
-            current_tuesday += timedelta(days=1)
-        
-        return current_tuesday
+        # Fallback to next week if no valid expiry found in current week
+        return self.get_next_week_expiry(reference_date)
     
     def get_next_week_expiry(self, reference_date: datetime = None) -> datetime:
-        """Get next week's expiry date (Tuesday)"""
+        """Get next week's actual expiry date (checking Mon-Fri for NSE expiry)"""
         if reference_date is None:
             reference_date = datetime.now()
         
-        # Get current week's expiry first
-        current_week = self.get_current_week_expiry(reference_date)
+        # Get Monday of next week
+        days_since_monday = reference_date.weekday()
+        monday_this_week = reference_date - timedelta(days=days_since_monday)
+        monday_next_week = monday_this_week + timedelta(days=7)
         
-        # Add 7 days to get next week
-        next_week = current_week + timedelta(days=7)
+        # Check each day of next week for expiry (Mon-Fri)
+        for day_offset in range(5):  # Monday to Friday
+            potential_expiry = monday_next_week + timedelta(days=day_offset)
+            
+            # Tuesday (day_offset=1) is the standard expiry day
+            if day_offset == 1:  # Tuesday
+                if self.is_trading_day(potential_expiry):
+                    return potential_expiry
+                # If Tuesday is holiday, continue checking other days
+            
+            # Check if this could be an alternate expiry day (Mon/Wed/Thu/Fri)
+            # This happens when Tuesday is a holiday
+            if day_offset in [0, 2, 3, 4]:  # Mon, Wed, Thu, Fri
+                # Check if Tuesday was a holiday
+                tuesday = monday_next_week + timedelta(days=1)
+                if not self.is_trading_day(tuesday) and self.is_trading_day(potential_expiry):
+                    # This is likely the adjusted expiry day
+                    return potential_expiry
         
-        # Check if next Tuesday is a holiday
-        if next_week.date() in self.holidays:
-            # Move to Wednesday
-            next_week += timedelta(days=1)
-        
-        return next_week
+        # If no valid expiry found (unlikely), return Tuesday anyway
+        return monday_next_week + timedelta(days=1)
     
     def get_month_end_expiry(self, reference_date: datetime = None) -> datetime:
         """Get month-end expiry date (last Tuesday of the month)"""

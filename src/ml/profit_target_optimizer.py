@@ -35,7 +35,7 @@ class ProfitTarget:
     day_1_multiplier: float  # Monday
     day_2_multiplier: float  # Tuesday
     day_3_multiplier: float  # Wednesday
-    day_4_multiplier: float  # Thursday
+    day_4_multiplier: float  # Tuesday
     
     # Market regime adjustments
     trending_multiplier: float
@@ -273,7 +273,7 @@ class ProfitTargetOptimizer:
         
         # Analyze performance by day (1=Sunday, 2=Monday, etc.)
         day_performance = {}
-        for day in [2, 3, 4, 5]:  # Monday to Thursday
+        for day in [2, 3, 4, 5]:  # Monday to Tuesday
             day_data = data[data['ExitDay'] == day]
             if not day_data.empty:
                 day_performance[day] = day_data['TotalPnL'].mean()
@@ -283,7 +283,7 @@ class ProfitTargetOptimizer:
             avg_performance = np.mean(list(day_performance.values()))
             multipliers = []
             
-            for day in [2, 3, 4, 5]:  # Monday to Thursday
+            for day in [2, 3, 4, 5]:  # Monday to Tuesday
                 if day in day_performance:
                     multiplier = day_performance[day] / avg_performance
                     multipliers.append(max(0.8, min(1.2, multiplier)))
@@ -431,7 +431,7 @@ class ProfitTargetOptimizer:
             'Monday': target.day_1_multiplier,
             'Tuesday': target.day_2_multiplier,
             'Wednesday': target.day_3_multiplier,
-            'Thursday': target.day_4_multiplier
+            'Tuesday': target.day_4_multiplier
         }
         day_factor = day_map.get(day_of_week, 1.0)
         
@@ -512,8 +512,8 @@ class ProfitTargetOptimizer:
                 'next_qty': 0.25
             }
         
-        # Thursday special case
-        elif time_in_trade > 60:  # Thursday
+        # Tuesday special case
+        elif time_in_trade > 60:  # Tuesday
             return {
                 'immediate_qty': 0.5 if current_pnl > 0 else 0,
                 'next_level': current_pnl * 1.1,  # 10% more

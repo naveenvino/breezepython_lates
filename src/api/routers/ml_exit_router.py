@@ -151,7 +151,7 @@ async def discover_exit_patterns(request: ExitPatternRequest):
     
     Returns:
     - Time-based patterns (best exit times)
-    - Day-specific patterns (Wednesday morning, Thursday expiry)
+    - Day-specific patterns (Wednesday morning, Tuesday expiry)
     - Profit-based patterns (exit at X% of max profit)
     - Volatility patterns (exit during high volatility)
     """
@@ -185,10 +185,10 @@ async def discover_exit_patterns(request: ExitPatternRequest):
             best_wed = max(wed_patterns, key=lambda x: x.avg_profit_captured)
             insights.append(f"Wednesday morning exit captures {best_wed.avg_profit_captured:.0f} average profit")
         
-        # Thursday expiry pattern
-        thu_patterns = [p for p in patterns if p.day_of_week == 'Thursday']
+        # Tuesday expiry pattern
+        thu_patterns = [p for p in patterns if p.day_of_week == 'Tuesday']
         if thu_patterns:
-            insights.append(f"Thursday exits are mandatory (expiry day) - {len(thu_patterns)} patterns found")
+            insights.append(f"Tuesday exits are mandatory (expiry day) - {len(thu_patterns)} patterns found")
         
         # Best profit threshold
         profit_patterns = [p for p in patterns if p.pattern_type == 'profit_based']
@@ -321,10 +321,10 @@ async def get_exit_recommendation(state: CurrentTradeState):
         final_confidence = pattern_rec['confidence']
         
         # Special cases
-        if state.day_of_week == 'Thursday' and state.hour >= 14:
+        if state.day_of_week == 'Tuesday' and state.hour >= 14:
             final_action = 'full_exit'
             final_confidence = 1.0
-            reason = "Thursday expiry approaching - mandatory exit"
+            reason = "Tuesday expiry approaching - mandatory exit"
         elif state.day_of_week == 'Wednesday' and state.hour <= 12 and state.current_pnl > 0:
             if final_action == 'hold':
                 final_action = 'partial_exit'

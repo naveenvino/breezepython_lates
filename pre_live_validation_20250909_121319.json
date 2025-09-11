@@ -1,0 +1,118 @@
+{
+  "timestamp": "2025-09-09T12:13:19.828666",
+  "confidence_score": 0,
+  "results": {
+    "successful_flows": [
+      {
+        "flow": "Entry Signal Processing",
+        "details": "Webhook received -> Position created -> Hedge calculated",
+        "response": {
+          "status": "success",
+          "message": "Position created",
+          "position": {
+            "id": 9,
+            "signal": "S1",
+            "main_leg": {
+              "strike": 25000,
+              "price": 150,
+              "type": "PE",
+              "symbol": "NIFTY23SEP2525000PE"
+            },
+            "hedge_leg": {
+              "strike": 24800,
+              "price": 30,
+              "symbol": "NIFTY23SEP2524800PE"
+            },
+            "breakeven": 24880,
+            "expiry_date": "2025-09-23",
+            "auto_square_off": "2025-09-11T15:15:00.741661",
+            "trading_mode": "paper"
+          }
+        }
+      }
+    ],
+    "failures": [
+      {
+        "test": "Position Monitoring",
+        "issue": "Position not found after creation",
+        "file": "unified_api_correct.py",
+        "function": "/positions/live endpoint"
+      },
+      {
+        "test": "Invalid Order Handling",
+        "issue": "System doesn't validate strike prices",
+        "severity": "HIGH"
+      },
+      {
+        "test": "Duplicate Alert Prevention",
+        "issue": "3 positions created from same signal",
+        "severity": "HIGH",
+        "file": "unified_api_correct.py",
+        "function": "/webhook endpoint"
+      }
+    ],
+    "risk_gaps": [
+      {
+        "gap": "Position Size Validation",
+        "issue": "No enforcement of max lots per trade",
+        "severity": "HIGH",
+        "recommendation": "Add validation in webhook handler to reject orders > max_lots"
+      },
+      {
+        "gap": "Duplicate Order Prevention",
+        "issue": "Same signal can create multiple positions",
+        "severity": "MEDIUM",
+        "recommendation": "Add deduplication logic with time window"
+      },
+      {
+        "gap": "Token Auto-Refresh",
+        "issue": "No automatic token refresh before expiry",
+        "severity": "CRITICAL",
+        "recommendation": "Implement scheduled token refresh 30 min before expiry"
+      },
+      {
+        "gap": "Kill Switch Implementation",
+        "issue": "No working kill switch found",
+        "severity": "CRITICAL",
+        "recommendation": "Implement emergency trading halt mechanism"
+      },
+      {
+        "gap": "Real-time Updates",
+        "issue": "WebSocket not connected for real-time updates",
+        "severity": "MEDIUM",
+        "recommendation": "Ensure WebSocket auto-reconnect on disconnect"
+      }
+    ],
+    "improvements": [],
+    "test_logs": [
+      {
+        "timestamp": "2025-09-09T12:12:37.804982",
+        "test": "Entry Webhook",
+        "status": "SUCCESS",
+        "details": "Position created: {'status': 'success', 'message': 'Position created', 'position': {'id': 9, 'signal': 'S1', 'main_leg': {'strike': 25000, 'price': 150, 'type': 'PE', 'symbol': 'NIFTY23SEP2525000PE'}, 'hedge_leg': {'strike': 24800, 'price': 30, 'symbol': 'NIFTY23SEP2524800PE'}, 'breakeven': 24880, 'expiry_date': '2025-09-23', 'auto_square_off': '2025-09-11T15:15:00.741661', 'trading_mode': 'paper'}}"
+      },
+      {
+        "timestamp": "2025-09-09T12:12:56.720434",
+        "test": "Token Expiry Check",
+        "status": "INFO",
+        "details": "Token expires at 12:10"
+      },
+      {
+        "timestamp": "2025-09-09T12:13:17.781507",
+        "test": "Error Messages",
+        "status": "SUCCESS",
+        "details": "Proper error messages"
+      }
+    ]
+  },
+  "checklist": {
+    "Broker Connectivity": true,
+    "Webhook Processing": true,
+    "Position Management": false,
+    "Risk Controls": false,
+    "Data Integrity": true,
+    "Market Hours Check": false,
+    "Kill Switch": false,
+    "Token Management": false
+  }
+}

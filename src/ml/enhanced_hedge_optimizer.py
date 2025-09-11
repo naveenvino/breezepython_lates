@@ -216,7 +216,7 @@ class EnhancedHedgeOptimizer:
                 df = pd.read_sql(query, conn, params=params)
                 
                 if df.empty:
-                    return {}
+                    raise ValueError("No trade data available for hedge optimization analysis")
                 
                 results = {}
                 
@@ -309,4 +309,4 @@ class EnhancedHedgeOptimizer:
                 
         except Exception as e:
             logger.error(f"Error in enhanced hedge optimization: {str(e)}")
-            return {}
+            raise RuntimeError(f"Failed to perform enhanced hedge optimization: {str(e)}")

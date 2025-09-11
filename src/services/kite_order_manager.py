@@ -46,7 +46,7 @@ class KiteOrderManager:
             self.access_token = access_token or os.getenv('KITE_ACCESS_TOKEN')
             
             if not self.access_token:
-                logger.error("Kite access token not provided")
+                logger.error("Kite access token not provided - authentication required")
                 return False
             
             self.kite.set_access_token(self.access_token)
@@ -328,14 +328,14 @@ class KiteOrderManager:
     def _get_current_expiry(self) -> str:
         """Get current week expiry format for Kite"""
         today = datetime.now()
-        days_until_thursday = (3 - today.weekday()) % 7
+        days_until_tuesday = (1 - today.weekday()) % 7
         
-        # If today is Thursday after 3:30 PM, get next Thursday
-        if days_until_thursday == 0:
+        # If today is Tuesday after 3:30 PM, get next Tuesday
+        if days_until_tuesday == 0:
             if today.hour >= 15 and today.minute >= 30:
-                days_until_thursday = 7
+                days_until_tuesday = 7
         
-        expiry = today + timedelta(days=days_until_thursday)
+        expiry = today + timedelta(days=days_until_tuesday)
         
         # Format for Kite: 25AUG (day + month)
         day = expiry.strftime("%d").lstrip("0")  # Remove leading zero

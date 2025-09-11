@@ -56,12 +56,12 @@ class LiveMarketService:
             if not self.is_connected:
                 await self.initialize()
             
-            # Get current expiry (Thursday)
+            # Get current expiry (Tuesday)
             current_date = datetime.now()
-            days_until_thursday = (3 - current_date.weekday()) % 7
-            if days_until_thursday == 0 and current_date.hour >= 15:
-                days_until_thursday = 7
-            expiry_date = current_date + timedelta(days=days_until_thursday)
+            days_until_tuesday = (1 - current_date.weekday()) % 7
+            if days_until_tuesday == 0 and current_date.hour >= 15:
+                days_until_tuesday = 7
+            expiry_date = current_date + timedelta(days=days_until_tuesday)
             
             # Map symbols to Breeze API codes
             symbol_map = {
@@ -279,11 +279,11 @@ class LiveMarketService:
                 
                 return depth
             
-            return {'bids': [], 'asks': []}
+            raise ValueError(f"No market depth data received from Breeze API: {response}")
             
         except Exception as e:
             logger.error(f"Error fetching market depth: {e}")
-            return {'bids': [], 'asks': []}
+            raise RuntimeError(f"Failed to fetch market depth for {symbol}: {str(e)}")
     
     async def get_intraday_candles(self, symbol: str = "NIFTY", interval: str = "5minute", count: int = 100) -> List[Dict]:
         """Get intraday candles using Breeze API v2"""
@@ -389,14 +389,14 @@ class LiveMarketService:
         }
     
     def _get_current_expiry(self) -> datetime:
-        """Get current weekly expiry date (Thursday)"""
+        """Get current weekly expiry date (Tuesday)"""
         current_date = datetime.now()
-        days_until_thursday = (3 - current_date.weekday()) % 7
+        days_until_tuesday = (1 - current_date.weekday()) % 7
         
-        if days_until_thursday == 0 and current_date.hour >= 15:
-            days_until_thursday = 7
+        if days_until_tuesday == 0 and current_date.hour >= 15:
+            days_until_tuesday = 7
         
-        expiry_date = current_date + timedelta(days=days_until_thursday)
+        expiry_date = current_date + timedelta(days=days_until_tuesday)
         return expiry_date
     
     async def get_all_market_data(self) -> Dict:

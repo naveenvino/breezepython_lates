@@ -106,8 +106,8 @@ class MonitorPositionsUseCase:
         """Check if it's time for expiry day square-off"""
         now = datetime.now()
         
-        # Check if today is Thursday (expiry day)
-        if now.weekday() != 3:  # Not Thursday
+        # Check if today is Tuesday (expiry day)
+        if now.weekday() != 1:  # Not Tuesday
             return False
         
         # Check if it's past square-off time
@@ -174,7 +174,7 @@ class MonitorPositionsUseCase:
         now = datetime.now()
         
         # No new positions after 3 PM on expiry day
-        if now.weekday() == 3 and now.time() >= self.last_entry_time:
+        if now.weekday() == 1 and now.time() >= self.last_entry_time:
             return False
         
         return True

@@ -231,10 +231,10 @@ class MarketDataCacheService:
             if not expiry_date:
                 from datetime import datetime, timedelta
                 today = datetime.now()
-                days_until_thursday = (3 - today.weekday()) % 7
-                if days_until_thursday == 0 and today.hour >= 15:
-                    days_until_thursday = 7
-                expiry_date = (today + timedelta(days=days_until_thursday)).date()
+                days_until_tuesday = (1 - today.weekday()) % 7
+                if days_until_tuesday == 0 and today.hour >= 15:
+                    days_until_tuesday = 7
+                expiry_date = (today + timedelta(days=days_until_tuesday)).date()
             
             # Format expiry for query (e.g., "25AUG")
             expiry_str = expiry_date.strftime("%y%b").upper()

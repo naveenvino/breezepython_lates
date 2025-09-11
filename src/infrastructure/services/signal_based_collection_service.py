@@ -145,7 +145,7 @@ class SignalBasedCollectionService:
         
         # Determine date range for download
         if download_full_week:
-            # Download from Monday to expiry (Thursday)
+            # Download from Monday to expiry (Tuesday)
             download_from = datetime.combine(week_start, datetime.min.time().replace(hour=9, minute=15))
             download_to = datetime.combine(expiry_date, datetime.min.time().replace(hour=15, minute=30))
         else:
@@ -223,10 +223,10 @@ class SignalBasedCollectionService:
         Get Monday and expiry date for a given week
         
         Args:
-            expiry_date: Thursday expiry date
+            expiry_date: Tuesday expiry date
             
         Returns:
-            Tuple of (Monday date, Thursday date)
+            Tuple of (Monday date, Tuesday date)
         """
         # Go back to Monday (weekday 0)
         days_back = expiry_date.weekday() - 0  # Monday is 0

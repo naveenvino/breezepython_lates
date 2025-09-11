@@ -66,7 +66,7 @@ def test_visual_check():
         saved_config = driver.execute_script("""
             // Manually collect the config like saveExpiryConfig does
             const config = {};
-            const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+            const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Tuesday', 'Friday'];
             
             weekdays.forEach(day => {
                 const select = document.getElementById(`expiry${day}`);

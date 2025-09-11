@@ -121,17 +121,18 @@ class Option(Entity):
     
     @property
     def is_weekly(self) -> bool:
-        """Check if this is a weekly option (expires on Thursday)"""
-        return self._expiry_date.weekday() == 3  # Thursday
+        """Check if this is a weekly option (expires on Tuesday)"""
+        return self._expiry_date.weekday() == 1  # Tuesday
     
     @property
     def is_monthly(self) -> bool:
-        """Check if this is a monthly option (last Thursday of month)"""
+        """Check if this is a monthly option (last Tuesday of month)"""
         if not self.is_weekly:
             return False
         
-        # Check if this Thursday is the last Thursday of the month
-        next_week = self._expiry_date + datetime.timedelta(days=7)
+        # Check if this Tuesday is the last Tuesday of the month
+        from datetime import timedelta
+        next_week = self._expiry_date + timedelta(days=7)
         return next_week.month != self._expiry_date.month
     
     @property

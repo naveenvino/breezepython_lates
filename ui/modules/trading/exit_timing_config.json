@@ -1,0 +1,12 @@
+{
+  "exit_times": {
+    "Monday": "15:15",
+    "Tuesday": "15:15",
+    "Wednesday": "15:15",
+    "Thursday": "15:15",
+    "Friday": "15:15"
+  },
+  "square_off_time": "15:20",
+  "expiry_day": "Tuesday",
+  "default_exit_time": "15:15"
+}

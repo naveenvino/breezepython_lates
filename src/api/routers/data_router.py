@@ -95,18 +95,18 @@ async def get_available_expiries(
     from datetime import timedelta
     today = date.today()
     
-    # Calculate next few Thursday expiries
+    # Calculate next few Tuesday expiries
     expiries = []
     current = today
     
     for _ in range(5):
-        # Find next Thursday
-        days_until_thursday = (3 - current.weekday()) % 7
-        if days_until_thursday == 0 and current == today:
-            # If today is Thursday and market is closed, skip to next week
-            days_until_thursday = 7
+        # Find next Tuesday
+        days_until_tuesday = (1 - current.weekday()) % 7
+        if days_until_tuesday == 0 and current == today:
+            # If today is Tuesday and market is closed, skip to next week
+            days_until_tuesday = 7
         
-        expiry = current + timedelta(days=days_until_thursday)
+        expiry = current + timedelta(days=days_until_tuesday)
         expiries.append(expiry.isoformat())
         current = expiry + timedelta(days=1)
     

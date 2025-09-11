@@ -243,8 +243,8 @@ class KiteOrderService:
         """
         current_time = datetime.now()
         
-        # Check if today is Thursday (expiry day)
-        if current_time.weekday() == 3:  # Thursday
+        # Check if today is Tuesday (expiry day)
+        if current_time.weekday() == 1:  # Tuesday
             # Check if it's 3:15 PM or later
             if current_time.time() >= time(15, 15):
                 logger.info("Expiry day square-off triggered at 3:15 PM")

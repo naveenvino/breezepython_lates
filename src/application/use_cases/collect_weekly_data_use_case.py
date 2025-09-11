@@ -325,16 +325,16 @@ class CollectWeeklyDataUseCase:
         return [int(strike.price) for strike in strikes]
     
     def _get_weekly_expiry_for_date(self, date: date, symbol: str = "NIFTY") -> date:
-        """Get weekly expiry (Thursday) for the given date"""
-        # Calculate days until Thursday (3 = Thursday)
-        days_until_thursday = (3 - date.weekday()) % 7
+        """Get weekly expiry (Tuesday) for the given date"""
+        # Calculate days until Tuesday (1 = Tuesday)
+        days_until_tuesday = (1 - date.weekday()) % 7
         
-        # If it's already Thursday and past market close, go to next Thursday
-        if days_until_thursday == 0:
-            # For simplicity, always use the Thursday of the week
+        # If it's already Tuesday and past market close, go to next Tuesday
+        if days_until_tuesday == 0:
+            # For simplicity, always use the Tuesday of the week
             pass
         
-        expiry = date + timedelta(days=days_until_thursday)
+        expiry = date + timedelta(days=days_until_tuesday)
         
         return expiry
     

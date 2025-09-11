@@ -613,7 +613,7 @@ class LiveTradingEngine:
         
         Args:
             weeks_ahead: 0 for current week, 1 for next week, etc.
-            use_monthly: True for monthly expiry (last Thursday of month)
+            use_monthly: True for monthly expiry (last Tuesday of month)
         
         Returns:
             Expiry in format "25AUG" for Kite
@@ -621,7 +621,7 @@ class LiveTradingEngine:
         today = datetime.now()
         
         if use_monthly:
-            # Get last Thursday of current/next month
+            # Get last Tuesday of current/next month
             if today.day > 25:  # Likely past monthly expiry
                 # Move to next month
                 if today.month == 12:
@@ -634,24 +634,24 @@ class LiveTradingEngine:
                 target_month = today.month
                 target_year = today.year
             
-            # Find last Thursday of target month
+            # Find last Tuesday of target month
             import calendar
             last_day = calendar.monthrange(target_year, target_month)[1]
             last_date = datetime(target_year, target_month, last_day)
             
-            # Find last Thursday
-            while last_date.weekday() != 3:  # 3 is Thursday
+            # Find last Tuesday
+            while last_date.weekday() != 3:  # 3 is Tuesday
                 last_date -= timedelta(days=1)
             
             expiry = last_date
         else:
-            # Weekly expiry (Thursday)
-            days_until_thursday = (3 - today.weekday()) % 7
-            if days_until_thursday == 0 and today.hour >= 15:  # After 3 PM on Thursday
-                days_until_thursday = 7
+            # Weekly expiry (Tuesday)
+            days_until_tuesday = (1 - today.weekday()) % 7
+            if days_until_tuesday == 0 and today.hour >= 15:  # After 3 PM on Tuesday
+                days_until_tuesday = 7
             
             # Add additional weeks if specified
-            days_to_add = days_until_thursday + (weeks_ahead * 7)
+            days_to_add = days_until_tuesday + (weeks_ahead * 7)
             expiry = today + timedelta(days=days_to_add)
         
         # Format for Kite: YY + MONTH (e.g., "25AUG" for August 2025)

@@ -1,0 +1,27 @@
+import base64
+
+# Simple 16x16 favicon in ICO format (base64 encoded)
+favicon_base64 = """AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAA////Bv///0r///+P////sv///7L///+P////Sv///wYAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAD///9K////wv///////////////////////////////8L///9KAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+////Bv///8L///////////////////////////////////////////+8////BgAAAAAAAAAAAAAAAAAAAAAA////Sv//
+/////////////////////////////////6z///8r////vP///////////////////0oAAAAAAAAA////j///////////
+//////////T///+E////Hv///x7///8e////Hv///4T////9////////////////////jwAAAP///7L/////////////
+//T///8e////AP///wD///8A////AP///wD///8A////Hv////T//////////////7IAAAD///+y//////////z///8e
+////AP///wD///8A////AP///wD///8A////AP///wD///8e////+P//////////sgAAAP///7L//////////P///x7/
+//8A////AP///wD///8A////AP///wD///8A////AP///x7////8//////////+yAAAA////sv//////////+P///x7/
+//8A////AP///wD///8A////AP///wD///8A////AP///x7////4//////////+yAAAA////sv//////////+P///x7/
+//8A////AP///wD///8A////AP///wD///8A////AP///x7////8//////////+yAAAA////kP//////////////////
+/4T///8e////Hv///x7///8e////Hv///x7///+E////////////////////kAAAAP///0r///////////////////+8
+////vP///yv///8r////K////yv///+8////+P///////////////////0oAAAAAAAAAAAD///8G////wv//////////
+/////////////////////////////////////////////////////8L///8GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/
+//9K////wv///////////////////////////////8L///9KAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAP///wb///9K////j////7L///+y////j////0r///8GAAAAAAAAAAAAAAAAAAAAgAEAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAEAAA=="""
+
+# Decode and write to file
+favicon_bytes = base64.b64decode(favicon_base64.replace('\n', ''))
+with open('ui/favicon.ico', 'wb') as f:
+    f.write(favicon_bytes)
+
+print("Favicon created successfully at ui/favicon.ico")

@@ -56,6 +56,12 @@ credentials/
 auth/
 tokens/
 
+# TELEGRAM CREDENTIALS - NEVER COMMIT
+telegram_config.json
+alert_config.json
+*telegram*.json
+cleanup/dev_artifacts/telegram_*.json
+
 # Auto-login artifacts
 *.png
 logs/screenshots/*.png

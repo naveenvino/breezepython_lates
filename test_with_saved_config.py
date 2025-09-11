@@ -19,7 +19,7 @@ driver.execute_script("""
         monday: 'next',
         tuesday: 'monthend',
         wednesday: 'next', 
-        thursday: 'next',
+        tuesday: 'next',
         friday: 'next'
     };
     localStorage.setItem('weekdayExpiryConfig', JSON.stringify(config));
@@ -51,7 +51,7 @@ result = driver.execute_script("""
                 const config = JSON.parse(saved);
                 console.log('[RE-RUN TEST] Found saved config:', JSON.stringify(config));
                 
-                const weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+                const weekdays = ['monday', 'tuesday', 'wednesday', 'tuesday', 'friday'];
                 weekdays.forEach(day => {
                     const select = document.getElementById('expiry' + day.charAt(0).toUpperCase() + day.slice(1));
                     if (select && config[day]) {

@@ -45,7 +45,7 @@ class SignalToKiteOrderConverter:
         # Calculate strikes
         main_strike = self._calculate_atm_strike(current_spot)
         
-        # Get expiry date (next Thursday or Wednesday if holiday)
+        # Get expiry date (next Tuesday or Wednesday if holiday)
         expiry_date = self._get_next_expiry()
         
         # Generate symbols
@@ -104,28 +104,28 @@ class SignalToKiteOrderConverter:
     def _get_next_expiry(self) -> date:
         """
         Get next weekly expiry date
-        NIFTY weekly options expire on Thursday (or Wednesday if Thursday is holiday)
+        NIFTY weekly options expire on Tuesday (or Wednesday if Tuesday is holiday)
         """
         today = datetime.now().date()
         
-        # Find next Thursday
-        days_until_thursday = (3 - today.weekday()) % 7
-        if days_until_thursday == 0 and datetime.now().time() > datetime.strptime("15:30", "%H:%M").time():
-            # If today is Thursday after 3:30 PM, get next Thursday
-            days_until_thursday = 7
+        # Find next Tuesday
+        days_until_tuesday = (1 - today.weekday()) % 7
+        if days_until_tuesday == 0 and datetime.now().time() > datetime.strptime("15:30", "%H:%M").time():
+            # If today is Tuesday after 3:30 PM, get next Tuesday
+            days_until_tuesday = 7
         
-        next_thursday = today + timedelta(days=days_until_thursday)
+        next_tuesday = today + timedelta(days=days_until_tuesday)
         
-        # Check if Thursday is a holiday
-        if self.holiday_service.is_holiday(next_thursday):
-            # If Thursday is holiday, expiry is on Wednesday
-            next_thursday -= timedelta(days=1)
+        # Check if Tuesday is a holiday
+        if self.holiday_service.is_holiday(next_tuesday):
+            # If Tuesday is holiday, expiry is on Wednesday
+            next_tuesday -= timedelta(days=1)
             
             # Double check Wednesday is not a holiday
-            if self.holiday_service.is_holiday(next_thursday):
-                logger.warning(f"Both Thursday and Wednesday are holidays for week of {next_thursday}")
+            if self.holiday_service.is_holiday(next_tuesday):
+                logger.warning(f"Both Tuesday and Wednesday are holidays for week of {next_tuesday}")
         
-        return next_thursday
+        return next_tuesday
     
     def calculate_strikes_for_spot(self, spot_price: float, signal_type: str) -> Dict[str, int]:
         """

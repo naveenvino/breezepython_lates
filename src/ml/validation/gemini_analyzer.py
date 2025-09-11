@@ -342,7 +342,7 @@ class GeminiAnalyzer:
             "category": "THETA_MANAGEMENT",
             "priority": "MEDIUM",
             "action": "Exit all positions by Wednesday 3:15 PM",
-            "rationale": "Avoid Thursday expiry theta decay",
+            "rationale": "Avoid Tuesday expiry theta decay",
             "expected_impact": "Reduce theta losses by 25%"
         })
         

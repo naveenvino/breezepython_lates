@@ -22,7 +22,7 @@ def test_weekday_config_setup():
         "monday": "current",     # Use current week expiry on Monday
         "tuesday": "current",     # Use current week expiry on Tuesday
         "wednesday": "next",      # Use next week expiry on Wed
-        "thursday": "next",       # Use next week expiry on Thu
+        "tuesday": "next",       # Use next week expiry on Thu
         "friday": "next"          # Use next week expiry on Fri
     }
     
@@ -203,7 +203,7 @@ def test_expiry_calculation():
             datetime(2025, 1, 6),   # Monday
             datetime(2025, 1, 7),   # Tuesday
             datetime(2025, 1, 8),   # Wednesday
-            datetime(2025, 1, 9),   # Thursday
+            datetime(2025, 1, 9),   # Tuesday
             datetime(2025, 1, 10),  # Friday
         ]
         

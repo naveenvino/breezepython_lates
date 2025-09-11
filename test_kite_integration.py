@@ -52,7 +52,7 @@ def test_kite_symbol_generation():
         assert weekly_symbol == "NIFTY2511425000PE", f"Expected NIFTY2511425000PE, got {weekly_symbol}"
         
         # Test monthly expiry symbol
-        monthly_date = datetime(2025, 1, 30)  # Last Thursday
+        monthly_date = datetime(2025, 1, 30)  # Last Tuesday
         monthly_symbol = executor.format_monthly_symbol(monthly_date, 25000, "CE")
         print(f"[OK] Monthly symbol: {monthly_symbol}")
         assert monthly_symbol == "NIFTY25JAN25000CE", f"Expected NIFTY25JAN25000CE, got {monthly_symbol}"
@@ -73,7 +73,7 @@ def test_complete_webhook_flow():
         "monday": "current",
         "tuesday": "current",
         "wednesday": "next",
-        "thursday": "next",
+        "tuesday": "next",
         "friday": "next"
     }
     

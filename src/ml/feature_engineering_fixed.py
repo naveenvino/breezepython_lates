@@ -262,7 +262,7 @@ class FeatureEngineer:
         df['month'] = df['Timestamp'].dt.month
         df['quarter'] = df['Timestamp'].dt.quarter
         
-        # Expiry week (Thursday is expiry)
+        # Expiry week (Tuesday is expiry)
         df['days_to_thursday'] = (3 - df['day_of_week']) % 7
         df['is_expiry_week'] = (df['days_to_thursday'] <= 3).astype(int)
         

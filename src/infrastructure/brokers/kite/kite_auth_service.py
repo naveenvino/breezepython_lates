@@ -36,10 +36,10 @@ class KiteAuthService:
                 token_date = datetime.fromisoformat(data[timestamp_key]).date()
                 if token_date == datetime.now().date():
                     self.kite_client.set_access_token(data['access_token'])
-                    logger.info("Loaded saved access token from auto login")
+                    logger.info("Loaded saved credentials from auto login")
                     return True
                 else:
-                    logger.info("Saved token expired, need new authentication")
+                    logger.info("Saved credentials expired, need new authentication")
             except Exception as e:
                 logger.error(f"Error loading saved token: {e}")
         
@@ -54,7 +54,7 @@ class KiteAuthService:
             }
             with open(self.token_file, 'w') as f:
                 json.dump(data, f)
-            logger.info("Access token saved successfully")
+            logger.info("Credentials saved successfully")
         except Exception as e:
             logger.error(f"Error saving token: {e}")
     

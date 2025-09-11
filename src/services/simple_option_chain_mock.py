@@ -84,13 +84,13 @@ class SimpleOptionChainMock:
         self.spot_price = new_spot
     
     def _get_next_expiry(self) -> str:
-        """Get next Thursday expiry"""
+        """Get next Tuesday expiry"""
         today = datetime.now()
-        days_ahead = 3 - today.weekday()  # Thursday is 3
+        days_ahead = 1 - today.weekday()  # Tuesday is 1
         if days_ahead <= 0:
             days_ahead += 7
-        next_thursday = today + timedelta(days=days_ahead)
-        return next_thursday.strftime('%Y-%m-%d')
+        next_tuesday = today + timedelta(days=days_ahead)
+        return next_tuesday.strftime('%Y-%m-%d')
 
 # Singleton instance
 _instance = None

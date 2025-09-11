@@ -207,7 +207,7 @@ class RunBacktestCachedUseCase:
             else:
                 option_type = 'CE'
             
-            # Get expiry (next Thursday)
+            # Get expiry (next Tuesday)
             expiry = self._get_next_expiry(entry_time)
             
             # Get main position price
@@ -393,8 +393,8 @@ class RunBacktestCachedUseCase:
             return total_pnl
     
     def _get_next_expiry(self, date: datetime) -> datetime:
-        """Get next Thursday expiry"""
-        days_ahead = 3 - date.weekday()  # Thursday is 3
+        """Get next Tuesday expiry"""
+        days_ahead = 1 - date.weekday()  # Tuesday is 1
         if days_ahead <= 0:
             days_ahead += 7
         expiry = date + timedelta(days=days_ahead)

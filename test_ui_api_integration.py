@@ -176,7 +176,7 @@ class UIAPIIntegrationTest:
                 "Monday": "current",
                 "Tuesday": "current",
                 "Wednesday": "current",
-                "Thursday": "current",
+                "Tuesday": "current",
                 "Friday": "current"
             }
         )

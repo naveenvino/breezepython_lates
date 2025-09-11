@@ -33,7 +33,7 @@ def test_config_loading():
             "monday": "next",
             "tuesday": "current",
             "wednesday": "month_end",
-            "thursday": "next",
+            "tuesday": "next",
             "friday": "current"
         }
     }

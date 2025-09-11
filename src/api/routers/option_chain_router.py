@@ -77,7 +77,7 @@ async def get_option_chain_fast(
         # Get current week expiry
         from datetime import timedelta
         today = datetime.now()
-        days_ahead = 3 - today.weekday()  # Thursday is 3
+        days_ahead = 1 - today.weekday()  # Tuesday is 3
         if days_ahead <= 0:
             days_ahead += 7
         expiry_date = today + timedelta(days=days_ahead)

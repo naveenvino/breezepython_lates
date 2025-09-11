@@ -16,7 +16,7 @@ def test_expiry_day_exit():
         ("Monday Entry", datetime(2025, 1, 6, 10, 0)),   # Monday
         ("Tuesday Entry", datetime(2025, 1, 7, 10, 0)),  # Tuesday  
         ("Wednesday Entry", datetime(2025, 1, 8, 10, 0)), # Wednesday
-        ("Thursday Entry", datetime(2025, 1, 9, 10, 0)),  # Thursday
+        ("Tuesday Entry", datetime(2025, 1, 9, 10, 0)),  # Tuesday
         ("Friday Entry", datetime(2025, 1, 10, 10, 0))    # Friday
     ]
     

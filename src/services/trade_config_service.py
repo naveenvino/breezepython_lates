@@ -33,6 +33,7 @@ class TradeConfigService:
                     -- Position Settings
                     num_lots INTEGER DEFAULT 10,
                     entry_timing TEXT DEFAULT 'immediate',
+                    amo_enabled BOOLEAN DEFAULT 0,
                     
                     -- Hedge Configuration
                     hedge_enabled BOOLEAN DEFAULT 1,
@@ -111,6 +112,7 @@ class TradeConfigService:
                         UPDATE TradeConfiguration SET
                             num_lots = ?,
                             entry_timing = ?,
+                            amo_enabled = ?,
                             hedge_enabled = ?,
                             hedge_method = ?,
                             hedge_percent = ?,
@@ -137,6 +139,7 @@ class TradeConfigService:
                     """, (
                         config.get('num_lots', 10),
                         config.get('entry_timing', 'immediate'),
+                        config.get('amo_enabled', False),
                         config.get('hedge_enabled', True),
                         config.get('hedge_method', 'percentage'),
                         config.get('hedge_percent', 30.0),
@@ -168,7 +171,7 @@ class TradeConfigService:
                     # Insert new configuration
                     cursor.execute("""
                         INSERT INTO TradeConfiguration (
-                            user_id, config_name, num_lots, entry_timing,
+                            user_id, config_name, num_lots, entry_timing, amo_enabled,
                             hedge_enabled, hedge_method, hedge_percent, hedge_offset,
                             profit_lock_enabled, profit_target, profit_lock,
                             trailing_stop_enabled, trail_percent,
@@ -182,6 +185,7 @@ class TradeConfigService:
                         user_id, config_name,
                         config.get('num_lots', 10),
                         config.get('entry_timing', 'immediate'),
+                        config.get('amo_enabled', False),
                         config.get('hedge_enabled', True),
                         config.get('hedge_method', 'percentage'),
                         config.get('hedge_percent', 30.0),
@@ -249,7 +253,7 @@ class TradeConfigService:
                             config['weekday_config'] = {}
                     # Convert boolean values
                     for key in ['hedge_enabled', 'profit_lock_enabled', 'trailing_stop_enabled', 
-                                'auto_trade_enabled', 'auto_square_off_enabled']:
+                                'auto_trade_enabled', 'auto_square_off_enabled', 'amo_enabled']:
                         if key in config:
                             config[key] = bool(config[key])
                     
@@ -267,6 +271,7 @@ class TradeConfigService:
         return {
             'num_lots': 10,
             'entry_timing': 'immediate',
+            'amo_enabled': False,
             'hedge_enabled': True,
             'hedge_method': 'percentage',
             'hedge_percent': 30.0,
@@ -291,7 +296,7 @@ class TradeConfigService:
                 'monday': 'current',
                 'tuesday': 'current',
                 'wednesday': 'next',
-                'thursday': 'next',
+                'tuesday': 'next',
                 'friday': 'next'
             }
         }

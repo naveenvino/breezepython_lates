@@ -156,26 +156,26 @@ class MarketCalendar:
         
     def get_weekly_expiry(self, for_date: date) -> date:
         """
-        Get weekly expiry date (Thursday) for given date
-        If Thursday is holiday, expiry is on previous trading day
+        Get weekly expiry date (Tuesday) for given date
+        If Tuesday is holiday, expiry is on previous trading day
         """
-        # Find Thursday of the week (weekday 3)
-        days_until_thursday = (3 - for_date.weekday()) % 7
-        if days_until_thursday == 0 and for_date.weekday() == 3:
-            # If it's already Thursday, get this Thursday
-            thursday = for_date
+        # Find Tuesday of the week (weekday 1)
+        days_until_tuesday = (1 - for_date.weekday()) % 7
+        if days_until_tuesday == 0 and for_date.weekday() == 1:
+            # If it's already Tuesday, get this Tuesday
+            tuesday = for_date
         else:
-            # Get next Thursday
-            if for_date.weekday() > 3:  # Friday, Saturday, Sunday
-                days_until_thursday = 3 + (7 - for_date.weekday())
-            thursday = for_date + timedelta(days=days_until_thursday)
+            # Get next Tuesday
+            if for_date.weekday() > 1:  # Wednesday, Tuesday, Friday, Saturday, Sunday
+                days_until_tuesday = 1 + (7 - for_date.weekday())
+            tuesday = for_date + timedelta(days=days_until_tuesday)
             
-        # Check if Thursday is a trading day
-        if self.is_trading_day(thursday):
-            return thursday
+        # Check if Tuesday is a trading day
+        if self.is_trading_day(tuesday):
+            return tuesday
             
-        # If Thursday is holiday, find previous trading day
-        expiry_date = thursday - timedelta(days=1)
+        # If Tuesday is holiday, find previous trading day
+        expiry_date = tuesday - timedelta(days=1)
         while not self.is_trading_day(expiry_date):
             expiry_date = expiry_date - timedelta(days=1)
             
@@ -183,10 +183,10 @@ class MarketCalendar:
         
     def get_monthly_expiry(self, year: int, month: int) -> date:
         """
-        Get monthly expiry date (last Thursday of month)
-        If last Thursday is holiday, expiry is on previous trading day
+        Get monthly expiry date (last Tuesday of month)
+        If last Tuesday is holiday, expiry is on previous trading day
         """
-        # Find last Thursday of the month
+        # Find last Tuesday of the month
         # Start from last day of month and work backwards
         if month == 12:
             next_month = date(year + 1, 1, 1)
@@ -195,8 +195,8 @@ class MarketCalendar:
             
         last_day = next_month - timedelta(days=1)
         
-        # Find last Thursday
-        while last_day.weekday() != 3:  # Thursday is 3
+        # Find last Tuesday
+        while last_day.weekday() != 1:  # Tuesday is 1
             last_day = last_day - timedelta(days=1)
             
         # Check if it's a trading day

@@ -29,7 +29,7 @@ def add_missing_columns():
                 ("exit_day_offset", "INTEGER", 2),
                 ("exit_time", "TEXT", "15:15"),
                 ("auto_square_off_enabled", "BOOLEAN", 1),
-                ("weekday_config", "TEXT", '{"monday":"current","tuesday":"current","wednesday":"next","thursday":"next","friday":"next"}'),
+                ("weekday_config", "TEXT", '{"monday":"current","tuesday":"current","wednesday":"next","tuesday":"next","friday":"next"}'),
                 ("max_loss_per_trade", "REAL", 20000),
                 ("max_exposure", "REAL", 200000),
                 ("max_positions", "INTEGER", 5)

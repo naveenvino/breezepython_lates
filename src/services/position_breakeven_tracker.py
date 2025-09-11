@@ -134,13 +134,13 @@ class PositionBreakevenTracker:
             # Execute real orders if live trading is enabled
             if self.live_trading_enabled and self.zerodha.is_connected:
                 try:
-                    # Get current expiry (Thursday)
+                    # Get current expiry (Tuesday)
                     from datetime import timedelta
                     today = datetime.now()
-                    days_until_thursday = (3 - today.weekday()) % 7
-                    if days_until_thursday == 0 and today.hour >= 15:  # Past 3:30 PM on Thursday
-                        days_until_thursday = 7
-                    expiry = today + timedelta(days=days_until_thursday)
+                    days_until_tuesday = (1 - today.weekday()) % 7
+                    if days_until_tuesday == 0 and today.hour >= 15:  # Past 3:30 PM on Tuesday
+                        days_until_tuesday = 7
+                    expiry = today + timedelta(days=days_until_tuesday)
                     expiry_str = expiry.strftime("%y%b").upper()  # Format: 24DEC
                     
                     # Place main order (SELL option)

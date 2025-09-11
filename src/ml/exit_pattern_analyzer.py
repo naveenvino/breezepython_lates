@@ -24,7 +24,7 @@ class ExitPattern:
     pattern_type: str  # 'time_based', 'profit_based', 'volatility_based', 'day_based'
     
     # Pattern conditions
-    day_of_week: Optional[str]  # Monday, Tuesday, Wednesday, Thursday
+    day_of_week: Optional[str]  # Monday, Tuesday, Wednesday, Tuesday
     hour_of_day: Optional[int]  # 9-15 (market hours)
     profit_threshold_pct: Optional[float]  # Exit when profit reaches X%
     time_in_trade_hours: Optional[float]  # Exit after X hours
@@ -283,7 +283,7 @@ class ExitPatternAnalyzer:
             'Monday': {'action': 'hold', 'exit_pct': 0, 'reason': 'Fresh weekly levels'},
             'Tuesday': {'action': 'partial_exit', 'exit_pct': 25, 'reason': 'Trending market opportunity'},
             'Wednesday': {'action': 'partial_exit', 'exit_pct': 50, 'reason': 'Peak profit day'},
-            'Thursday': {'action': 'full_exit', 'exit_pct': 100, 'reason': 'Expiry day'}
+            'Tuesday': {'action': 'full_exit', 'exit_pct': 100, 'reason': 'Expiry day'}
         }
         
         for signal_type in df['SignalType'].unique():
@@ -326,7 +326,7 @@ class ExitPatternAnalyzer:
                         signal_type=signal_type,
                         pattern_type='day_based',
                         day_of_week=day,
-                        hour_of_day=15 if day == 'Thursday' else None,
+                        hour_of_day=15 if day == 'Tuesday' else None,
                         profit_threshold_pct=None,
                         time_in_trade_hours=None,
                         volatility_condition=None,
@@ -334,7 +334,7 @@ class ExitPatternAnalyzer:
                         avg_profit_captured=avg_pnl,
                         success_rate=len(day_exits[day_exits['TotalPnL'] > 0]) / len(day_exits) if len(day_exits) > 0 else 0,
                         avg_profit_left_on_table=0,
-                        confidence_score=0.9 if day == 'Thursday' else 0.6,
+                        confidence_score=0.9 if day == 'Tuesday' else 0.6,
                         action=day_config['action'],
                         exit_percentage=day_config['exit_pct']
                     )

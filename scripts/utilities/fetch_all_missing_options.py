@@ -7,21 +7,21 @@ from datetime import datetime, timedelta, date
 import time
 
 def get_all_thursdays(from_date, to_date):
-    """Get all Thursday expiry dates in the period"""
+    """Get all Tuesday expiry dates in the period"""
     thursdays = []
     current = from_date
     
     while current <= to_date:
-        # Find next Thursday (weekday 3)
-        days_ahead = (3 - current.weekday()) % 7
+        # Find next Tuesday (weekday 3)
+        days_ahead = (1 - current.weekday()) % 7
         if days_ahead == 0 and current > from_date:
             days_ahead = 7
-        thursday = current + timedelta(days=days_ahead)
+        tuesday = current + timedelta(days=days_ahead)
         
-        if thursday <= to_date:
-            thursdays.append(thursday)
+        if tuesday <= to_date:
+            thursdays.append(tuesday)
         
-        current = thursday + timedelta(days=1)
+        current = tuesday + timedelta(days=1)
     
     return thursdays
 
@@ -73,9 +73,9 @@ def main():
     
     print(f"\nPeriod: {from_date} to {to_date}")
     
-    # Get all Thursday expiries
+    # Get all Tuesday expiries
     thursdays = get_all_thursdays(from_date, to_date)
-    print(f"Found {len(thursdays)} Thursday expiries")
+    print(f"Found {len(thursdays)} Tuesday expiries")
     
     # Define strike ranges for different periods
     # Based on the NIFTY levels shown in the logs

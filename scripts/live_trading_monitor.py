@@ -159,7 +159,7 @@ class LiveTradingMonitor:
             summary_text.append("Open", style="green")
         
         # Expiry warning
-        if now.weekday() == 3:  # Thursday
+        if now.weekday() == 1:  # Tuesday
             time_to_squareoff = (now.replace(hour=15, minute=15) - now).total_seconds() / 60
             if 0 < time_to_squareoff < 60:
                 summary_text.append(f"\n\n⚠️  Expiry Square-off in {int(time_to_squareoff)} mins", style="bold red blink")

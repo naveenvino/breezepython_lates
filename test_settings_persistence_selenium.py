@@ -64,7 +64,7 @@ def test_settings_persistence():
             'monday': 'current',
             'tuesday': 'current',
             'wednesday': 'next',
-            'thursday': 'next',
+            'tuesday': 'next',
             'friday': 'monthend'
         }
         

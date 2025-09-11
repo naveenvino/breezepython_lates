@@ -286,8 +286,8 @@ This is an automated alert from your trading system.
         """Check for expiry day specific alerts"""
         now = datetime.now()
         
-        # Check if Thursday (expiry day)
-        if now.weekday() == 3:
+        # Check if Tuesday (expiry day)
+        if now.weekday() == 1:
             current_time = now.time()
             
             # Alert 30 minutes before square-off

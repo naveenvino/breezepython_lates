@@ -359,12 +359,12 @@ class TradingViewWebhookService:
         from datetime import datetime, timedelta
         
         today = datetime.now()
-        days_until_thursday = (3 - today.weekday()) % 7
+        days_until_tuesday = (1 - today.weekday()) % 7
         
-        if days_until_thursday == 0 and today.hour >= 15:
-            days_until_thursday = 7
+        if days_until_tuesday == 0 and today.hour >= 15:
+            days_until_tuesday = 7
         
-        expiry = today + timedelta(days=days_until_thursday)
+        expiry = today + timedelta(days=days_until_tuesday)
         return expiry.strftime("%d%b%y").upper()
     
     def _save_webhook_signal(self, signal: TradingViewSignal):

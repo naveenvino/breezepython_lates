@@ -246,7 +246,7 @@ class IntegrationTester:
             "Monday": "current",
             "Tuesday": "current",
             "Wednesday": "next",
-            "Thursday": "current",
+            "Tuesday": "current",
             "Friday": "next"
         }
         

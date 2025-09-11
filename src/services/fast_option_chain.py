@@ -72,18 +72,18 @@ class FastOptionChainService:
         today = datetime.now()
         
         # Current weekly
-        days_to_thursday = (3 - today.weekday()) % 7
-        if days_to_thursday == 0 and today.hour >= 15:
-            days_to_thursday = 7
-        current_expiry = today + timedelta(days=days_to_thursday)
+        days_to_tuesday = (1 - today.weekday()) % 7
+        if days_to_tuesday == 0 and today.hour >= 15:
+            days_to_tuesday = 7
+        current_expiry = today + timedelta(days=days_to_tuesday)
         
         # Next weekly
         next_expiry = current_expiry + timedelta(days=7)
         
-        # Monthly (last Thursday)
+        # Monthly (last Tuesday)
         last_day = (today.replace(day=28) + timedelta(days=4))
         last_day = last_day - timedelta(days=last_day.day)
-        while last_day.weekday() != 3:
+        while last_day.weekday() != 1:
             last_day -= timedelta(days=1)
         
         return {

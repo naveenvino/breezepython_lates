@@ -68,12 +68,12 @@ class OptionChainService:
             logger.warning(f"Could not connect to Breeze: {e}")
     
     def get_current_expiry(self) -> str:
-        """Get current week's expiry date (Thursday)"""
+        """Get current week's expiry date (Tuesday)"""
         today = datetime.now()
-        days_until_thursday = (3 - today.weekday()) % 7
-        if days_until_thursday == 0 and today.hour >= 15:  # After 3 PM on Thursday
-            days_until_thursday = 7
-        expiry = today + timedelta(days=days_until_thursday)
+        days_until_tuesday = (1 - today.weekday()) % 7
+        if days_until_tuesday == 0 and today.hour >= 15:  # After 3 PM on Tuesday
+            days_until_tuesday = 7
+        expiry = today + timedelta(days=days_until_tuesday)
         return expiry.strftime("%Y-%m-%d")
     
     def get_next_expiry(self) -> str:
@@ -83,18 +83,18 @@ class OptionChainService:
         return next_expiry.strftime("%Y-%m-%d")
     
     def get_monthly_expiry(self) -> str:
-        """Get monthly expiry (last Thursday of month)"""
+        """Get monthly expiry (last Tuesday of month)"""
         today = datetime.now()
-        # Find last Thursday of current month
+        # Find last Tuesday of current month
         next_month = today.replace(day=28) + timedelta(days=4)
         last_day = next_month - timedelta(days=next_month.day)
         
-        # Find last Thursday
-        while last_day.weekday() != 3:  # Thursday is 3
+        # Find last Tuesday
+        while last_day.weekday() != 3:  # Tuesday is 3
             last_day -= timedelta(days=1)
             
         if today > last_day:
-            # Move to next month's last Thursday
+            # Move to next month's last Tuesday
             next_month = last_day + timedelta(days=35)
             last_day = next_month.replace(day=28) + timedelta(days=4)
             last_day = last_day - timedelta(days=last_day.day)
@@ -145,8 +145,8 @@ class OptionChainService:
             except Exception as e:
                 logger.error(f"Breeze fetch failed: {e}")
         
-        # No broker available - return error (NO MOCK DATA)
-        raise Exception("No broker connection available. Please check Kite or Breeze credentials.")
+        # No broker available or data unavailable - return proper error
+        raise Exception("Option chain data unavailable. Market may be closed or expiry date invalid. Please check broker connection and try again during market hours.")
     
     def _fetch_from_kite(
         self,
@@ -261,8 +261,9 @@ class OptionChainService:
         for i in range(-strike_count, strike_count + 1):
             strikes.append(atm_strike + (i * strike_interval))
         
-        # Format expiry date for Breeze
+        # Format expiry date for Breeze (DD-Mon-YYYY format with proper case)
         expiry_dt = datetime.strptime(expiry_date, "%Y-%m-%d")
+        # Breeze requires Mon format (e.g., Sep not SEP)
         formatted_expiry = expiry_dt.strftime("%d-%b-%Y")
         
         # Fetch option data
@@ -273,6 +274,17 @@ class OptionChainService:
             call_data = self._fetch_breeze_option(symbol, strike, 'call', formatted_expiry)
             # Fetch put data
             put_data = self._fetch_breeze_option(symbol, strike, 'put', formatted_expiry)
+            
+            # Handle None returns - use empty dict as fallback
+            if call_data is None:
+                call_data = {}
+            if put_data is None:
+                put_data = {}
+            
+            # Skip this strike if both call and put data are unavailable
+            if not call_data and not put_data:
+                logger.debug(f"Skipping strike {strike} - no data available")
+                continue
             
             chain_row = {
                 'strike': strike,
@@ -293,6 +305,10 @@ class OptionChainService:
             
             option_chain.append(chain_row)
         
+        # Check if we got any valid data
+        if not option_chain:
+            raise Exception(f"No option data available for {symbol} expiry {expiry_date}")
+        
         result = {
             'symbol': symbol,
             'spot_price': spot_price,
@@ -303,9 +319,10 @@ class OptionChainService:
             'chain': option_chain
         }
         
-        # Cache for 1 minute
-        cache_key = f"option_chain:{symbol}:{expiry_date}"
-        self.cache.set(cache_key, json.dumps(result), ttl=60)
+        # Only cache if we have valid data
+        if len(option_chain) > 0:
+            cache_key = f"option_chain:{symbol}:{expiry_date}"
+            self.cache.set(cache_key, json.dumps(result), ttl=60)
         
         return result
     
@@ -338,9 +355,9 @@ class OptionChainService:
                     'iv': float(data.get('implied_volatility', 0.25))
                 }
         except Exception as e:
-            logger.debug(f"Error fetching Breeze option data: {e}")
-        
-        return {'ltp': 0, 'bid': 0, 'ask': 0, 'oi': 0, 'volume': 0, 'iv': 0.25}
+            logger.warning(f"Error fetching Breeze option data for {symbol} {strike} {option_type}: {e}")
+            # Return None to indicate this specific option couldn't be fetched
+            return None
     
     def _get_moneyness_label(self, spot: float, strike: float) -> str:
         """Get moneyness label for a strike"""

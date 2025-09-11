@@ -337,19 +337,19 @@ async def _auto_fetch_missing_options_data(from_date: date, to_date: date):
             # Check which strikes have missing data (only for actual period)
             missing_strikes = []
             
-            # Get Thursday expiry for the period
+            # Get Tuesday expiry for the period
             current = from_date
             expiries_checked = 0
             max_expiries = 2  # Limit to 2 expiries max
             
             while current <= to_date and expiries_checked < max_expiries:
-                # Find Thursday of current week
-                days_ahead = 3 - current.weekday()  # Thursday is 3
+                # Find Tuesday of current week
+                days_ahead = 1 - current.weekday()  # Tuesday is 3
                 if days_ahead <= 0:  # Target day already happened this week
                     days_ahead += 7
-                thursday = current + timedelta(days=days_ahead)
+                tuesday = current + timedelta(days=days_ahead)
                 
-                if thursday > to_date + timedelta(days=7):
+                if tuesday > to_date + timedelta(days=7):
                     break  # Don't check expiries too far beyond the period
                 
                 expiries_checked += 1
@@ -363,10 +363,10 @@ async def _auto_fetch_missing_options_data(from_date: date, to_date: date):
                                 FROM OptionsHistoricalData
                                 WHERE Strike = :strike 
                                 AND OptionType = :option_type
-                                AND ExpiryDate >= :thursday AND ExpiryDate < DATEADD(day, 1, :thursday)
+                                AND ExpiryDate >= :tuesday AND ExpiryDate < DATEADD(day, 1, :tuesday)
                                 AND Timestamp >= :from_date AND Timestamp <= :to_date
                             """),
-                            {"strike": strike, "option_type": option_type, "thursday": thursday, "from_date": from_date, "to_date": to_date}
+                            {"strike": strike, "option_type": option_type, "tuesday": tuesday, "from_date": from_date, "to_date": to_date}
                         )
                         
                         count = result.scalar_one_or_none()
@@ -524,7 +524,7 @@ def _format_backtest_results(backtest_id: str):
                     "positions": position_data
                 })
             
-            # Calculate Wednesday vs Thursday comparison
+            # Calculate Wednesday vs Tuesday comparison
             wednesday_total_pnl = sum(float(t.wednesday_exit_pnl) for t in trades if t.wednesday_exit_pnl)
             thursday_total_pnl = sum(float(t.total_pnl) for t in trades if t.total_pnl)
             wednesday_wins = sum(1 for t in trades if t.wednesday_exit_pnl and float(t.wednesday_exit_pnl) > 0)
@@ -546,14 +546,14 @@ def _format_backtest_results(backtest_id: str):
                         "winning_trades": wednesday_wins,
                         "win_rate": (wednesday_wins / len(trades) * 100) if trades else 0
                     },
-                    "thursday_expiry": {
+                    "tuesday_expiry": {
                         "total_pnl": thursday_total_pnl,
                         "winning_trades": run.winning_trades,
                         "win_rate": (run.winning_trades / run.total_trades * 100) if run.total_trades > 0 else 0
                     },
                     "difference": {
                         "pnl": thursday_total_pnl - wednesday_total_pnl,
-                        "better_exit": "Thursday" if thursday_total_pnl > wednesday_total_pnl else "Wednesday"
+                        "better_exit": "Tuesday" if thursday_total_pnl > wednesday_total_pnl else "Wednesday"
                     }
                 },
                 "trades": trade_results
@@ -3295,7 +3295,7 @@ async def create_ml_validation(request: MLValidationRequest, background_tasks: B
                 'monday': {'avg_pnl': 5000, 'exit_time': '15:15'},
                 'tuesday': {'avg_pnl': 12000, 'exit_time': '15:15'},
                 'wednesday': {'avg_pnl': 20000, 'exit_time': '15:15'},
-                'thursday': {'avg_pnl': 28775, 'exit_time': '09:15'}
+                'tuesday': {'avg_pnl': 28775, 'exit_time': '09:15'}
             }
         
         # Process breakeven optimization
@@ -9090,7 +9090,7 @@ def load_weekday_expiry_config():
                 "monday": "current",
                 "tuesday": "current",
                 "wednesday": "next",
-                "thursday": "next",
+                "tuesday": "next",
                 "friday": "next"
             }
     except Exception as e:
@@ -9099,7 +9099,7 @@ def load_weekday_expiry_config():
             "monday": "next",
             "tuesday": "next",
             "wednesday": "next",
-            "thursday": "next",
+            "tuesday": "next",
             "friday": "next"
         }
 
@@ -9140,7 +9140,7 @@ async def save_weekday_config(config: dict):
     """Save weekday expiry configuration"""
     try:
         # Validate config
-        valid_days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+        valid_days = ['monday', 'tuesday', 'wednesday', 'tuesday', 'friday']
         valid_types = ['current', 'next', 'monthend']
         
         for day in valid_days:
@@ -9615,7 +9615,7 @@ async def get_expiry_config():
         "Monday": "current",
         "Tuesday": "current",
         "Wednesday": "current",
-        "Thursday": "current",
+        "Tuesday": "current",
         "Friday": "current"
     }
     
@@ -10198,7 +10198,7 @@ async def get_weekday_expiry_config():
             return {
                 "enabled": False,
                 "exit_time": "15:15",
-                "weekdays": ["monday", "tuesday", "wednesday", "thursday", "friday"]
+                "weekdays": ["monday", "tuesday", "wednesday", "tuesday", "friday"]
             }
             
         with sqlite3.connect(str(db_path)) as conn:
@@ -10212,7 +10212,7 @@ async def get_weekday_expiry_config():
                 return {
                     "enabled": False,
                     "exit_time": "15:15",
-                    "weekdays": ["monday", "tuesday", "wednesday", "thursday", "friday"]
+                    "weekdays": ["monday", "tuesday", "wednesday", "tuesday", "friday"]
                 }
                 
     except Exception as e:

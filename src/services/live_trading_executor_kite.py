@@ -287,13 +287,13 @@ class LiveTradingExecutorKite:
             # Determine strike and option type
             strike, option_type = self.calculate_strike(signal, spot_price)
             
-            # Get current expiry (Thursday)
+            # Get current expiry (Tuesday)
             from datetime import datetime, timedelta
             today = datetime.now()
-            days_until_thursday = (3 - today.weekday()) % 7
-            if days_until_thursday == 0 and today.hour >= 15:
-                days_until_thursday = 7
-            expiry_date = today + timedelta(days=days_until_thursday)
+            days_until_tuesday = (1 - today.weekday()) % 7
+            if days_until_tuesday == 0 and today.hour >= 15:
+                days_until_tuesday = 7
+            expiry_date = today + timedelta(days=days_until_tuesday)
             expiry_str = expiry_date.strftime("%y%b").upper()  # e.g., "25JAN"
             
             # Create Kite trading symbol

@@ -1,0 +1,12 @@
+{
+  "timestamp": "2025-09-09T15:47:28.706845",
+  "tests_passed": 9,
+  "tests_failed": 6,
+  "critical_issues": [],
+  "warnings": [
+    "Accepts unlimited position sizes",
+    "No market hours validation",
+    "No strike validation"
+  ],
+  "successful_flows": []
+}

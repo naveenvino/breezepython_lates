@@ -106,13 +106,13 @@ class FetchOptionChainUseCase:
     
     async def _get_current_expiry(self, symbol: str) -> date:
         """Get current/nearest expiry for the symbol"""
-        # For NIFTY, weekly expiry is Thursday
+        # For NIFTY, weekly expiry is Tuesday
         today = date.today()
-        days_until_thursday = (3 - today.weekday()) % 7
-        if days_until_thursday == 0 and datetime.now().hour >= 15:  # Past 3:30 PM
-            days_until_thursday = 7
+        days_until_tuesday = (1 - today.weekday()) % 7
+        if days_until_tuesday == 0 and datetime.now().hour >= 15:  # Past 3:30 PM
+            days_until_tuesday = 7
         
-        return today + timedelta(days=days_until_thursday)
+        return today + timedelta(days=days_until_tuesday)
     
     async def _save_chain_to_db(
         self,
@@ -290,11 +290,11 @@ class AnalyzeOptionChainUseCase:
         """Get current/nearest expiry"""
         from datetime import timedelta
         today = date.today()
-        days_until_thursday = (3 - today.weekday()) % 7
-        if days_until_thursday == 0 and datetime.now().hour >= 15:
-            days_until_thursday = 7
+        days_until_tuesday = (1 - today.weekday()) % 7
+        if days_until_tuesday == 0 and datetime.now().hour >= 15:
+            days_until_tuesday = 7
         
-        return today + timedelta(days=days_until_thursday)
+        return today + timedelta(days=days_until_tuesday)
     
     async def _analyze_strikes(
         self,

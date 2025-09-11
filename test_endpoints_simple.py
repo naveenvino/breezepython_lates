@@ -126,7 +126,7 @@ def main():
     weekday_config = {
         "enabled": True,
         "exit_time": "15:10",
-        "weekdays": ["monday", "tuesday", "wednesday", "thursday"]
+        "weekdays": ["monday", "tuesday", "wednesday", "tuesday"]
     }
     
     success = test_endpoint("POST", f"{API_BASE_URL}/save-weekday-expiry-config", 

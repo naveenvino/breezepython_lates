@@ -31,20 +31,40 @@ class BreezeOptionChainProduction:
         self.initialize()
     
     def initialize(self):
-        """Initialize Breeze connection - DISABLED to prevent hanging"""
-        # Temporarily disabled to prevent loading issues
-        # Set to not connected immediately
-        self.is_connected = False
-        logger.info("Breeze initialization disabled - using mock data fallback")
+        """Initialize Breeze connection"""
+        try:
+            if not all([self.api_key, self.api_secret, self.session_token]):
+                logger.warning("Missing Breeze credentials - option chain will use fallback")
+                self.is_connected = False
+                return
+            
+            self.breeze = BreezeConnect(api_key=self.api_key)
+            self.breeze.generate_session(
+                api_secret=self.api_secret,
+                session_token=self.session_token
+            )
+            
+            # Test connection
+            response = self.breeze.get_funds()
+            if response and (response.get('Status') == 200 or response.get('Success')):
+                self.is_connected = True
+                logger.info("Successfully connected to Breeze API for option chain")
+            else:
+                self.is_connected = False
+                logger.warning("Breeze connection test failed - using fallback")
+                
+        except Exception as e:
+            logger.error(f"Failed to initialize Breeze: {e}")
+            self.is_connected = False
     
     def get_current_expiry(self) -> str:
-        """Get current weekly expiry (Thursday)"""
+        """Get current weekly expiry (Tuesday)"""
         today = datetime.now()
-        days_ahead = 3 - today.weekday()  # Thursday is 3
+        days_ahead = 1 - today.weekday()  # Tuesday is 1
         if days_ahead <= 0:
             days_ahead += 7
-        next_thursday = today + timedelta(days=days_ahead)
-        return next_thursday.strftime('%Y-%m-%d')
+        next_tuesday = today + timedelta(days=days_ahead)
+        return next_tuesday.strftime('%Y-%m-%d')
     
     def get_spot_price(self) -> Optional[float]:
         """Get real NIFTY spot price"""
@@ -98,18 +118,27 @@ class BreezeOptionChainProduction:
             
             options = []
             
+            # Convert expiry to Breeze format (DD-Mon-YYYY)
+            if expiry:
+                expiry_date = datetime.strptime(expiry, '%Y-%m-%d')
+            else:
+                expiry_date = datetime.strptime(self.get_current_expiry(), '%Y-%m-%d')
+            
+            breeze_expiry = expiry_date.strftime('%d-%b-%Y')
+            
             # Fetch each strike's data
             for strike in strikes_to_fetch:
                 try:
                     # Get both CE and PE for this strike
                     for option_type in ['call', 'put']:
-                        response = self.breeze.get_option_chain_quotes(
+                        # Use get_quotes for option data
+                        response = self.breeze.get_quotes(
                             stock_code=symbol,
                             exchange_code="NFO",
                             product_type="options",
-                            expiry_date=expiry,
+                            expiry_date=breeze_expiry,
                             strike_price=str(strike),
-                            right=option_type
+                            right=option_type[0].upper()  # 'C' for call, 'P' for put
                         )
                         
                         if response.get('Status') == 200:

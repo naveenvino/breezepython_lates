@@ -253,12 +253,12 @@ class EnhancedHourlyExitAnalyzer:
         """Generate textual recommendation based on analysis"""
         
         # Find patterns
-        if 'Monday' in day_analysis and 'Thursday' in day_analysis:
+        if 'Monday' in day_analysis and 'Tuesday' in day_analysis:
             mon_pnl = day_analysis['Monday']['avg_pnl']
-            thu_pnl = day_analysis['Thursday']['avg_pnl']
+            thu_pnl = day_analysis['Tuesday']['avg_pnl']
             
             if thu_pnl > mon_pnl * 1.5:
-                return "Hold till Thursday expiry for maximum theta decay"
+                return "Hold till Tuesday expiry for maximum theta decay"
             elif mon_pnl > thu_pnl:
                 return f"Exit early on Monday at {day_analysis['Monday']['hour']:02d}:30"
         

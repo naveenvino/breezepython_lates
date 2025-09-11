@@ -1,9 +1,21 @@
 {
   "permissions": {
     "allow": [
-      "Bash(C:/Users/E1791/Kitepy/breezepython/.venv/Scripts/python.exe test_unified_ui_integration.py)",
-      "Bash(C:/Users/E1791/Kitepy/breezepython/.venv/Scripts/python.exe test_unified_api_complete.py)",
-      "Bash(C:/Users/E1791/Kitepy/breezepython/.venv/Scripts/python.exe quick_settings_test.py)"
+      "Bash(C:/Users/E1791/Kitepy/breezepython/.venv/Scripts/python.exe quick_api_test.py)",
+      "Bash(findstr:*)",
+      "Bash(start /B C:/Users/E1791/Kitepy/breezepython/.venv/Scripts/python.exe unified_api_correct.py)",
+      "Bash(C:/Users/E1791/Kitepy/breezepython/.venv/Scripts/python.exe:*)",
+      "Bash(curl:*)",
+      "WebFetch(domain:kite.trade)",
+      "Bash(start chrome \"http://localhost:8000/ui/modules/trading/tradingview_pro.html\")",
+      "Bash(start chrome \"http://localhost:8000/ui/modules/trading/tradingview_pro.html?nocache=%RANDOM%\")",
+      "Bash(timeout:*)",
+      "Bash(netstat:*)",
+      "Bash(taskkill:*)",
+      "Bash(cmd /c:*)",
+      "Bash(sqlite3:*)",
+      "Bash(python test_expiry_logic.py:*)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []

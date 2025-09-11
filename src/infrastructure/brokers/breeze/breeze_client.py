@@ -193,4 +193,4 @@ class BreezeClient:
             
         except Exception as e:
             logger.error(f"Error parsing option chain: {e}")
-            return {"strikes": []}
+            raise RuntimeError(f"Failed to parse option chain data: {str(e)}")

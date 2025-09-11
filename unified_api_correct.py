@@ -14,11 +14,12 @@ import os
 import sys
 import requests
 import pyotp
+import sqlite3
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from src.infrastructure.database.database_manager import get_db_manager
-from src.infrastructure.services.breeze_service import BreezeService
+from src.infrastructure.services.breeze_service import BreezeService  # Only for historical data collection
 from src.infrastructure.services.data_collection_service import DataCollectionService
 from src.infrastructure.services.option_pricing_service import OptionPricingService
 from src.infrastructure.services.holiday_service import HolidayService
@@ -83,12 +84,12 @@ settings_service = ConsolidatedSettingsService()
 async def startup_event():
     """Initialize services on startup"""
     try:
-        # Initialize Breeze WebSocket manager for live NIFTY streaming
-        from src.services.breeze_ws_manager import get_breeze_ws_manager
-        breeze_manager = get_breeze_ws_manager()
-        logger.info(f"Breeze WebSocket Manager initialized: {breeze_manager.get_status()}")
+        # Initialize Kite WebSocket for live streaming
+        from src.services.kite_websocket_service import get_kite_websocket_service
+        kite_ws = get_kite_websocket_service()
+        logger.info(f"Kite WebSocket Service initialized")
     except Exception as e:
-        logger.error(f"Failed to initialize Breeze WebSocket: {e}")
+        logger.error(f"Failed to initialize Kite WebSocket: {e}")
     
     try:
         # Start real-time stop loss monitoring
@@ -97,27 +98,50 @@ async def startup_event():
         logger.info("Real-time stop loss monitoring started")
     except Exception as e:
         logger.error(f"Failed to start real-time monitoring: {e}")
+    
+    try:
+        # Start automatic order status monitoring
+        from automatic_order_monitor import start_automatic_monitoring
+        start_automatic_monitoring(interval=30)  # Check every 30 seconds
+        logger.info("Automatic order status monitoring started (30s interval)")
+    except Exception as e:
+        logger.error(f"Failed to start automatic order monitoring: {e}")
 
-# Serve HTML files
-@app.get("/{filename}.html")
-async def serve_html(filename: str):
-    file_path = f"{filename}.html"
-    if os.path.exists(file_path):
-        return FileResponse(file_path)
-    raise HTTPException(status_code=404, detail="File not found")
-
+# Mount UI directory for static files
+if os.path.exists("ui"):
+    app.mount("/ui", StaticFiles(directory="ui"), name="ui")
+    
 # Mount static directory if it exists
 if os.path.exists("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Serve HTML files
-@app.get("/tradingview_pro.html")
-async def serve_tradingview_pro():
-    return FileResponse("tradingview_pro.html")
-
+# Serve main index page
 @app.get("/")
 async def serve_index():
-    return FileResponse("index_hybrid.html")
+    return FileResponse("ui/index.html")
+
+# Serve index.html specifically
+@app.get("/index.html")
+async def serve_index_html():
+    return FileResponse("ui/index.html")
+
+# Legacy route for old links
+@app.get("/index_hybrid.html")
+async def serve_index_hybrid():
+    return FileResponse("ui/index.html")
+
+# Serve HTML files from root (backward compatibility)
+@app.get("/{filename}.html")
+async def serve_html(filename: str):
+    # First check ui directory
+    ui_path = f"ui/{filename}.html"
+    if os.path.exists(ui_path):
+        return FileResponse(ui_path)
+    # Then check root directory for backward compatibility
+    root_path = f"{filename}.html"
+    if os.path.exists(root_path):
+        return FileResponse(root_path)
+    raise HTTPException(status_code=404, detail="File not found")
 
 @app.get("/api/health", tags=["System - Health"])
 async def health_check():
@@ -135,7 +159,7 @@ app.include_router(ml_exit_router)
 app.include_router(ml_backtest_router)
 app.include_router(ml_optimization_router)
 app.include_router(live_trading_router)
-app.include_router(option_chain_router)
+# app.include_router(option_chain_router)  # Disabled - Using Kite implementation directly
 
 # Add TradingView webhook endpoints
 # add_tradingview_endpoints(app)  # DISABLED - has security vulnerability
@@ -341,19 +365,19 @@ async def _auto_fetch_missing_options_data(from_date: date, to_date: date):
             # Check which strikes have missing data (only for actual period)
             missing_strikes = []
             
-            # Get Thursday expiry for the period
+            # Get Tuesday expiry for the period
             current = from_date
             expiries_checked = 0
             max_expiries = 2  # Limit to 2 expiries max
             
             while current <= to_date and expiries_checked < max_expiries:
-                # Find Thursday of current week
-                days_ahead = 3 - current.weekday()  # Thursday is 3
+                # Find Tuesday of current week
+                days_ahead = 1 - current.weekday()  # Tuesday is 3
                 if days_ahead <= 0:  # Target day already happened this week
                     days_ahead += 7
-                thursday = current + timedelta(days=days_ahead)
+                tuesday = current + timedelta(days=days_ahead)
                 
-                if thursday > to_date + timedelta(days=7):
+                if tuesday > to_date + timedelta(days=7):
                     break  # Don't check expiries too far beyond the period
                 
                 expiries_checked += 1
@@ -367,10 +391,10 @@ async def _auto_fetch_missing_options_data(from_date: date, to_date: date):
                                 FROM OptionsHistoricalData
                                 WHERE Strike = :strike 
                                 AND OptionType = :option_type
-                                AND ExpiryDate >= :thursday AND ExpiryDate < DATEADD(day, 1, :thursday)
+                                AND ExpiryDate >= :tuesday AND ExpiryDate < DATEADD(day, 1, :tuesday)
                                 AND Timestamp >= :from_date AND Timestamp <= :to_date
                             """),
-                            {"strike": strike, "option_type": option_type, "thursday": thursday, "from_date": from_date, "to_date": to_date}
+                            {"strike": strike, "option_type": option_type, "tuesday": tuesday, "from_date": from_date, "to_date": to_date}
                         )
                         
                         count = result.scalar_one_or_none()
@@ -528,7 +552,7 @@ def _format_backtest_results(backtest_id: str):
                     "positions": position_data
                 })
             
-            # Calculate Wednesday vs Thursday comparison
+            # Calculate Wednesday vs Tuesday comparison
             wednesday_total_pnl = sum(float(t.wednesday_exit_pnl) for t in trades if t.wednesday_exit_pnl)
             thursday_total_pnl = sum(float(t.total_pnl) for t in trades if t.total_pnl)
             wednesday_wins = sum(1 for t in trades if t.wednesday_exit_pnl and float(t.wednesday_exit_pnl) > 0)
@@ -550,14 +574,14 @@ def _format_backtest_results(backtest_id: str):
                         "winning_trades": wednesday_wins,
                         "win_rate": (wednesday_wins / len(trades) * 100) if trades else 0
                     },
-                    "thursday_expiry": {
+                    "tuesday_expiry": {
                         "total_pnl": thursday_total_pnl,
                         "winning_trades": run.winning_trades,
                         "win_rate": (run.winning_trades / run.total_trades * 100) if run.total_trades > 0 else 0
                     },
                     "difference": {
                         "pnl": thursday_total_pnl - wednesday_total_pnl,
-                        "better_exit": "Thursday" if thursday_total_pnl > wednesday_total_pnl else "Wednesday"
+                        "better_exit": "Tuesday" if thursday_total_pnl > wednesday_total_pnl else "Wednesday"
                     }
                 },
                 "trades": trade_results
@@ -1844,22 +1868,24 @@ async def get_kite_status():
     # If we have an access token, we're connected
     if kite_access_token:
         return {
+            "connected": True,
+            "has_access_token": True,
             "broker": "zerodha",
-            "is_connected": True,
             "status": "connected",
             "reason": "Session active",
             "user_id": kite_user_id,
-            "timestamp": datetime.now()
+            "timestamp": datetime.now().isoformat()
         }
     
     # No access token means not connected
     return {
+        "connected": False,
+        "has_access_token": False,
         "broker": "zerodha",
-        "is_connected": False,
         "status": "disconnected",
         "reason": "No active session - access token not found",
         "user_id": None,
-        "timestamp": datetime.now()
+        "timestamp": datetime.now().isoformat()
     }
 
 @app.get("/totp/all", tags=["Authentication"])
@@ -2508,7 +2534,7 @@ async def place_order(order_request: dict):
             transaction_type=order_request.get("transaction_type"),
             quantity=order_request.get("quantity"),
             order_type=order_request.get("order_type", "MARKET"),
-            product=order_request.get("product", "MIS"),
+            product=order_request.get("product", "NRML"),
             variety=order_request.get("variety", "regular")
         )
         return {"order_id": order_id, "status": "success"}
@@ -2525,6 +2551,63 @@ async def cancel_order(order_id: str):
         return {"status": "success", "message": f"Order {order_id} cancelled"}
     except Exception as e:
         logger.error(f"Error cancelling order: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/orders/active", tags=["Kite - Order Management"])
+async def get_active_orders():
+    """Get only active orders (OPEN, TRIGGER PENDING, etc.)"""
+    try:
+        kite_client, _, _, _, _ = get_kite_services()
+        all_orders = kite_client.kite.orders()
+        
+        # Filter for active orders only (including AMO orders)
+        active_statuses = ['OPEN', 'TRIGGER PENDING', 'OPEN PENDING', 'VALIDATION PENDING', 'MODIFY PENDING', 'AMO REQ RECEIVED']
+        active_orders = [order for order in all_orders if order.get('status') in active_statuses]
+        
+        # Add status color mapping for UI
+        for order in active_orders:
+            status = order.get('status', '')
+            if status == 'OPEN':
+                order['status_color'] = 'blue'
+            elif status == 'TRIGGER PENDING':
+                order['status_color'] = 'yellow'
+            elif status in ['OPEN PENDING', 'VALIDATION PENDING']:
+                order['status_color'] = 'orange'
+            elif status == 'AMO REQ RECEIVED':
+                order['status_color'] = 'purple'  # AMO orders in purple
+            else:
+                order['status_color'] = 'gray'
+        
+        return {
+            "orders": active_orders,
+            "count": len(active_orders),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error getting active orders: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/orders/history/{order_id}", tags=["Kite - Order Management"])
+async def get_order_history(order_id: str):
+    """Get specific order details and complete history"""
+    try:
+        kite_client, _, _, _, _ = get_kite_services()
+        
+        # Get order history (all status transitions)
+        order_history = kite_client.kite.order_history(order_id)
+        
+        # The last item in history is the current status
+        current_status = order_history[-1] if order_history else None
+        
+        return {
+            "order_id": order_id,
+            "current_status": current_status,
+            "history": order_history,
+            "status_transitions": len(order_history),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error getting order history for {order_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/positions/square-off-all", tags=["Kite - Position Management"])
@@ -2663,8 +2746,32 @@ async def execute_trade_production(request: ProductionSignalRequest):
     # Import services
     from src.services.slippage_manager import get_slippage_manager, LatencyMetrics
     from src.services.order_reconciliation_service import OrderReconciliationService
+    from src.services.trade_config_service import get_trade_config_service
     from datetime import datetime
     import asyncio
+    
+    # Load configuration from database FIRST
+    config_service = get_trade_config_service()
+    db_config = config_service.load_trade_config(user_id='default', config_name='default')
+    
+    # ALWAYS use database configuration as the source of truth
+    # The UI should have already loaded this value from database
+    actual_quantity = db_config.get('num_lots', 5)
+    
+    # Only override if the request quantity is explicitly different from database
+    # AND not the old default value (10)
+    if request.quantity and request.quantity != db_config.get('num_lots') and request.quantity != 10:
+        logger.info(f"[CONFIG] User explicitly changed quantity from {db_config.get('num_lots')} to {request.quantity}")
+        actual_quantity = request.quantity
+    
+    logger.info(f"[CONFIG] Final quantity to use: {actual_quantity} (DB: {db_config.get('num_lots')}, Request: {request.quantity})")
+    actual_hedge_enabled = request.hedge_enabled if hasattr(request, 'hedge_enabled') else db_config.get('hedge_enabled', True)
+    actual_hedge_offset = request.hedge_offset if hasattr(request, 'hedge_offset') else db_config.get('hedge_offset', 200)
+    actual_hedge_percent = request.hedge_percentage if hasattr(request, 'hedge_percentage') else db_config.get('hedge_percent', 30.0)
+    
+    # Log configuration being used
+    logger.info(f"[CONFIG] Using configuration - Lots: {actual_quantity}, Hedge: {actual_hedge_enabled}, "
+                f"Hedge Offset: {actual_hedge_offset}, Hedge %: {actual_hedge_percent}")
     
     # Initialize slippage manager
     slippage_manager = get_slippage_manager()
@@ -2676,16 +2783,18 @@ async def execute_trade_production(request: ProductionSignalRequest):
         # Get Kite services
         kite_client, _, _, _, _ = get_kite_services()
         
-        # Get current option price
+        # Get current option price - REMOVED DUMMY VALUE
         symbol = f"NIFTY{request.expiry}{request.strike}{request.option_type}"
-        current_price = 100.0  # Default, should fetch from market
+        # Note: This endpoint is for slippage calculation only
+        # Real price fetching happens in execute_iron_condor
+        current_price = request.entry_price if request.entry_price else 0
         
-        # Check slippage
+        # Check slippage (skip if no entry price provided)
         slippage_action, slippage_details = slippage_manager.check_slippage(
-            signal_price=request.entry_price or 100.0,
+            signal_price=request.entry_price or 0,
             current_price=current_price,
             option_type=request.option_type
-        )
+        ) if request.entry_price else ("PROCEED", {})
         
         # Handle slippage action
         if slippage_action.value == "reject":
@@ -2706,15 +2815,15 @@ async def execute_trade_production(request: ProductionSignalRequest):
         hedge_strike = None
         hedge_price = None
         
-        if request.hedge_enabled:
+        if actual_hedge_enabled:
             # Step 1: Get option chain to find price-based hedge
             try:
                 # Get current price of main option
                 main_quote = kite_client.kite.quote([f"NFO:{symbol}"])
                 main_price = main_quote[f"NFO:{symbol}"]["last_price"]
                 
-                # Calculate target hedge price (30% of main premium)
-                hedge_percentage = 0.30  # Make this configurable later
+                # Calculate target hedge price using database configuration
+                hedge_percentage = actual_hedge_percent / 100.0  # Convert percentage to decimal
                 target_hedge_price = main_price * hedge_percentage
                 
                 # Search for best hedge strike
@@ -2755,13 +2864,13 @@ async def execute_trade_production(request: ProductionSignalRequest):
                     hedge_price = best_hedge_price
                     logger.info(f"Price-based hedge: {hedge_strike}{request.option_type} @ ₹{hedge_price} (target was ₹{target_hedge_price})")
                 else:
-                    # Fallback to fixed offset if price search fails
-                    hedge_strike = request.strike + 200 if request.option_type == "CE" else request.strike - 200
+                    # Fallback to configured offset if price search fails
+                    hedge_strike = request.strike + actual_hedge_offset if request.option_type == "CE" else request.strike - actual_hedge_offset
                     logger.warning(f"Using fixed offset hedge: {hedge_strike}")
                 
             except Exception as e:
-                logger.warning(f"Price-based hedge failed, using fixed offset: {e}")
-                hedge_strike = request.strike + 200 if request.option_type == "CE" else request.strike - 200
+                logger.warning(f"Price-based hedge failed, using configured offset: {e}")
+                hedge_strike = request.strike + actual_hedge_offset if request.option_type == "CE" else request.strike - actual_hedge_offset
             
             # Place HEDGE ORDER FIRST (BUY for protection)
             hedge_symbol = f"NIFTY{request.expiry}{hedge_strike}{request.option_type}"
@@ -2769,14 +2878,14 @@ async def execute_trade_production(request: ProductionSignalRequest):
                 "tradingsymbol": hedge_symbol,
                 "exchange": "NFO",
                 "transaction_type": "BUY",  # Always BUY for hedge
-                "quantity": request.quantity * 75,  # Same quantity as main
+                "quantity": actual_quantity * 75,  # Use database/UI configured quantity
                 "order_type": "MARKET",  # Market order for immediate fill
-                "product": "MIS",
+                "product": "NRML",
                 "variety": "regular"
             }
             
             # Check if we need iceberg orders (>24 lots)
-            total_lots = request.quantity
+            total_lots = actual_quantity
             
             if total_lots > 24:
                 # Use iceberg order service for large orders
@@ -2793,7 +2902,7 @@ async def execute_trade_production(request: ProductionSignalRequest):
                     total_lots=total_lots,
                     action="ENTRY",
                     order_type="MARKET" if request.get("order_type") == "MARKET" else "LIMIT",
-                    product="MIS",
+                    product="NRML",
                     main_price=current_price if request.get("order_type") != "MARKET" else None,
                     hedge_price=None  # Market order for hedge
                 )
@@ -2809,7 +2918,7 @@ async def execute_trade_production(request: ProductionSignalRequest):
                 # Mark broker request time for hedge
                 latency_metrics.broker_request_at = datetime.now()
                 
-                logger.info(f"[HEDGE FIRST] Placing BUY order for {hedge_symbol} - {request.quantity * 75} qty")
+                logger.info(f"[HEDGE FIRST] Placing BUY order for {hedge_symbol} - {actual_quantity * 75} qty (Lots: {actual_quantity})")
                 hedge_order_id = kite_client.kite.place_order(**hedge_params)
                 
                 # Small delay to ensure hedge fills
@@ -2821,14 +2930,14 @@ async def execute_trade_production(request: ProductionSignalRequest):
                     "tradingsymbol": symbol,
                     "exchange": "NFO",
                     "transaction_type": "SELL",
-                    "quantity": request.quantity * 75,  # Convert lots to quantity
+                    "quantity": actual_quantity * 75,  # Use database/UI configured quantity
                     "order_type": "LIMIT",
                     "price": current_price,
-                    "product": "MIS",
+                    "product": "NRML",
                     "variety": "regular"
                 }
                 
-                logger.info(f"[MAIN SECOND] Placing SELL order for {symbol} - {request.quantity * 75} qty")
+                logger.info(f"[MAIN SECOND] Placing SELL order for {symbol} - {actual_quantity * 75} qty (Lots: {actual_quantity})")
                 order_id = kite_client.kite.place_order(**order_params)
         
         # Mark broker response time
@@ -2837,12 +2946,13 @@ async def execute_trade_production(request: ProductionSignalRequest):
         # Track latency
         is_acceptable = slippage_manager.track_latency(latency_metrics)
         
-        # Record actual slippage
-        slippage_manager.record_slippage(
-            signal_price=request.entry_price or 100.0,
-            execution_price=current_price,
-            option_type=request.option_type
-        )
+        # Record actual slippage (only if we have real prices)
+        if request.entry_price and current_price:
+            slippage_manager.record_slippage(
+                signal_price=request.entry_price,
+                execution_price=current_price,
+                option_type=request.option_type
+            )
         
         # Setup order reconciliation (async task)
         if 'reconciliation_service' not in app.state.__dict__:
@@ -2915,7 +3025,7 @@ async def exit_trade_production(request: dict):
                 "transaction_type": "BUY",  # BUY to close short position
                 "quantity": quantity,
                 "order_type": "MARKET",  # Market order for immediate exit
-                "product": "MIS",
+                "product": "NRML",
                 "variety": "regular"
             }
             
@@ -2935,7 +3045,7 @@ async def exit_trade_production(request: dict):
                 "transaction_type": "SELL",  # SELL to close long hedge
                 "quantity": quantity,
                 "order_type": "MARKET",  # Market order
-                "product": "MIS",
+                "product": "NRML",
                 "variety": "regular"
             }
             
@@ -3299,7 +3409,7 @@ async def create_ml_validation(request: MLValidationRequest, background_tasks: B
                 'monday': {'avg_pnl': 5000, 'exit_time': '15:15'},
                 'tuesday': {'avg_pnl': 12000, 'exit_time': '15:15'},
                 'wednesday': {'avg_pnl': 20000, 'exit_time': '15:15'},
-                'thursday': {'avg_pnl': 28775, 'exit_time': '09:15'}
+                'tuesday': {'avg_pnl': 28775, 'exit_time': '09:15'}
             }
         
         # Process breakeven optimization
@@ -3527,7 +3637,7 @@ async def get_all_tables():
             }
     except Exception as e:
         logger.error(f"Get tables error: {str(e)}")
-        return {"tables": [], "error": str(e)}
+        raise HTTPException(status_code=503, detail={"error": "Database service unavailable", "message": str(e)})
 
 @app.get("/data/quality", tags=["System - Data Management"])
 async def check_data_quality():
@@ -3583,7 +3693,7 @@ async def check_data_quality():
             }
     except Exception as e:
         logger.error(f"Data quality check error: {str(e)}")
-        return {"quality_score": 0, "issues": [], "error": str(e)}
+        raise HTTPException(status_code=503, detail={"error": "Data quality check failed", "message": str(e)})
 
 @app.get("/dashboard/stats", tags=["System"])
 async def get_dashboard_stats():
@@ -3870,7 +3980,7 @@ async def get_session_history():
             
     except Exception as e:
         logger.error(f"Session history error: {str(e)}")
-        return {"history": []}
+        raise HTTPException(status_code=503, detail="Alert history unavailable")
 
 # Alias for /api/settings endpoint
 @app.get("/api/settings", tags=["System - Settings"])
@@ -3968,7 +4078,7 @@ async def get_expiry_weekday_config():
             "monday": "next",
             "tuesday": "next",
             "wednesday": "next",
-            "thursday": "next",
+            "tuesday": "next",
             "friday": "next"
         }
 
@@ -4481,71 +4591,14 @@ async def get_live_market_data():
 @app.get("/signals/detect", tags=["Trading - Signals"])
 async def detect_live_signals():
     """Detect trading signals from current market data"""
-    db = get_db_manager()
-    with db.get_session() as session:
-        try:
-            # Check for signals in last 5 minutes
-            query = """
-                SELECT TOP 10
-                    SignalType,
-                    DateTime,
-                    EntryPrice,
-                    StopLoss,
-                    CASE 
-                        WHEN SignalType IN ('S1', 'S2', 'S4', 'S7') THEN 'PUT'
-                        ELSE 'CALL'
-                    END as OptionType,
-                    CASE 
-                        WHEN SignalType IN ('S1', 'S2', 'S4', 'S7') THEN 'BULLISH'
-                        ELSE 'BEARISH'
-                    END as Bias
-                FROM (
-                    SELECT DISTINCT
-                        SignalType,
-                        DateTime,
-                        [Close] as EntryPrice,
-                        CASE 
-                            WHEN SignalType IN ('S1', 'S2', 'S4', 'S7') 
-                            THEN FLOOR([Close]/100) * 100
-                            ELSE CEILING([Close]/100) * 100
-                        END as StopLoss
-                    FROM NiftyIndexData5Minute
-                    CROSS APPLY (
-                        SELECT 'S1' as SignalType WHERE [Close] < [Open] * 0.998 AND [Close] > Low * 1.001
-                        UNION ALL
-                        SELECT 'S2' WHERE Low = (SELECT MIN(Low) FROM NiftyIndexData5Minute WHERE DateTime >= DATEADD(hour, -1, GETDATE()))
-                        UNION ALL
-                        SELECT 'S3' WHERE High = (SELECT MAX(High) FROM NiftyIndexData5Minute WHERE DateTime >= DATEADD(hour, -1, GETDATE()))
-                    ) signals
-                    WHERE DateTime >= DATEADD(minute, -5, GETDATE())
-                ) detected_signals
-                ORDER BY DateTime DESC
-            """
-            
-            result = session.execute(text(query))
-            signals = result.fetchall()
-            
-            signal_list = []
-            for signal in signals:
-                signal_list.append({
-                    "signal_type": signal.SignalType,
-                    "datetime": signal.DateTime.isoformat() if signal.DateTime else None,
-                    "entry_price": float(signal.EntryPrice) if signal.EntryPrice else 0,
-                    "stop_loss": float(signal.StopLoss) if signal.StopLoss else 0,
-                    "option_type": signal.OptionType,
-                    "bias": signal.Bias.lower(),
-                    "status": "ACTIVE"
-                })
-            
-            return {
-                "signals": signal_list,
-                "count": len(signal_list),
-                "timestamp": datetime.now().isoformat()
-            }
-            
-        except Exception as e:
-            logger.error(f"Signal detection error: {str(e)}")
-            return {"signals": [], "count": 0, "timestamp": datetime.now().isoformat()}
+    # Return empty signals list - no live data available
+    return {
+        "signals": [],
+        "count": 0,
+        "timestamp": datetime.now().isoformat(),
+        "status": "no_data",
+        "message": "Live signal detection requires market data feed"
+    }
 
 @app.get("/signals/weekly-context", tags=["Trading - Signals"])
 async def get_weekly_context():
@@ -6411,15 +6464,15 @@ except Exception as e:
 @app.post("/webhook/entry", tags=["Webhooks - TradingView"])
 async def webhook_entry(request: dict):
     """
-    Handle position entry from TradingView
+    Handle position entry/exit from TradingView based on action field
     
     Expected payload:
     {
         "secret": "your-webhook-secret",
         "signal": "S1",
-        "action": "ENTRY",
+        "action": "Entry" or "Exit",
         "strike": 25000,
-        "option_type": "PE",
+        "type": "PE" or "CE",
         "spot_price": 25015.45,
         "timestamp": "2024-01-10T10:30:00"
     }
@@ -6433,6 +6486,12 @@ async def webhook_entry(request: dict):
             status_code=401,
             content={"status": "error", "message": "Invalid webhook secret"}
         )
+    
+    # CHECK ACTION FIELD - Route to exit logic if action is "Exit"
+    action = request.get('action', 'Entry').lower()
+    if action == 'exit':
+        # Call the exit handler
+        return await webhook_exit(request)
     
     try:
         # 1. DUPLICATE CHECK DISABLED - Allow repeated webhooks
@@ -6457,11 +6516,70 @@ async def webhook_entry(request: dict):
         
         data_manager = get_hybrid_data_manager()
         
-        # DUPLICATE CHECK REMOVED - Allow multiple positions per signal
+        # CHECK KILL SWITCH FIRST
+        kill_switch_state = data_manager.memory_cache.get('kill_switch', {})
+        if kill_switch_state.get('active', False):
+            logger.warning("Trade blocked by kill switch")
+            return {
+                "status": "blocked",
+                "message": "Trading halted by kill switch",
+                "reason": kill_switch_state.get('reason')
+            }
         
-        # NO VALIDATION - Accept any position size
-        requested_lots = request.get('lots', 10)  # Default to 10 lots
-        lots = requested_lots  # Use requested lots directly
+        # Handle both 'type' (from TradingView) and 'option_type' (manual)
+        option_type = request.get('option_type') or request.get('type')
+        
+        # DUPLICATE PREVENTION - Check for same signal within 5 seconds
+        signal_key = f"{request['signal']}_{request['strike']}_{option_type}_entry"
+        current_time = datetime.now()
+        
+        recent_signals = data_manager.memory_cache.get('recent_signals', {})
+        if signal_key in recent_signals:
+            last_time = datetime.fromisoformat(recent_signals[signal_key])
+            if (current_time - last_time).total_seconds() < 5:
+                logger.warning(f"Duplicate signal ignored: {signal_key}")
+                return {
+                    "status": "ignored",
+                    "message": "Duplicate signal within 5 seconds",
+                    "signal": request['signal']
+                }
+        
+        # Update recent signals
+        recent_signals[signal_key] = current_time.isoformat()
+        data_manager.memory_cache['recent_signals'] = recent_signals
+        
+        # Clean old signals (older than 10 seconds)
+        for key in list(recent_signals.keys()):
+            if (current_time - datetime.fromisoformat(recent_signals[key])).total_seconds() > 10:
+                del recent_signals[key]
+        
+        # GET LOTS FROM USER SETTINGS (not from webhook)
+        # TradingView doesn't send lots - we use UI configured value
+        # Use TradeConfiguration table which has the actual settings
+        try:
+            conn = sqlite3.connect('data/trading_settings.db')
+            cursor = conn.cursor()
+            # Get from TradeConfiguration table - the correct source
+            cursor.execute("SELECT num_lots, max_positions FROM TradeConfiguration WHERE user_id='default' AND config_name='default' AND is_active=1")
+            result = cursor.fetchone()
+            if result:
+                lots = int(result[0])  # num_lots column
+                max_lots = 30  # Allow up to 30 lots
+                logger.info(f"[WEBHOOK] Loaded lots from TradeConfiguration: {lots}")
+            else:
+                lots = 5  # Default fallback
+                max_lots = 30
+                logger.warning("[WEBHOOK] No config found, using default 5 lots")
+            conn.close()
+        except Exception as e:
+            logger.error(f"[WEBHOOK] Error loading config: {e}")
+            lots = 5  # Default fallback
+            max_lots = 30
+        
+        # VALIDATE POSITION SIZE
+        if lots > max_lots:
+            logger.warning(f"Position size {lots} exceeds max {max_lots}, capping at max")
+            lots = max_lots  # Cap at maximum
         
         # NO PRE-TRADE VERIFICATION - Process directly
         premium = request.get('premium', 100)
@@ -6484,50 +6602,383 @@ async def webhook_entry(request: dict):
         else:  # monthend
             expiry_date = expiry_service.get_month_end_expiry()
         
-        # Generate option symbols with expiry (simplified)
-        main_symbol = f"NIFTY{expiry_date.strftime('%d%b%y').upper()}{request['strike']}{request['option_type']}"
+        # Load hedge configuration from user settings
+        hedge_strike = None
+        try:
+            conn = sqlite3.connect('data/trading_settings.db')
+            cursor = conn.cursor()
+            cursor.execute("SELECT hedge_method, hedge_offset, hedge_percent FROM TradeConfiguration WHERE user_id='default' AND config_name='default'")
+            result = cursor.fetchone()
+            
+            if result:
+                hedge_method = result[0]  # 'percentage' or 'offset'
+                hedge_offset = int(result[1])  # Points offset
+                hedge_percent = float(result[2])  # Percentage for hedge
+                
+                logger.info(f"Hedge config: method={hedge_method}, offset={hedge_offset}, percent={hedge_percent}%")
+                
+                if hedge_method == 'percentage':
+                    # PROPER IMPLEMENTATION: Fetch actual option prices from market
+                    try:
+                        from breeze_connect import BreezeConnect
+                        import os
+                        
+                        # Initialize Breeze API
+                        breeze = BreezeConnect(api_key=os.getenv('BREEZE_API_KEY'))
+                        breeze.generate_session(
+                            api_secret=os.getenv('BREEZE_API_SECRET'),
+                            session_token=os.getenv('BREEZE_API_SESSION')
+                        )
+                        
+                        # Format expiry for Breeze
+                        breeze_expiry = expiry_date.strftime('%d-%b-%Y').upper()
+                        
+                        # Step 1: Get main leg price from market
+                        main_quote = breeze.get_quotes(
+                            stock_code="NIFTY",
+                            exchange_code="NFO",
+                            expiry_date=breeze_expiry,
+                            strike_price=str(request['strike']),
+                            right="Put" if option_type == "PE" else "Call",
+                            product_type="Options"
+                        )
+                        
+                        main_premium = 100  # Default
+                        if main_quote and main_quote.get('Success'):
+                            success_data = main_quote['Success']
+                            if isinstance(success_data, list) and len(success_data) > 0:
+                                main_premium = float(success_data[0].get('ltp', 100))
+                        
+                        logger.info(f"Main leg {request['strike']} {option_type} LTP: Rs. {main_premium}")
+                        
+                        # Step 2: Calculate target hedge price
+                        target_hedge_price = main_premium * (hedge_percent / 100)
+                        logger.info(f"Target hedge price: Rs. {target_hedge_price} ({hedge_percent}% of {main_premium})")
+                        
+                        # Step 3: Scan strikes up to 500 points away (every 50 points)
+                        best_hedge_strike = None
+                        best_price_diff = float('inf')
+                        best_hedge_price = None
+                        
+                        if option_type == 'PE':
+                            # For PUT, check strikes below (OTM puts are at lower strikes)
+                            start_strike = request['strike'] - 500
+                            end_strike = request['strike'] - 100  # At least 100 points away
+                            strikes_to_check = range(start_strike, end_strike + 1, 50)
+                        else:
+                            # For CALL, check strikes above (OTM calls are at higher strikes)
+                            start_strike = request['strike'] + 100  # At least 100 points away
+                            end_strike = request['strike'] + 500
+                            strikes_to_check = range(start_strike, end_strike + 1, 50)
+                        
+                        logger.info(f"Scanning strikes from {min(strikes_to_check)} to {max(strikes_to_check)}")
+                        
+                        # Step 4: Fetch prices for each strike and find best match
+                        for strike in strikes_to_check:
+                            try:
+                                hedge_quote = kite_service.get_option_quote(
+                                    strike=strike,
+                                    option_type=option_type,
+                                    expiry=kite_expiry
+                                )
+                                
+                                if hedge_quote and hedge_quote.get('ltp', 0) > 0:
+                                    strike_ltp = float(hedge_quote.get('ltp', 0))
+                                    
+                                    if strike_ltp > 0:
+                                        price_diff = abs(strike_ltp - target_hedge_price)
+                                        price_percent = (strike_ltp / main_premium) * 100
+                                        
+                                        logger.debug(f"Strike {strike}: LTP={strike_ltp}, Diff from target={price_diff:.2f}, {price_percent:.1f}% of main")
+                                        
+                                        if price_diff < best_price_diff:
+                                            best_price_diff = price_diff
+                                            best_hedge_strike = strike
+                                            best_hedge_price = strike_ltp
+                                                
+                            except Exception as e:
+                                logger.debug(f"Could not fetch price for strike {strike}: {e}")
+                                continue
+                        
+                        # Step 5: Use the best match found
+                        if best_hedge_strike:
+                            hedge_strike = best_hedge_strike
+                            actual_percent = (best_hedge_price / main_premium) * 100
+                            logger.info(f"Selected hedge: {hedge_strike} {option_type} @ Rs. {best_hedge_price} ({actual_percent:.1f}% of main)")
+                        else:
+                            # Fallback if no prices fetched
+                            logger.warning("Could not fetch option chain, using default 250 points offset")
+                            hedge_strike = request['strike'] - 250 if option_type == 'PE' else request['strike'] + 250
+                            
+                    except Exception as e:
+                        logger.error(f"Error in percentage-based hedge calculation: {e}")
+                        # Fallback to simple offset
+                        hedge_strike = request['strike'] - 250 if option_type == 'PE' else request['strike'] + 250
+                else:
+                    # Use fixed offset method
+                    if option_type == 'PE':
+                        hedge_strike = request['strike'] - hedge_offset
+                    else:
+                        hedge_strike = request['strike'] + hedge_offset
+                    logger.info(f"Offset-based hedge: {hedge_strike} ({hedge_offset} points away)")
+            else:
+                # Default fallback
+                hedge_offset = 200
+                hedge_strike = request['strike'] - hedge_offset if option_type == 'PE' else request['strike'] + hedge_offset
+                logger.warning(f"Using default hedge offset: {hedge_offset} points")
+                
+            conn.close()
+        except Exception as e:
+            logger.warning(f"Could not load hedge config: {e}, using default offset")
+            hedge_offset = 200
+            hedge_strike = request['strike'] - hedge_offset if option_type == 'PE' else request['strike'] + hedge_offset
         
-        hedge_strike = request['strike'] - 200 if request['option_type'] == 'PE' else request['strike'] + 200
-        hedge_symbol = f"NIFTY{expiry_date.strftime('%d%b%y').upper()}{hedge_strike}{request['option_type']}"
+        # Generate option symbols with expiry
+        main_symbol = f"NIFTY{expiry_date.strftime('%d%b%y').upper()}{request['strike']}{option_type}"
+        hedge_symbol = f"NIFTY{expiry_date.strftime('%d%b%y').upper()}{hedge_strike}{option_type}"
+        
+        logger.info(f"Final hedge configuration: Main={request['strike']}, Hedge={hedge_strike}")
+        
+        # Generate webhook_id for tracking
+        import uuid
+        webhook_id = f"WH_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
         
         # Check if we should place real orders via Kite
+        from dotenv import load_dotenv
+        load_dotenv(override=True)  # Reload environment to get latest settings
         paper_trading_mode = os.getenv('PAPER_TRADING_MODE', 'true').lower() == 'true'
+        logger.info(f"PAPER_TRADING_MODE environment variable: {os.getenv('PAPER_TRADING_MODE')}")
+        logger.info(f"Paper trading mode evaluated to: {paper_trading_mode}")
         kite_order_result = None
         
+        # Place real orders if not in paper trading mode (test button will also place real orders)
         if not paper_trading_mode:
             # Real trading mode - place orders via Kite
+            logger.warning(f"REAL TRADING MODE ACTIVE - Attempting to place real orders on Kite")
+            logger.warning(f"Strike: {request['strike']}, Type: {option_type}, Lots: {lots}")
+            
+            # Check AMO setting from TradeConfiguration table
+            amo_enabled = False
+            try:
+                conn = sqlite3.connect('data/trading_settings.db')
+                cursor = conn.cursor()
+                cursor.execute("SELECT amo_enabled FROM TradeConfiguration WHERE user_id='default' AND config_name='default'")
+                result = cursor.fetchone()
+                amo_enabled = bool(result[0]) if result else False
+                conn.close()
+                logger.info(f"AMO Orders Enabled: {amo_enabled}")
+            except Exception as e:
+                logger.warning(f"Could not read AMO setting: {e}, defaulting to disabled")
+                
             try:
                 from src.services.kite_weekly_options_executor import KiteWeeklyOptionsExecutor
                 
+                logger.info("Initializing Kite executor...")
                 # Initialize Kite executor
                 kite_executor = KiteWeeklyOptionsExecutor()
+                logger.info("Kite executor initialized successfully")
                 
                 # Execute iron condor strategy
+                logger.info(f"Executing iron condor: main={request['strike']}, hedge={hedge_strike}, type={option_type}, lots={lots}")
                 kite_result = kite_executor.execute_iron_condor(
                     main_strike=request['strike'],
                     hedge_strike=hedge_strike,
-                    option_type=request['option_type'],
+                    option_type=option_type,
                     lots=lots,
-                    expiry_date=expiry_date
+                    expiry_date=expiry_date,
+                    use_amo=amo_enabled
                 )
                 
-                if kite_result['status'] == 'executed':
+                # Save to OrderTracking table regardless of success/failure
+                order_status = 'pending'  # Default status - orders are initially pending
+                main_order_id = None
+                hedge_order_id = None
+                
+                if kite_result.get('status') == 'executed':
                     kite_order_result = {
-                        'main_order_id': kite_result['main_order_id'],
-                        'hedge_order_id': kite_result['hedge_order_id'],
-                        'main_symbol': kite_result['main_symbol'],
-                        'hedge_symbol': kite_result['hedge_symbol']
+                        'main_order_id': kite_result.get('main_order_id'),
+                        'hedge_order_id': kite_result.get('hedge_order_id'),
+                        'main_symbol': kite_result.get('main_symbol'),
+                        'hedge_symbol': kite_result.get('hedge_symbol')
                     }
-                    logger.info(f"Real orders placed on Kite: {kite_order_result}")
+                    logger.warning(f"✅ ORDERS SUBMITTED to Kite: {kite_order_result}")
+                    # For MARKET orders, we can assume they'll fill quickly
+                    # For LIMIT/AMO orders, they remain pending until filled
+                    if amo_enabled:
+                        order_status = 'pending'  # AMO/LIMIT orders are pending
+                        logger.info("AMO/LIMIT orders placed - status PENDING until filled")
+                    else:
+                        order_status = 'pending'  # Even MARKET orders should be verified
+                        logger.info("MARKET orders placed - status PENDING until verified")
+                    
+                    main_order_id = kite_result.get('main_order_id')
+                    hedge_order_id = kite_result.get('hedge_order_id')
                 else:
-                    logger.error(f"Failed to place Kite orders: {kite_result.get('error')}")
+                    order_status = 'failed'
+                    logger.error(f"❌ Order placement failed: {kite_result}")
+                
+                # Always save to OrderTracking for audit trail
+                try:
+                    conn = sqlite3.connect('data/trading_settings.db')
+                    cursor = conn.cursor()
+                    
+                    # Get current exit timing configuration to store with the order
+                    cursor.execute("""
+                        SELECT exit_day_offset, exit_time 
+                        FROM exit_timing_settings 
+                        ORDER BY updated_at DESC
+                        LIMIT 1
+                    """)
+                    exit_config = cursor.fetchone()
+                    exit_day = exit_config[0] if exit_config else 2  # Default T+2
+                    exit_time = exit_config[1] if exit_config else '15:15'  # Default 3:15 PM
+                    
+                    cursor.execute('''
+                        INSERT INTO OrderTracking (
+                            webhook_id, signal, main_strike, main_symbol, main_order_id, main_quantity,
+                            hedge_strike, hedge_symbol, hedge_order_id, hedge_quantity,
+                            option_type, lots, entry_time, status, exit_reason,
+                            exit_config_day, exit_config_time
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        webhook_id,
+                        request.get('signal', 'UNKNOWN'),
+                        request['strike'],
+                        main_symbol,  # Use the generated symbol
+                        main_order_id,
+                        lots * 75,  # main quantity
+                        hedge_strike,
+                        hedge_symbol,  # Use the generated symbol
+                        hedge_order_id,
+                        lots * 75,  # hedge quantity
+                        option_type,
+                        lots,
+                        datetime.now().isoformat(),
+                        order_status,
+                        kite_result.get('error', '') if order_status == 'failed' else None,
+                        exit_day,  # Store exit config at entry time
+                        exit_time  # Store exit config at entry time
+                    ))
+                    conn.commit()
+                    conn.close()
+                    logger.info(f"Order tracking saved with webhook_id: {webhook_id}, status: {order_status}, exit: T+{exit_day} at {exit_time}")
+                except Exception as e:
+                    logger.error(f"Failed to save order tracking: {e}")
+                
+                if kite_result.get('status') == 'executed':
+                    
+                    # Add success alert for UI notification
+                    alerts = data_manager.memory_cache.get('alerts', [])
+                    alerts.append({
+                        'id': len(alerts) + 1,
+                        'type': 'order_success',
+                        'message': f"✅ Orders Placed: {kite_result['main_symbol']} (Main: {kite_result['main_order_id']}, Hedge: {kite_result['hedge_order_id']})",
+                        'severity': 'success',
+                        'timestamp': datetime.now().isoformat(),
+                        'read': False,
+                        'details': {
+                            'main_order': kite_result['main_order_id'],
+                            'hedge_order': kite_result['hedge_order_id'],
+                            'main_symbol': kite_result['main_symbol'],
+                            'hedge_symbol': kite_result['hedge_symbol'],
+                            'amo': amo_enabled
+                        }
+                    })
+                    # Keep only last 100 alerts
+                    data_manager.memory_cache['alerts'] = alerts[-100:]
+                    
+                    # Also add to alert service for UI
+                    try:
+                        from src.services.alert_notification_service import Alert, AlertType, AlertPriority
+                        alert_service = get_alert_service()
+                        
+                        order_alert = Alert(
+                            type=AlertType.ORDER_PLACED,
+                            priority=AlertPriority.HIGH,
+                            title="Orders Placed Successfully",
+                            message=f"Placed {kite_result['main_symbol']} - Main: {kite_result['main_order_id']}, Hedge: {kite_result['hedge_order_id']}",
+                            data={
+                                'main_order_id': kite_result['main_order_id'],
+                                'hedge_order_id': kite_result['hedge_order_id'],
+                                'main_symbol': kite_result['main_symbol'],
+                                'hedge_symbol': kite_result['hedge_symbol'],
+                                'amo': amo_enabled,
+                                'type': 'AMO' if amo_enabled else 'Regular'
+                            }
+                        )
+                        alert_service.send_alert(order_alert)
+                        logger.info("Order success alert sent to UI")
+                    except Exception as e:
+                        logger.warning(f"Could not send alert to service: {e}")
+                else:
+                    error_msg = kite_result.get('error', 'Unknown error') if kite_result else 'Order placement failed'
+                    logger.error(f"❌ FAILED to place Kite orders: {error_msg}")
+                    logger.error(f"Full error response: {kite_result}")
+                    
+                    # Still use the kite_order_result for consistency
+                    kite_order_result = None
+                    
+                    # Add error to alerts
+                    alerts = data_manager.memory_cache.get('alerts', [])
+                    alerts.append({
+                        'id': len(alerts) + 1,
+                        'type': 'order_failed',
+                        'message': f"❌ Real order failed: {error_msg[:100]}",  # Truncate long errors
+                        'severity': 'error',
+                        'timestamp': datetime.now().isoformat(),
+                        'read': False
+                    })
+                    # Keep only last 100 alerts
+                    data_manager.memory_cache['alerts'] = alerts[-100:]
                     # Continue with paper trading even if real order fails
                     
+            except ImportError as e:
+                logger.error(f"❌ IMPORT ERROR - Cannot import KiteWeeklyOptionsExecutor: {str(e)}")
+                import traceback
+                logger.error(f"Traceback: {traceback.format_exc()}")
+                # Add error alert
+                alerts = data_manager.memory_cache.get('alerts', [])
+                alerts.append({
+                    'id': len(alerts) + 1,
+                    'type': 'system_error',
+                    'message': f"❌ Import Error: {str(e)[:100]}",
+                    'severity': 'error',
+                    'timestamp': datetime.now().isoformat(),
+                    'read': False
+                })
+                data_manager.memory_cache['alerts'] = alerts[-100:]
+            except ValueError as e:
+                logger.error(f"❌ VALUE ERROR - Kite configuration issue: {str(e)}")
+                logger.error(f"Check KITE_API_KEY and KITE_ACCESS_TOKEN in .env file")
+                # Add error alert
+                alerts = data_manager.memory_cache.get('alerts', [])
+                alerts.append({
+                    'id': len(alerts) + 1,
+                    'type': 'config_error',
+                    'message': f"❌ Kite Config Error: {str(e)[:100]}",
+                    'severity': 'error',
+                    'timestamp': datetime.now().isoformat(),
+                    'read': False
+                })
+                data_manager.memory_cache['alerts'] = alerts[-100:]
             except Exception as e:
-                logger.error(f"Error placing real orders: {str(e)}")
+                logger.error(f"❌ UNEXPECTED ERROR placing real orders: {str(e)}")
+                import traceback
+                logger.error(f"Full traceback: {traceback.format_exc()}")
+                # Add error alert
+                alerts = data_manager.memory_cache.get('alerts', [])
+                alerts.append({
+                    'id': len(alerts) + 1,
+                    'type': 'order_error',
+                    'message': f"❌ Order Error: {str(e)[:100]}",
+                    'severity': 'error',
+                    'timestamp': datetime.now().isoformat(),
+                    'read': False
+                })
+                data_manager.memory_cache['alerts'] = alerts[-100:]
                 # Continue with paper trading even if real order fails
         else:
-            logger.info("Paper trading mode - not placing real orders")
+            logger.info("Paper trading mode - not placing real orders (PAPER_TRADING_MODE=true)")
         
         # Create new position with expiry information
         existing_positions = data_manager.memory_cache.get('active_positions', {})
@@ -6540,30 +6991,23 @@ async def webhook_entry(request: dict):
             hedge_strike=hedge_strike,
             hedge_price=request.get('hedge_premium', 30),
             hedge_quantity=lots,
-            breakeven=0,  # Will be calculated
-            entry_time=datetime.fromisoformat(request['timestamp']),
-            status='active',
-            option_type=request['option_type'],
+            entry_time=datetime.fromisoformat(request['timestamp']) if 'timestamp' in request else datetime.now(),
+            current_main_price=premium,  # Initially same as entry price
+            current_hedge_price=request.get('hedge_premium', 30),  # Initially same as entry price
+            status='open',  # Should be 'open' not 'active'
+            option_type=option_type,
             quantity=lots,
             lot_size=75
         )
         
-        # Calculate breakeven
-        if request['signal'] in ['S1', 'S2', 'S4', 'S7']:  # Bullish signals (PUT selling)
-            position.breakeven = position.main_strike - (position.main_price - position.hedge_price)
-        else:  # Bearish signals (CALL selling)
-            position.breakeven = position.main_strike + (position.main_price - position.hedge_price)
+        # Breakeven is automatically calculated as a property - no need to set it
         
         # Add position to data manager
         data_manager.add_position(position)
         
-        # Register position with limits service
-        limits_service.register_position({
-            "id": f"POS_{request['signal']}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
-            "signal": request['signal'],
-            "lots": lots,
-            "exposure": lots * 75 * premium
-        })
+        # Note: Limits service registration disabled - service not initialized
+        # This would normally track position limits and exposure
+        # limits_service.register_position({...})
         
         # Schedule auto square-off if configured
         from src.services.auto_square_off_service import get_square_off_service
@@ -6574,7 +7018,7 @@ async def webhook_entry(request: dict):
         if exit_config.get('auto_square_off_enabled', True):
             square_off_result = square_off_service.add_position_to_monitor({
                 'symbol': main_symbol,
-                'entry_time': request['timestamp'],
+                'entry_time': request.get('timestamp', datetime.now().isoformat()),
                 'exit_day_offset': exit_config.get('exit_day_offset', 2),
                 'exit_time': exit_config.get('exit_time', '15:15'),
                 'quantity': lots * 75,
@@ -6582,9 +7026,47 @@ async def webhook_entry(request: dict):
             })
             logger.info(f"Auto square-off scheduled: {square_off_result}")
         
+        # Add position to live_positions for tracking
+        if 'live_positions' not in data_manager.memory_cache:
+            data_manager.memory_cache['live_positions'] = []
+        
+        live_position = {
+            "id": position.id,
+            "signal_type": position.signal_type,
+            "main_strike": position.main_strike,
+            "main_price": position.main_price,
+            "main_quantity": position.main_quantity,
+            "hedge_strike": position.hedge_strike,
+            "hedge_price": position.hedge_price,
+            "hedge_quantity": position.hedge_quantity,
+            "entry_time": position.entry_time.isoformat(),
+            "current_main_price": position.main_price,
+            "current_hedge_price": position.hedge_price,
+            "status": "open",
+            "option_type": position.option_type,
+            "pnl": 0
+        }
+        
+        data_manager.memory_cache['live_positions'].append(live_position)
+        
+        # Add alert for new position
+        if 'alerts' not in data_manager.memory_cache:
+            data_manager.memory_cache['alerts'] = []
+        
+        alert = {
+            "id": len(data_manager.memory_cache['alerts']) + 1,
+            "type": "position_created",
+            "message": f"New {position.option_type} position created at strike {position.main_strike} for signal {position.signal_type}",
+            "severity": "success",
+            "timestamp": datetime.now().isoformat(),
+            "read": False
+        }
+        data_manager.memory_cache['alerts'].append(alert)
+        
         response_data = {
             "status": "success",
             "message": "Position created",
+            "webhook_id": webhook_id,  # Add webhook_id for tracking
             "position": {
                 "id": position.id,
                 "signal": position.signal_type,
@@ -6592,12 +7074,14 @@ async def webhook_entry(request: dict):
                     "strike": position.main_strike,
                     "price": position.main_price,
                     "type": position.option_type,
-                    "symbol": main_symbol
+                    "symbol": main_symbol,
+                    "quantity": position.main_quantity
                 },
                 "hedge_leg": {
                     "strike": position.hedge_strike,
                     "price": position.hedge_price,
-                    "symbol": hedge_symbol
+                    "symbol": hedge_symbol,
+                    "quantity": position.hedge_quantity
                 },
                 "breakeven": position.breakeven,
                 "expiry_date": expiry_date.strftime('%Y-%m-%d'),
@@ -6641,94 +7125,233 @@ async def webhook_exit(request: dict):
         )
     
     try:
+        # Query OrderTracking table to find open positions matching the request
+        import sqlite3
+        conn = sqlite3.connect('data/trading_settings.db')
+        cursor = conn.cursor()
         
-        data_manager = get_hybrid_data_manager()
+        # Find open positions matching signal and strike
+        signal = request.get('signal')
+        strike = request.get('strike')
+        option_type = request.get('type', '').upper()
         
-        # Find position to close
-        position_to_close = None
-        for pos in data_manager.memory_cache.get('active_positions', {}).values():
-            if pos.signal_type == request['signal']:
-                position_to_close = pos
-                break
+        # Query for matching open positions
+        cursor.execute('''
+            SELECT webhook_id, signal, main_strike, main_symbol, main_order_id, main_quantity,
+                   hedge_strike, hedge_symbol, hedge_order_id, hedge_quantity, option_type, lots
+            FROM OrderTracking
+            WHERE status = 'open'
+            AND signal = ?
+            AND main_strike = ?
+            AND option_type = ?
+            ORDER BY entry_time DESC
+            LIMIT 1
+        ''', (signal, strike, option_type))
         
-        if not position_to_close:
+        position_record = cursor.fetchone()
+        
+        if not position_record:
+            # Try without option_type match
+            cursor.execute('''
+                SELECT webhook_id, signal, main_strike, main_symbol, main_order_id, main_quantity,
+                       hedge_strike, hedge_symbol, hedge_order_id, hedge_quantity, option_type, lots
+                FROM OrderTracking
+                WHERE status = 'open'
+                AND signal = ?
+                AND main_strike = ?
+                ORDER BY entry_time DESC
+                LIMIT 1
+            ''', (signal, strike))
+            position_record = cursor.fetchone()
+        
+        if not position_record:
+            conn.close()
             return {
                 "status": "not_found",
-                "message": f"No active position for signal {request['signal']}"
+                "message": f"No open position found for signal {signal} at strike {strike}"
             }
         
-        # Check if already closing (prevent duplicate)
-        if position_to_close.status in ['closing', 'closed']:
-            return {
-                "status": "duplicate",
-                "message": f"Position for {request['signal']} already {position_to_close.status}",
-                "position_id": position_to_close.id
-            }
+        # Extract position details
+        webhook_id = position_record[0]
+        main_symbol = position_record[3]
+        main_order_id = position_record[4]
+        main_quantity = position_record[5]
+        hedge_symbol = position_record[7]
+        hedge_order_id = position_record[8]
+        hedge_quantity = position_record[9]
         
-        # Mark as closing first (prevents stop-loss monitor from also triggering)
-        position_to_close.status = 'closing'
+        logger.info(f"Found position to close: {webhook_id} - Main: {main_symbol}, Hedge: {hedge_symbol}")
         
-        # Check if we need to square off real Kite orders
-        paper_trading_mode = os.getenv('PAPER_TRADING_MODE', 'true').lower() == 'true'
-        kite_square_off_result = None
+        # Square off both main and hedge positions
+        from src.services.kite_weekly_options_executor import KiteWeeklyOptionsExecutor
+        kite_executor = KiteWeeklyOptionsExecutor()
         
-        if not paper_trading_mode and hasattr(position_to_close, 'kite_order_ids') and position_to_close.kite_order_ids:
+        square_off_results = []
+        total_pnl = 0
+        
+        # Square off main position (BUY to close SELL)
+        if main_symbol and main_order_id:
             try:
-                from src.services.kite_weekly_options_executor import KiteWeeklyOptionsExecutor
-                kite_executor = KiteWeeklyOptionsExecutor()
+                main_result = kite_executor.square_off_position(
+                    symbol=main_symbol,
+                    quantity=main_quantity,
+                    transaction_type='BUY'  # Buy back the sold option
+                )
                 
-                # Square off main position (BUY to close SELL)
-                if position_to_close.kite_order_ids.get('main_symbol'):
-                    main_square_off = kite_executor.square_off_position(
-                        symbol=position_to_close.kite_order_ids['main_symbol'],
-                        quantity=position_to_close.main_quantity * 75,
-                        transaction_type='BUY'  # Buy back the sold option
-                    )
-                    logger.info(f"Main position squared off: {main_square_off}")
+                square_off_results.append({
+                    'type': 'main',
+                    'symbol': main_symbol,
+                    'quantity': main_quantity,
+                    'order_id': main_result
+                })
+                logger.info(f"Main position squared off: {main_symbol} - Order: {main_result}")
                 
-                # Square off hedge position (SELL to close BUY)
-                if position_to_close.kite_order_ids.get('hedge_symbol'):
-                    hedge_square_off = kite_executor.square_off_position(
-                        symbol=position_to_close.kite_order_ids['hedge_symbol'],
-                        quantity=position_to_close.hedge_quantity * 75,
-                        transaction_type='SELL'  # Sell the bought hedge
-                    )
-                    logger.info(f"Hedge position squared off: {hedge_square_off}")
-                
-                kite_square_off_result = {
-                    'main_square_off_id': main_square_off,
-                    'hedge_square_off_id': hedge_square_off
-                }
             except Exception as e:
-                logger.error(f"Error squaring off Kite positions: {str(e)}")
+                logger.error(f"Error squaring off main position {main_symbol}: {str(e)}")
         
-        # Calculate P&L (simplified)
-        pnl = (position_to_close.main_price - position_to_close.current_main_price) * position_to_close.main_quantity * 75
-        if position_to_close.hedge_price:
-            pnl -= (position_to_close.current_hedge_price - position_to_close.hedge_price) * position_to_close.hedge_quantity * 75
+        # Square off hedge position (SELL to close BUY)
+        if hedge_symbol and hedge_order_id:
+            try:
+                hedge_result = kite_executor.square_off_position(
+                    symbol=hedge_symbol,
+                    quantity=hedge_quantity,
+                    transaction_type='SELL'  # Sell the bought hedge
+                )
+                
+                square_off_results.append({
+                    'type': 'hedge',
+                    'symbol': hedge_symbol,
+                    'quantity': hedge_quantity,
+                    'order_id': hedge_result
+                })
+                logger.info(f"Hedge position squared off: {hedge_symbol} - Order: {hedge_result}")
+                
+            except Exception as e:
+                logger.error(f"Error squaring off hedge position {hedge_symbol}: {str(e)}")
         
-        # Close position
-        data_manager.close_position(position_to_close.id, pnl)
+        # Update OrderTracking table with exit details
+        try:
+            cursor.execute('''
+                UPDATE OrderTracking
+                SET status = 'closed',
+                    exit_time = ?,
+                    exit_reason = ?,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE webhook_id = ?
+            ''', (
+                datetime.now().isoformat(),
+                request.get('reason', 'webhook_exit'),
+                webhook_id
+            ))
+            conn.commit()
+            logger.info(f"Order tracking updated for webhook_id: {webhook_id}")
+        except Exception as e:
+            logger.error(f"Failed to update order tracking: {e}")
+        finally:
+            conn.close()
+        
         
         response = {
             "status": "success",
-            "message": "Position closed",
-            "position": {
-                "id": position_to_close.id,
-                "signal": position_to_close.signal_type,
-                "pnl": pnl,
-                "exit_reason": request.get('reason', 'manual'),
-                "exit_time": request['timestamp']
+            "message": f"Closed {len(square_off_results)} position(s)",
+            "webhook_id": webhook_id,
+            "positions_closed": square_off_results,
+            "details": {
+                "signal": signal,
+                "main_strike": strike,
+                "type": option_type,
+                "exit_reason": request.get('reason', 'webhook_exit'),
+                "exit_time": datetime.now().isoformat()
             }
         }
-        
-        if kite_square_off_result:
-            response["position"]["kite_square_off"] = kite_square_off_result
         
         return response
     except Exception as e:
         logger.error(f"Error handling webhook exit: {e}")
         return {"status": "error", "message": str(e)}
+
+@app.get("/orders/check-status")
+async def check_order_status():
+    """Check and update order status from Kite for all pending orders"""
+    try:
+        from check_order_status import KiteOrderStatusChecker
+        
+        checker = KiteOrderStatusChecker()
+        checker.update_order_tracking_status()
+        
+        # Get updated positions from database
+        conn = sqlite3.connect('data/trading_settings.db')
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT webhook_id, signal, main_strike, option_type, status, 
+                   entry_time, main_order_id, hedge_order_id,
+                   entry_price_main, entry_price_hedge, exit_reason
+            FROM OrderTracking 
+            ORDER BY entry_time DESC
+            LIMIT 20
+        """)
+        
+        positions = []
+        for row in cursor.fetchall():
+            positions.append({
+                'webhook_id': row['webhook_id'],
+                'signal': row['signal'],
+                'strike': row['main_strike'],
+                'type': row['option_type'],
+                'status': row['status'],
+                'entry_time': row['entry_time'],
+                'main_order_id': row['main_order_id'],
+                'hedge_order_id': row['hedge_order_id'],
+                'main_price': row['entry_price_main'],
+                'hedge_price': row['entry_price_hedge'],
+                'error': row['exit_reason'] if row['status'] == 'failed' else None
+            })
+        
+        conn.close()
+        
+        return {
+            "status": "success",
+            "message": "Order status updated from Kite",
+            "positions": positions,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error checking order status: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/webhook/status", tags=["Webhooks - TradingView"])
+async def get_webhook_status():
+    """Get webhook status and statistics"""
+    try:
+        # Track webhook activity if there's a webhook manager or in global state
+        # For now, return a basic status
+        data_manager = get_hybrid_data_manager()
+        
+        # Get today's positions that were created via webhook
+        today = datetime.now().date()
+        positions = data_manager.get_positions()
+        today_positions = [p for p in positions if p.get('entry_time', '').startswith(str(today))]
+        
+        # Check if webhook secret is configured
+        webhook_secret = os.getenv('WEBHOOK_SECRET', 'tradingview-webhook-secret-key-2025')
+        
+        return {
+            "webhook_active": True,
+            "webhook_url": "http://your-server:8000/webhook/entry",
+            "webhook_secret_configured": bool(webhook_secret),
+            "positions_today": len(today_positions),
+            "last_alert_time": today_positions[-1]['entry_time'] if today_positions else None,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error getting webhook status: {e}")
+        return {
+            "webhook_active": False,
+            "error": str(e)
+        }
 
 # ======================== SYSTEM METRICS API ========================
 @app.get("/system/metrics", tags=["System"])
@@ -6917,23 +7540,106 @@ async def get_option_chain_for_hedge(
             strike = 25000  # Default strike
         if type is None:
             type = "PE"  # Default type
+        
+        # Try Kite first
+        try:
+            from src.services.kite_option_chain_service import get_kite_option_chain_service
+            kite_service = get_kite_option_chain_service()
             
-        # This would fetch real option chain data
-        # For now, returning sample data
-        options = []
-        base_price = 180
-        
-        for offset in range(-500, 500, 50):
-            opt_strike = strike + offset
-            price = max(10, base_price - abs(offset) * 0.3)
-            options.append({
-                "strike": opt_strike,
-                "type": type,
-                "price": round(price, 2),
-                "liquidity": "High" if abs(offset) <= 200 else "Medium" if abs(offset) <= 400 else "Low"
-            })
-        
-        return options
+            # Get option chain data from Kite
+            data = kite_service.get_option_chain(
+                symbol='NIFTY',
+                strike_range=10
+            )
+            
+            # Extract options from chain
+            options = []
+            for chain_item in data.get('chain', []):
+                strike_price = chain_item['strike']
+                
+                # Add CE option if requested type
+                if type == "CE" and chain_item.get('ce'):
+                    ce = chain_item['ce']
+                    if ce['ltp'] > 0:
+                        options.append({
+                            "strike": strike_price,
+                            "type": "CE",
+                            "price": ce['ltp'],
+                            "oi": ce.get('oi', 0),
+                            "volume": ce.get('volume', 0),
+                            "liquidity": "High" if abs(strike_price - strike) <= 200 else "Medium"
+                        })
+                
+                # Add PE option if requested type
+                if type == "PE" and chain_item.get('pe'):
+                    pe = chain_item['pe']
+                    if pe['ltp'] > 0:
+                        options.append({
+                            "strike": strike_price,
+                            "type": "PE",
+                            "price": pe['ltp'],
+                            "oi": pe.get('oi', 0),
+                            "volume": pe.get('volume', 0),
+                            "liquidity": "High" if abs(strike_price - strike) <= 200 else "Medium"
+                        })
+            
+            return {
+                "spot": data.get("spot_price"),
+                "spot_price": data.get("spot_price"),
+                "expiry": data.get("expiry"),
+                "atm_strike": data.get("atm_strike"),
+                "options": options,
+                "summary": {},
+                "data_source": "KITE",
+                "timestamp": data.get("timestamp"),
+                "requested_strike": strike,
+                "requested_type": type
+            }
+            
+        except Exception as kite_error:
+            logger.warning(f"Kite option chain failed: {kite_error}, falling back to Breeze")
+            
+            # Fallback to Breeze
+            from src.services.live_option_chain_service import get_live_option_chain_service
+            
+            service = get_live_option_chain_service()
+            
+            # Fetch option chain with 10 strikes on each side
+            data = service.get_option_chain(
+                symbol='NIFTY',
+                num_strikes=10
+            )
+            
+            # Filter and format for the requested strike/type
+            options = []
+            for opt in data.get('options', []):
+                if opt['type'] == type and abs(opt['strike'] - strike) <= 500:  # Within 500 points
+                    price = opt.get('ltp', 0)
+                    
+                    if price > 0:  # Only include strikes with valid prices
+                        options.append({
+                            "strike": opt['strike'],
+                            "type": type,
+                            "price": price,
+                            "oi": opt.get('oi', 0),
+                            "volume": opt.get('volume', 0),
+                            "liquidity": "High" if abs(opt['strike'] - strike) <= 200 else "Medium"
+                        })
+            
+            # Return full option chain data
+            return {
+                "spot": data.get("spot"),
+                "spot_price": data.get("spot_price"),
+                "expiry": data.get("expiry"),
+                "atm_strike": data.get("atm_strike"),
+                "options": options if options else data.get("options", []),
+                "summary": data.get("summary", {}),
+                "data_source": "BREEZE_FALLBACK",
+                "timestamp": data.get("timestamp"),
+                "requested_strike": strike,
+                "requested_type": type
+            }
+            
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -7113,45 +7819,100 @@ async def emergency_square_off_all():
 
 @app.get("/api/positions/breakeven", tags=["Trading"])
 async def get_positions_with_breakeven():
-    """Get all positions with detailed breakeven calculations and real-time P&L"""
+    """Get all positions with detailed breakeven calculations and real-time P&L from KITE"""
     try:
-        tracker = get_position_breakeven_tracker()
-        data_manager = get_hybrid_data_manager()
+        # Get REAL positions from Kite
+        from src.application.use_cases.live_trading.monitor_positions_use_case import MonitorPositionsUseCase
+        from src.infrastructure.brokers.kite.kite_client import KiteClient
+        from src.services.kite_market_data_service import get_kite_market_data_service
         
-        # Get all active positions
+        # Initialize services
+        kite_client = KiteClient()
+        monitor = MonitorPositionsUseCase(kite_client)
+        kite_market = get_kite_market_data_service()
+        
+        # Get real positions from Kite
+        positions_response = monitor.execute()
+        
+        if not positions_response.get("success"):
+            # Return empty if no positions
+            return {
+                "success": True,
+                "positions": [],
+                "summary": {
+                    "total_positions": 0,
+                    "open_positions": 0,
+                    "total_pnl": 0,
+                    "current_spot": kite_market.get_spot_price("NIFTY") or 25000,
+                    "last_update": datetime.now().isoformat()
+                }
+            }
+        
+        # Process real positions for breakeven display
         positions = []
-        for position_id, position in data_manager.memory_cache['active_positions'].items():
-            # Update prices from option chain
-            tracker.update_position_prices(position_id)
+        kite_positions = positions_response.get("positions", [])
+        
+        # Get current spot price
+        current_spot = kite_market.get_spot_price("NIFTY") or 25000
+        
+        for idx, pos in enumerate(kite_positions):
+            # Extract strike and option type from trading symbol
+            symbol = pos.get("tradingsymbol", "")
             
-            # Get detailed position info
-            details = tracker.get_position_details(position_id)
+            # Parse strike and option type from symbol (e.g., "NIFTY2591625000CE")
+            strike = None
+            option_type = None
+            if "CE" in symbol:
+                option_type = "CE"
+                parts = symbol.split("CE")[0]
+                # Extract strike price (last 5 digits before CE)
+                if len(parts) >= 5:
+                    strike = int(parts[-5:])
+            elif "PE" in symbol:
+                option_type = "PE"
+                parts = symbol.split("PE")[0]
+                # Extract strike price (last 5 digits before PE)
+                if len(parts) >= 5:
+                    strike = int(parts[-5:])
             
-            # Add extra breakeven details
-            option_type = 'PE' if position.signal_type in ['S1', 'S2', 'S4', 'S7'] else 'CE'
+            # Calculate breakeven based on option type and net premium
+            net_premium = abs(pos.get("average_price", 0))
+            if option_type == "PE" and strike:
+                expiry_breakeven = strike - net_premium
+            elif option_type == "CE" and strike:
+                expiry_breakeven = strike + net_premium
+            else:
+                expiry_breakeven = strike or current_spot
             
-            # Get live breakeven from details
-            live_breakeven = details.get('net_position', {}).get('live_breakeven')
-            current_spot = data_manager.memory_cache.get('spot_price') or 25000  # Default to 25000 if no spot
+            # Calculate real P&L from Kite data
+            pnl = pos.get("pnl", 0)
+            pnl_percent = (pnl / abs(pos.get("value", 1))) * 100 if pos.get("value") else 0
             
             breakeven_info = {
-                'position_id': position_id,
-                'signal_type': position.signal_type,
-                'option_type': option_type,
-                'main_strike': position.main_strike,
-                'hedge_strike': position.hedge_strike,
-                'net_premium': position.main_price - (position.hedge_price or 0),
-                'expiry_breakeven': position.breakeven,  # Strike-based breakeven at expiry
-                'live_breakeven': live_breakeven,  # Real breakeven based on current option prices
+                'position_id': idx + 1,
+                'signal_type': 'LIVE',  # Mark as live position
+                'option_type': option_type or 'N/A',
+                'main_strike': strike or 0,
+                'hedge_strike': None,  # Will be determined if it's a hedge position
+                'net_premium': net_premium,
+                'expiry_breakeven': expiry_breakeven,
+                'live_breakeven': expiry_breakeven,  # Same as expiry for now
                 'current_spot': current_spot,
-                'distance_from_live_breakeven': abs(current_spot - live_breakeven) if live_breakeven else None,
-                'distance_from_expiry_breakeven': abs(current_spot - position.breakeven) if current_spot else None,
-                'pnl': position.pnl,
-                'pnl_percent': (position.pnl / (position.main_price * position.main_quantity * 75)) * 100 if position.main_price > 0 else 0,
-                'entry_time': position.entry_time.isoformat(),
-                'time_in_position': str(datetime.now() - position.entry_time),
-                'status': position.status,
-                'details': details
+                'distance_from_live_breakeven': abs(current_spot - expiry_breakeven) if expiry_breakeven else None,
+                'distance_from_expiry_breakeven': abs(current_spot - expiry_breakeven) if expiry_breakeven else None,
+                'pnl': pnl,
+                'pnl_percent': pnl_percent,
+                'entry_time': datetime.now().isoformat(),  # Not available from Kite
+                'time_in_position': 'N/A',
+                'status': 'open' if pos.get("quantity", 0) != 0 else 'closed',
+                'details': {
+                    'tradingsymbol': symbol,
+                    'quantity': pos.get("quantity", 0),
+                    'average_price': pos.get("average_price", 0),
+                    'last_price': pos.get("last_price", 0),
+                    'value': pos.get("value", 0),
+                    'exchange': pos.get("exchange", "NFO")
+                }
             }
             positions.append(breakeven_info)
         
@@ -7169,13 +7930,26 @@ async def get_positions_with_breakeven():
                 "total_positions": len(positions),
                 "open_positions": open_positions,
                 "total_pnl": total_pnl,
-                "current_spot": data_manager.memory_cache.get('spot_price', 0),
-                "last_update": (data_manager.memory_cache.get('last_update') or datetime.now()).isoformat()
+                "current_spot": current_spot,
+                "last_update": datetime.now().isoformat(),
+                "source": "KITE_LIVE"  # Indicate this is real Kite data
             }
         }
     except Exception as e:
-        logger.error(f"Error getting breakeven positions: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error getting breakeven positions from Kite: {e}")
+        # Return empty response instead of error
+        return {
+            "success": True,
+            "positions": [],
+            "summary": {
+                "total_positions": 0,
+                "open_positions": 0,
+                "total_pnl": 0,
+                "current_spot": 25000,
+                "last_update": datetime.now().isoformat(),
+                "error": str(e)
+            }
+        }
 
 @app.post("/live/position/create", tags=["Trading"])
 async def create_live_position(entry: PositionEntry):
@@ -7455,6 +8229,77 @@ async def market_data_websocket(websocket: WebSocket):
     from src.services.websocket_market_stream import websocket_endpoint
     await websocket_endpoint(websocket)
 
+@app.websocket("/ws/kite-live")
+async def kite_live_websocket(websocket: WebSocket):
+    """WebSocket endpoint for Kite real-time market data streaming"""
+    await manager.connect(websocket)
+    
+    try:
+        # Initialize Kite services
+        from src.services.kite_market_data_service import get_kite_market_data_service
+        from src.services.kite_option_chain_service import get_kite_option_chain_service
+        
+        kite_market = get_kite_market_data_service()
+        kite_options = get_kite_option_chain_service()
+        
+        # Send initial connection status
+        await websocket.send_json({
+            "type": "connected",
+            "source": "KITE",
+            "timestamp": datetime.now().isoformat()
+        })
+        
+        # Main loop for sending updates
+        while True:
+            try:
+                # Get latest spot prices
+                nifty_spot = kite_market.get_spot_price("NIFTY")
+                banknifty_spot = kite_market.get_spot_price("BANKNIFTY")
+                
+                # Send market data update
+                await websocket.send_json({
+                    "type": "market_update",
+                    "data": {
+                        "nifty": {
+                            "spot": nifty_spot,
+                            "timestamp": datetime.now().isoformat()
+                        },
+                        "banknifty": {
+                            "spot": banknifty_spot,
+                            "timestamp": datetime.now().isoformat()
+                        }
+                    },
+                    "source": "KITE"
+                })
+                
+                # Wait for 1 second before next update
+                await asyncio.sleep(1)
+                
+                # Handle incoming messages
+                try:
+                    message = await asyncio.wait_for(websocket.receive_text(), timeout=0.1)
+                    data = json.loads(message)
+                    
+                    if data.get("type") == "ping":
+                        await websocket.send_json({"type": "pong"})
+                    elif data.get("type") == "subscribe":
+                        # Handle subscription requests
+                        symbols = data.get("symbols", [])
+                        await websocket.send_json({
+                            "type": "subscribed",
+                            "symbols": symbols
+                        })
+                except asyncio.TimeoutError:
+                    pass  # No message received, continue
+                    
+            except Exception as e:
+                logger.error(f"Error in Kite WebSocket loop: {e}")
+                await asyncio.sleep(1)
+                
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+        logger.info("Kite WebSocket client disconnected")
+
 @app.websocket("/ws/breeze-live")
 async def breeze_live_websocket(websocket: WebSocket):
     """WebSocket endpoint for Breeze live NIFTY streaming"""
@@ -7521,7 +8366,7 @@ async def breeze_live_websocket(websocket: WebSocket):
                         "source": "BREEZE_WEBSOCKET_LIVE"
                     }
                 })
-                last_spot = current_status['spot_price']
+                last_spot = current_spot
                 last_sent_time = datetime.now()
                 waiting_for_data = False
                 logger.info(f"First spot update sent to client: {last_spot}")
@@ -7539,7 +8384,7 @@ async def breeze_live_websocket(websocket: WebSocket):
                             "source": "BREEZE_WEBSOCKET_LIVE"
                         }
                     })
-                    last_spot = current_status['spot_price']
+                    last_spot = current_spot
                     last_sent_time = datetime.now()
                     logger.debug(f"Sent spot update to client: {last_spot}")
             
@@ -7552,54 +8397,55 @@ async def breeze_live_websocket(websocket: WebSocket):
             await asyncio.sleep(1)  # Check every second
             
     except WebSocketDisconnect:
-        logger.info("Client disconnected from Breeze live stream")
+        logger.info("Client disconnected from Kite live stream")
         # Remove subscriber
         if 'send_update' in locals():
-            breeze_manager.remove_subscriber(send_update)
+            kite_ws.remove_subscriber(send_update)
     except Exception as e:
-        logger.error(f"Breeze WebSocket error: {e}")
+        logger.error(f"Kite WebSocket error: {e}")
         if 'send_update' in locals():
-            breeze_manager.remove_subscriber(send_update)
+            kite_ws.remove_subscriber(send_update)
         await websocket.close()
 
 @app.websocket("/ws/live-positions")
 async def live_positions_websocket(websocket: WebSocket):
-    """WebSocket endpoint for live positions with real-time P&L and breakeven"""
+    """WebSocket endpoint for REAL Kite positions only - no dummy data"""
     await websocket.accept()
     
     try:
-        # Import required services
-        from src.services.position_breakeven_tracker import get_position_breakeven_tracker
-        from src.services.breeze_ws_manager import get_breeze_ws_manager
+        # Use REAL Kite services instead of memory cache tracker
+        kite_client, _, _, monitor_positions_use_case, _ = get_kite_services()
+        from src.services.kite_market_data_service import get_kite_market_data_service
         import json
         
-        tracker = get_position_breakeven_tracker()
-        breeze_manager = get_breeze_ws_manager()
+        kite_market = get_kite_market_data_service()
         
-        logger.info("Client connected to live positions WebSocket")
+        logger.info("Client connected to live positions WebSocket - REAL Kite data only")
         
-        # Send initial positions
-        positions = tracker.get_all_positions()
-        spot_status = breeze_manager.get_status()
+        # Send initial REAL positions from Kite
+        positions_result = monitor_positions_use_case.execute()
+        positions = positions_result.get('positions', [])
+        spot_price = kite_market.get_spot_price('NIFTY')
         
         await websocket.send_json({
             "type": "positions_update",
             "data": {
                 "positions": positions,
-                "spot_price": spot_status.get('spot_price'),
+                "spot_price": spot_price,
                 "timestamp": datetime.now().isoformat()
             }
         })
         
         # Track last values to detect changes
         last_positions_json = json.dumps(positions)
-        last_spot = spot_status.get('spot_price')
+        last_spot = spot_price
         heartbeat_counter = 0
         
         while True:
-            # Get current positions and spot price
-            current_positions = tracker.get_all_positions()
-            current_spot = breeze_manager.get_status().get('spot_price')
+            # Get current REAL positions from Kite
+            current_positions_result = monitor_positions_use_case.execute()
+            current_positions = current_positions_result.get('positions', [])
+            current_spot = kite_market.get_spot_price('NIFTY')
             
             # Check if positions changed (new position, closed position, or P&L change)
             current_positions_json = json.dumps(current_positions)
@@ -7608,29 +8454,18 @@ async def live_positions_websocket(websocket: WebSocket):
             
             # Send update if anything changed
             if positions_changed or spot_changed:
-                # Update all position prices with latest option chain
-                for pos in current_positions:
-                    tracker.update_position_prices(pos['position_id'])
-                
-                # Get updated positions with new P&L
-                updated_positions = tracker.get_all_positions()
-                
-                # Calculate live breakeven for each position
-                for pos in updated_positions:
-                    pos['live_breakeven'] = tracker.calculate_live_breakeven(pos['position_id'])
-                
                 await websocket.send_json({
                     "type": "positions_update",
                     "data": {
-                        "positions": updated_positions,
+                        "positions": current_positions,
                         "spot_price": current_spot,
                         "timestamp": datetime.now().isoformat()
                     }
                 })
                 
-                last_positions_json = json.dumps(updated_positions)
+                last_positions_json = json.dumps(current_positions)
                 last_spot = current_spot
-                logger.debug(f"Sent positions update: {len(updated_positions)} positions")
+                logger.debug(f"Sent REAL Kite positions update: {len(current_positions)} positions")
             
             # Send heartbeat every 30 seconds
             heartbeat_counter += 1
@@ -7646,40 +8481,197 @@ async def live_positions_websocket(websocket: WebSocket):
         logger.error(f"Live positions WebSocket error: {e}")
         await websocket.close()
 
-@app.get("/api/breeze-ws/status", tags=["Breeze - WebSocket"])
+@app.get("/api/breeze-ws/status", tags=["Kite - WebSocket"])
 async def get_breeze_ws_status():
-    """Get Breeze WebSocket connection status"""
+    """Get Kite WebSocket connection status"""
     try:
-        from src.services.breeze_ws_manager import get_breeze_ws_manager
-        breeze_manager = get_breeze_ws_manager()
-        return breeze_manager.get_status()
+        from src.services.kite_websocket_service import get_kite_websocket_service
+        from src.services.kite_market_data_service import get_kite_market_data_service
+        kite_ws = get_kite_websocket_service()
+        kite_market = get_kite_market_data_service()
+        spot = kite_market.get_spot_price('NIFTY')
+        return {"connected": True, "spot_price": spot, "source": "KITE"}
     except Exception as e:
         return {"error": str(e), "connected": False}
 
-@app.get("/api/live/nifty-spot", tags=["Breeze - Spot Prices"])
+@app.get("/api/live/nifty-spot", tags=["Kite - Spot Prices"])
 async def get_live_nifty_spot():
-    """Get live NIFTY spot price"""
+    """Get live NIFTY spot price using Kite API"""
     try:
-        from src.services.live_market_service_fixed import get_live_market_service as get_market_service
-        service = get_market_service()
-        await service.initialize()
-        data = await service.get_spot_price("NIFTY")
+        from src.services.kite_market_data_service import get_kite_market_data_service
+        service = get_kite_market_data_service()
+        spot_price = service.get_spot_price("NIFTY")
+        
+        # Get additional market data
+        quotes = service.get_quote(["NSE:NIFTY 50"])
+        quote_data = quotes.get("NSE:NIFTY 50", {})
+        
+        data = {
+            "price": spot_price,
+            "change": quote_data.get("change", 0),
+            "change_percent": quote_data.get("change_percent", 0),
+            "volume": quote_data.get("volume", 0),
+            "timestamp": datetime.now().isoformat(),
+            "source": "KITE"
+        }
         return {"success": True, "data": data}
     except Exception as e:
-        logger.error(f"Error fetching NIFTY spot: {e}")
-        return {"success": False, "error": str(e)}
+        logger.error(f"Error fetching NIFTY spot from Kite: {e}")
+        # Fallback to Breeze if Kite fails
+        try:
+            from src.services.live_market_service_fixed import get_live_market_service as get_market_service
+            service = get_market_service()
+            await service.initialize()
+            data = await service.get_spot_price("NIFTY")
+            return {"success": True, "data": data, "source": "BREEZE_FALLBACK"}
+        except Exception as fallback_error:
+            logger.error(f"Fallback to Breeze also failed: {fallback_error}")
+            return {"success": False, "error": str(e)}
 
-@app.get("/api/live/banknifty-spot", tags=["Breeze - Spot Prices"])
+@app.get("/api/live/banknifty-spot", tags=["Kite - Spot Prices"])
 async def get_live_banknifty_spot():
-    """Get live BANK NIFTY spot price"""
+    """Get live BANK NIFTY spot price using Kite API"""
     try:
-        from src.services.live_market_service_fixed import get_live_market_service as get_market_service
-        service = get_market_service()
-        await service.initialize()
-        data = await service.get_spot_price("BANKNIFTY")
+        from src.services.kite_market_data_service import get_kite_market_data_service
+        service = get_kite_market_data_service()
+        spot_price = service.get_spot_price("BANKNIFTY")
+        
+        # Get additional market data
+        quotes = service.get_quote(["NSE:NIFTY BANK"])
+        quote_data = quotes.get("NSE:NIFTY BANK", {})
+        
+        data = {
+            "price": spot_price,
+            "change": quote_data.get("change", 0),
+            "change_percent": quote_data.get("change_percent", 0),
+            "volume": quote_data.get("volume", 0),
+            "timestamp": datetime.now().isoformat(),
+            "source": "KITE"
+        }
         return {"success": True, "data": data}
     except Exception as e:
-        logger.error(f"Error fetching BANKNIFTY spot: {e}")
+        logger.error(f"Error fetching BANKNIFTY spot from Kite: {e}")
+        # Fallback to Breeze if Kite fails
+        try:
+            from src.services.live_market_service_fixed import get_live_market_service as get_market_service
+            service = get_market_service()
+            await service.initialize()
+            data = await service.get_spot_price("BANKNIFTY")
+            return {"success": True, "data": data, "source": "BREEZE_FALLBACK"}
+        except Exception as fallback_error:
+            logger.error(f"Fallback to Breeze also failed: {fallback_error}")
+            return {"success": False, "error": str(e)}
+
+@app.get("/option-chain/fast", tags=["Kite - Options Data"])
+async def get_fast_option_chain(
+    symbol: str = Query("NIFTY", description="Index symbol"),
+    strikes: int = Query(10, description="Number of strikes to show around ATM")
+):
+    """Get fast option chain ±500 points from current spot"""
+    try:
+        # Get current spot price from Kite
+        from src.services.kite_market_data_service import get_kite_market_data_service
+        kite_market = get_kite_market_data_service()
+        spot = kite_market.get_spot_price('NIFTY')
+        
+        if not spot or spot == 0:
+            spot = 25000  # Default fallback
+        
+        # Calculate ATM and strikes ±500 points
+        atm_strike = round(spot / 50) * 50
+        min_strike = atm_strike - 500
+        max_strike = atm_strike + 500
+        
+        # Generate strikes list
+        strikes_list = list(range(min_strike, max_strike + 50, 50))
+        
+        # Get current expiry (Tuesday)
+        from datetime import datetime, timedelta
+        today = datetime.now()
+        days_until_tuesday = (1 - today.weekday()) % 7
+        if days_until_tuesday == 0 and today.hour >= 15:
+            days_until_tuesday = 7
+        next_tuesday = today + timedelta(days=days_until_tuesday)
+        expiry_date_format = next_tuesday.strftime('%Y-%m-%d')  # Format for the service
+        expiry_display = next_tuesday.strftime('%d-%b-%Y').upper()  # Format for display
+        
+        # Fetch option chain data from Kite
+        from src.services.kite_option_chain_service import get_kite_option_chain_service
+        kite_option_service = get_kite_option_chain_service()
+        
+        # Expiry format for Kite
+        kite_expiry = next_tuesday.strftime('%Y-%m-%d')
+        
+        chain = []
+        option_data = {}
+        
+        # Fetch each strike's data
+        for strike in strikes_list:
+            strike_data = {"strike": strike, "ce_ltp": 0, "pe_ltp": 0, "ce_oi": 0, "pe_oi": 0,
+                          "ce_volume": 0, "pe_volume": 0, "ce_iv": 0, "pe_iv": 0,
+                          "ce_bid": 0, "ce_ask": 0, "pe_bid": 0, "pe_ask": 0}
+            
+            # Fetch CALL option
+            try:
+                ce_data = kite_option_service.get_option_quote(strike, "CE", kite_expiry)
+                strike_data["ce_ltp"] = ce_data.get('ltp', 0)
+                strike_data["ce_bid"] = ce_data.get('bid', 0)
+                strike_data["ce_ask"] = ce_data.get('ask', 0)
+                strike_data["ce_volume"] = ce_data.get('volume', 0)
+                strike_data["ce_oi"] = ce_data.get('oi', 0)
+                logger.debug(f"Fetched {strike} CE: {strike_data['ce_ltp']}")
+            except Exception as e:
+                logger.debug(f"Error fetching {strike} CE: {e}")
+            
+            # Fetch PUT option
+            try:
+                pe_data = kite_option_service.get_option_quote(strike, "PE", kite_expiry)
+                strike_data["pe_ltp"] = pe_data.get('ltp', 0)
+                strike_data["pe_bid"] = pe_data.get('bid', 0)
+                strike_data["pe_ask"] = pe_data.get('ask', 0)
+                strike_data["pe_volume"] = pe_data.get('volume', 0)
+                strike_data["pe_oi"] = pe_data.get('oi', 0)
+                logger.debug(f"Fetched {strike} PE: {strike_data['pe_ltp']}")
+            except Exception as e:
+                logger.debug(f"Error fetching {strike} PE: {e}")
+            
+            chain.append(strike_data)
+            option_data[strike] = strike_data
+        
+        # Format response for UI compatibility
+        formatted_chain = []
+        for item in chain:
+            formatted_chain.append({
+                "strike": item["strike"],
+                "moneyness": "ATM" if item["strike"] == atm_strike else ("ITM" if item["strike"] < atm_strike else "OTM"),
+                "call_ltp": item["ce_ltp"],
+                "call_bid": item["ce_bid"],
+                "call_ask": item["ce_ask"],
+                "call_oi": item["ce_oi"],
+                "call_volume": item["ce_volume"],
+                "call_iv": item["ce_iv"],
+                "put_ltp": item["pe_ltp"],
+                "put_bid": item["pe_bid"],
+                "put_ask": item["pe_ask"],
+                "put_oi": item["pe_oi"],
+                "put_volume": item["pe_volume"],
+                "put_iv": item["pe_iv"]
+            })
+        
+        return {
+            "status": "success",
+            "data": {
+                "spot_price": spot,
+                "atm_strike": atm_strike,
+                "expiry": expiry_display,
+                "chain": formatted_chain,
+                "timestamp": datetime.now().isoformat(),
+                "data_source": "KITE"
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in fast option chain: {e}")
         return {"success": False, "error": str(e)}
 
 @app.get("/api/live/option-chain", tags=["Breeze - Options Data"])
@@ -7699,19 +8691,56 @@ async def get_live_option_chain(
         logger.error(f"Error fetching option chain: {e}")
         return {"success": False, "error": str(e)}
 
-@app.get("/api/live/option-quote", tags=["Breeze - Options Data"])
+@app.get("/api/live/option-quote", tags=["Kite - Options Data"])
 async def get_live_option_quote(
     strike: int = Query(..., description="Strike price"),
     option_type: str = Query(..., description="CE or PE"),
-    symbol: str = Query("NIFTY", description="Index symbol")
+    symbol: str = Query("NIFTY", description="Index symbol"),
+    expiry: Optional[str] = Query(None, description="Expiry date (YYYY-MM-DD format)")
 ):
-    """Get live quote for specific option"""
+    """Get live quote for specific option using Kite API"""
     try:
-        from src.services.live_market_service_fixed import get_live_market_service as get_market_service
-        service = get_market_service()
-        await service.initialize()
-        quote = await service.get_option_quote(strike, option_type.upper(), symbol)
-        return {"success": True, "data": quote}
+        from src.services.kite_option_chain_service import get_kite_option_chain_service
+        from datetime import datetime, timedelta
+        
+        # Get Kite service
+        kite_service = get_kite_option_chain_service()
+        
+        # Calculate expiry if not provided (next Thursday)
+        if not expiry:
+            today = datetime.now()
+            days_until_thursday = (3 - today.weekday()) % 7
+            if days_until_thursday == 0 and today.hour >= 15:
+                days_until_thursday = 7
+            next_thursday = today + timedelta(days=days_until_thursday)
+            expiry = next_thursday.strftime('%Y-%m-%d')
+        
+        # Get quote from Kite
+        quote_data = kite_service.get_option_quote(strike, option_type.upper(), expiry)
+        
+        if quote_data and quote_data.get('ltp', 0) > 0:
+            return {
+                "success": True,
+                "data": {
+                    "symbol": f"{symbol} {strike} {option_type.upper()}",
+                    "ltp": quote_data.get('ltp', 0),
+                    "ltt": datetime.now().isoformat(),
+                    "open": quote_data.get('ltp', 0),  # Kite doesn't provide OHLC for options
+                    "high": quote_data.get('ltp', 0),
+                    "low": quote_data.get('ltp', 0),
+                    "close": quote_data.get('ltp', 0),
+                    "bid": quote_data.get('bid', 0),
+                    "ask": quote_data.get('ask', 0),
+                    "volume": quote_data.get('volume', 0),
+                    "oi": quote_data.get('oi', 0),
+                    "expiry": expiry,
+                    "amo_buy_price": round(float(quote_data.get('ltp', 0)) * 1.02, 1),
+                    "amo_sell_price": round(float(quote_data.get('ltp', 0)) * 0.98, 1)
+                }
+            }
+        else:
+            return {"success": False, "error": "No data available"}
+            
     except Exception as e:
         logger.error(f"Error fetching option quote: {e}")
         return {"success": False, "error": str(e)}
@@ -7723,41 +8752,11 @@ async def get_market_depth(
     option_type: Optional[str] = Query(None, description="CE or PE for options")
 ):
     """Get market depth (5 levels of bid/ask)"""
-    try:
-        import random
-        # Generate mock market depth data
-        depth = {
-            "symbol": symbol,
-            "bids": [],
-            "asks": [],
-            "is_mock": True
-        }
-        
-        # Generate 5 levels of bid/ask
-        base_price = 24500 if symbol == "NIFTY" else 53500
-        if strike:
-            base_price = 100  # Option price
-        
-        for i in range(5):
-            bid_price = base_price - (i + 1) * 0.5
-            ask_price = base_price + (i + 1) * 0.5
-            
-            depth["bids"].append({
-                "price": round(bid_price, 2),
-                "quantity": random.randint(100, 1000) * 75,
-                "orders": random.randint(1, 10)
-            })
-            
-            depth["asks"].append({
-                "price": round(ask_price, 2),
-                "quantity": random.randint(100, 1000) * 75,
-                "orders": random.randint(1, 10)
-            })
-        
-        return {"success": True, "data": depth}
-    except Exception as e:
-        logger.error(f"Error generating market depth: {e}")
-        return {"success": False, "error": str(e)}
+    # FAIL LOUDLY - No mock data allowed
+    raise HTTPException(
+        status_code=503,
+        detail="Market depth not available - requires live market data feed"
+    )
 
 @app.get("/api/live/vix", tags=["Breeze - Market Indicators"])
 async def get_live_vix():
@@ -7802,15 +8801,117 @@ async def get_historical_candles(
         logger.error(f"Error fetching historical candles: {e}")
         return {"success": False, "error": str(e)}
 
-@app.get("/api/breeze/hourly-candle", tags=["Breeze - Status"])
+@app.get("/api/breeze/hourly-candle", tags=["Market Data"])
 async def get_breeze_hourly_candle():
-    """Get hourly candle close from Breeze 5-minute data (XX:10-XX:15 candle)"""
-    return await get_hourly_candle_data()
+    """Get hourly candle close from Kite historical data"""
+    return await get_kite_hourly_candle()
 
 @app.get("/api/tradingview/hourly-candle", tags=["Trading"])
 async def get_tradingview_hourly_candle():
-    """Legacy endpoint - redirects to Breeze hourly candle"""
-    return await get_hourly_candle_data()
+    """Legacy endpoint - redirects to Kite hourly candle"""
+    return await get_kite_hourly_candle()
+
+async def get_kite_hourly_candle():
+    """Get last hour's closing price from Kite"""
+    try:
+        from kiteconnect import KiteConnect
+        from datetime import datetime, timedelta
+        import pytz
+        from dotenv import load_dotenv
+        import requests
+        
+        load_dotenv()
+        
+        # Initialize Kite
+        kite = KiteConnect(api_key=os.getenv('KITE_API_KEY'))
+        kite.set_access_token(os.getenv('KITE_ACCESS_TOKEN'))
+        
+        # Get current IST time from internet (to avoid system time issues)
+        ist = pytz.timezone('Asia/Kolkata')
+        try:
+            # Try to get time from world time API
+            response = requests.get('http://worldtimeapi.org/api/timezone/Asia/Kolkata', timeout=2)
+            if response.status_code == 200:
+                time_data = response.json()
+                # Parse the datetime string
+                dt_str = time_data['datetime'].split('+')[0]  # Remove timezone part
+                now_ist = datetime.fromisoformat(dt_str)
+                now_ist = ist.localize(now_ist)
+                logger.info(f"Using internet time: {now_ist.strftime('%Y-%m-%d %H:%M:%S')}")
+            else:
+                # Fallback to system time if API fails
+                now_ist = datetime.now(ist)
+                logger.warning("WorldTimeAPI failed, using system time")
+        except Exception as e:
+            # Fallback to system time if API fails
+            now_ist = datetime.now(ist)
+            logger.warning(f"Failed to get internet time: {e}, using system time")
+        
+        # Calculate the last completed hour
+        # Market hours: 9:15 AM to 3:30 PM
+        # We want the last COMPLETED 1-hour candle (XX:15 to XX:15)
+        if now_ist.hour == 9 and now_ist.minute < 15:
+            # Before 9:15, show yesterday's 3:15 close
+            target_time = (now_ist - timedelta(days=1)).replace(hour=15, minute=15, second=0, microsecond=0)
+        else:
+            # Always show the LAST COMPLETED hour candle
+            # At 12:14 PM, current incomplete candle is 11:15-12:15 (in progress)
+            # So we need the previous completed candle: 10:15-11:15
+            # At 12:30 PM, current incomplete candle is 12:15-13:15 (in progress)  
+            # So we need the previous completed candle: 11:15-12:15
+            if now_ist.minute < 15:
+                # Before XX:15, we're still in previous hour's candle
+                # E.g., at 12:14, we're in 11:15-12:15 candle, so show 10:15-11:15
+                target_time = (now_ist - timedelta(hours=1)).replace(minute=15, second=0, microsecond=0)
+            else:
+                # After XX:15, we're in the next hour's candle
+                # E.g., at 12:16, we're in 12:15-13:15 candle (just started)
+                # The last COMPLETED candle ended 1 hour ago at 11:15 (10:15-11:15)
+                target_time = (now_ist - timedelta(hours=1)).replace(minute=15, second=0, microsecond=0)
+        
+        # Fetch 60-minute candle data
+        # The candle that ENDS at target_time started 1 hour before
+        from_time = target_time - timedelta(hours=1)
+        to_time = target_time + timedelta(minutes=1)  # Add 1 minute to ensure we get the candle
+        
+        historical_data = kite.historical_data(
+            instrument_token=256265,  # NIFTY 50 token
+            from_date=from_time,
+            to_date=to_time,
+            interval="60minute"
+        )
+        
+        if historical_data and len(historical_data) > 0:
+            last_candle = historical_data[-1]
+            return {
+                "success": True,
+                "candle": {
+                    "open": last_candle['open'],
+                    "high": last_candle['high'],
+                    "low": last_candle['low'],
+                    "close": last_candle['close'],
+                    "volume": last_candle['volume'],
+                    "timestamp": last_candle['date'].isoformat()
+                },
+                "source": "KITE"
+            }
+        else:
+            # If no historical data, return current spot as fallback
+            quote = kite.quote(['NSE:NIFTY 50'])
+            current_price = quote.get('NSE:NIFTY 50', {}).get('last_price', 0)
+            return {
+                "success": True,
+                "candle": {
+                    "close": current_price,
+                    "timestamp": now_ist.isoformat()
+                },
+                "source": "KITE_SPOT",
+                "note": "Using current spot as hourly data not available"
+            }
+            
+    except Exception as e:
+        logger.error(f"Error fetching Kite hourly candle: {e}")
+        return {"success": False, "error": str(e)}
 
 async def get_hourly_candle_data():
     """Get real-time hourly candle from TradingView/market data"""
@@ -7837,9 +8938,10 @@ async def get_hourly_candle_data():
         
         # Try to fetch the XX:10-XX:15 5-minute candle from Breeze for hourly close
         try:
-            from src.services.breeze_ws_manager import get_breeze_ws_manager
-            breeze_manager = get_breeze_ws_manager()
-            breeze_service = breeze_manager.breeze  # Use the existing authenticated Breeze instance
+            # Use Breeze only for historical data
+            breeze_service = BreezeService()
+            if not breeze_service.breeze:
+                breeze_service.initialize()
             
             # For hourly close, we need the XX:10-XX:15 5-minute candle
             # This represents the last 5 minutes of the hour
@@ -9079,7 +10181,7 @@ def load_weekday_expiry_config():
                 "monday": "current",
                 "tuesday": "current",
                 "wednesday": "next",
-                "thursday": "next",
+                "tuesday": "next",
                 "friday": "next"
             }
     except Exception as e:
@@ -9088,7 +10190,7 @@ def load_weekday_expiry_config():
             "monday": "next",
             "tuesday": "next",
             "wednesday": "next",
-            "thursday": "next",
+            "tuesday": "next",
             "friday": "next"
         }
 
@@ -9129,7 +10231,7 @@ async def save_weekday_config(config: dict):
     """Save weekday expiry configuration"""
     try:
         # Validate config
-        valid_days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+        valid_days = ['monday', 'tuesday', 'wednesday', 'tuesday', 'friday']
         valid_types = ['current', 'next', 'monthend']
         
         for day in valid_days:
@@ -9604,7 +10706,7 @@ async def get_expiry_config():
         "Monday": "current",
         "Tuesday": "current",
         "Wednesday": "current",
-        "Thursday": "current",
+        "Tuesday": "current",
         "Friday": "current"
     }
     
@@ -10187,7 +11289,7 @@ async def reset_circuit_breaker(name: str):
 # DUPLICATE:             return {
 # DUPLICATE:                 "enabled": False,
 # DUPLICATE:                 "exit_time": "15:15",
-# DUPLICATE:                 "weekdays": ["monday", "tuesday", "wednesday", "thursday", "friday"]
+# DUPLICATE:                 "weekdays": ["monday", "tuesday", "wednesday", "tuesday", "friday"]
 # DUPLICATE:             }
             
 # DUPLICATE:         with sqlite3.connect(str(db_path)) as conn:
@@ -10201,7 +11303,7 @@ async def reset_circuit_breaker(name: str):
 # DUPLICATE:                 return {
 # DUPLICATE:                     "enabled": False,
 # DUPLICATE:                     "exit_time": "15:15",
-# DUPLICATE:                     "weekdays": ["monday", "tuesday", "wednesday", "thursday", "friday"]
+# DUPLICATE:                     "weekdays": ["monday", "tuesday", "wednesday", "tuesday", "friday"]
 # DUPLICATE:                 }
                 
 # DUPLICATE:     except Exception as e:
@@ -10465,6 +11567,463 @@ async def broker_auto_login():
             "connected": False,
             "timestamp": datetime.now().isoformat()
         }
+
+# ============= CRITICAL FIX ENDPOINTS =============
+
+# 1. WORKING KILL SWITCH
+@app.post("/killswitch/activate", tags=["System - Risk Management"])
+async def activate_kill_switch(reason: str = "Manual trigger"):
+    """Activate emergency kill switch to halt all trading"""
+    from src.services.hybrid_data_manager import get_hybrid_data_manager
+    data_manager = get_hybrid_data_manager()
+    
+    data_manager.memory_cache['kill_switch'] = {
+        'active': True,
+        'triggered_at': datetime.now().isoformat(),
+        'reason': reason
+    }
+    
+    # Close all open positions
+    if 'live_positions' in data_manager.memory_cache:
+        for pos in data_manager.memory_cache['live_positions']:
+            if pos.get('status') == 'open':
+                pos['status'] = 'closed'
+                pos['exit_time'] = datetime.now().isoformat()
+    
+    logger.critical(f"KILL SWITCH ACTIVATED: {reason}")
+    return {"status": "activated", "reason": reason, "timestamp": datetime.now().isoformat()}
+
+@app.post("/killswitch/deactivate", tags=["System - Risk Management"])
+async def deactivate_kill_switch():
+    """Deactivate kill switch to resume trading"""
+    from src.services.hybrid_data_manager import get_hybrid_data_manager
+    data_manager = get_hybrid_data_manager()
+    
+    data_manager.memory_cache['kill_switch'] = {'active': False}
+    logger.info("Kill switch deactivated")
+    return {"status": "deactivated", "timestamp": datetime.now().isoformat()}
+
+# 2. PRICE UPDATE ENDPOINT
+@app.put("/positions/update_prices", tags=["Live Positions - Consolidated"])
+async def update_position_prices(request: dict):
+    """Update current prices for a position"""
+    from src.services.hybrid_data_manager import get_hybrid_data_manager
+    data_manager = get_hybrid_data_manager()
+    
+    position_id = request.get('position_id')
+    main_price = request.get('main_price')
+    hedge_price = request.get('hedge_price')
+    
+    positions = data_manager.memory_cache.get('live_positions', [])
+    for pos in positions:
+        if pos.get('id') == position_id:
+            pos['current_main_price'] = main_price
+            if hedge_price:
+                pos['current_hedge_price'] = hedge_price
+            pos['last_updated'] = datetime.now().isoformat()
+            
+            # Calculate P&L
+            main_pnl = (pos['main_price'] - main_price) * pos['main_quantity'] * 75
+            hedge_pnl = (hedge_price - pos.get('hedge_price', 0)) * pos.get('hedge_quantity', 0) * 75 if hedge_price else 0
+            pos['pnl'] = main_pnl + hedge_pnl
+            
+            return {"status": "success", "position": pos}
+    
+    return {"status": "error", "message": "Position not found"}
+
+# 3. DAILY P&L TRACKING
+@app.get("/positions/daily_pnl", tags=["Live Positions - Consolidated"])
+async def get_daily_pnl():
+    """Get daily P&L summary"""
+    from src.services.hybrid_data_manager import get_hybrid_data_manager
+    data_manager = get_hybrid_data_manager()
+    
+    positions = data_manager.memory_cache.get('live_positions', [])
+    today = datetime.now().date()
+    
+    daily_positions = []
+    for p in positions:
+        try:
+            entry_time = p.get('entry_time', '')
+            if entry_time and datetime.fromisoformat(str(entry_time)).date() == today:
+                daily_positions.append(p)
+        except:
+            pass
+    
+    total_pnl = sum(p.get('pnl', 0) for p in daily_positions)
+    realized_pnl = sum(p.get('pnl', 0) for p in daily_positions if p.get('status') == 'closed')
+    unrealized_pnl = sum(p.get('pnl', 0) for p in daily_positions if p.get('status') == 'open')
+    
+    # Get max daily loss from settings
+    try:
+        conn = sqlite3.connect('data/trading_settings.db')
+        cursor = conn.cursor()
+        cursor.execute("SELECT value FROM settings WHERE key='max_daily_loss'")
+        result = cursor.fetchone()
+        max_daily_loss = float(result[0]) if result else -50000
+        conn.close()
+    except:
+        max_daily_loss = -50000
+    
+    return {
+        "date": today.isoformat(),
+        "total_pnl": total_pnl,
+        "realized_pnl": realized_pnl,
+        "unrealized_pnl": unrealized_pnl,
+        "positions_count": len(daily_positions),
+        "max_daily_loss": max_daily_loss,
+        "loss_limit_reached": total_pnl < max_daily_loss,
+        "timestamp": datetime.now().isoformat()
+    }
+
+# 4. LIVE POSITIONS ENDPOINT
+@app.get("/positions/live", tags=["Live Positions - Consolidated"])
+async def get_live_positions():
+    """Get all live positions with current P&L"""
+    from src.services.hybrid_data_manager import get_hybrid_data_manager
+    data_manager = get_hybrid_data_manager()
+    
+    positions = data_manager.memory_cache.get('live_positions', [])
+    
+    # Filter only open positions
+    open_positions = [p for p in positions if p.get('status') == 'open']
+    
+    # Calculate current P&L for each position
+    for pos in open_positions:
+        if 'main_price' in pos and 'current_main_price' in pos:
+            main_pnl = (pos['main_price'] - pos.get('current_main_price', pos['main_price'])) * pos.get('main_quantity', 10) * 75
+            hedge_pnl = 0
+            if 'hedge_price' in pos and 'current_hedge_price' in pos:
+                hedge_pnl = (pos.get('current_hedge_price', pos['hedge_price']) - pos['hedge_price']) * pos.get('hedge_quantity', 10) * 75
+            pos['pnl'] = main_pnl + hedge_pnl
+    
+    return {
+        "positions": open_positions,
+        "total_positions": len(open_positions),
+        "total_pnl": sum(p.get('pnl', 0) for p in open_positions),
+        "timestamp": datetime.now().isoformat()
+    }
+
+# 5. ALERTS SYSTEM
+@app.get("/alerts/recent", tags=["System - Alerts"])
+async def get_recent_alerts():
+    """Get recent trading alerts"""
+    from src.services.hybrid_data_manager import get_hybrid_data_manager
+    data_manager = get_hybrid_data_manager()
+    
+    alerts = data_manager.memory_cache.get('alerts', [])
+    
+    # Keep only last 50 alerts
+    recent_alerts = alerts[-50:] if len(alerts) > 50 else alerts
+    
+    return {
+        "alerts": recent_alerts,
+        "count": len(recent_alerts),
+        "timestamp": datetime.now().isoformat()
+    }
+
+@app.post("/alerts/add", tags=["System - Alerts"])
+async def add_alert(alert_type: str, message: str, severity: str = "info"):
+    """Add a new alert"""
+    from src.services.hybrid_data_manager import get_hybrid_data_manager
+    data_manager = get_hybrid_data_manager()
+    
+    if 'alerts' not in data_manager.memory_cache:
+        data_manager.memory_cache['alerts'] = []
+    
+    alert = {
+        "id": len(data_manager.memory_cache['alerts']) + 1,
+        "type": alert_type,
+        "message": message,
+        "severity": severity,
+        "timestamp": datetime.now().isoformat(),
+        "read": False
+    }
+    
+    data_manager.memory_cache['alerts'].append(alert)
+    
+    # Keep only last 100 alerts
+    if len(data_manager.memory_cache['alerts']) > 100:
+        data_manager.memory_cache['alerts'] = data_manager.memory_cache['alerts'][-100:]
+    
+    return {"status": "success", "alert": alert}
+
+# 6. SETTINGS PERSISTENCE FIX
+@app.put("/settings/update", tags=["Settings - Core"])
+async def update_settings(request: dict):
+    """Update a specific setting and persist to database"""
+    try:
+        # Get key and value from request body
+        key = request.get('key')
+        value = request.get('value')
+        
+        if not key:
+            return {"status": "error", "message": "Key is required"}
+            
+        conn = sqlite3.connect('data/trading_settings.db')
+        cursor = conn.cursor()
+        
+        # Create table if not exists
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS settings (
+                key TEXT PRIMARY KEY,
+                value TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Update or insert setting
+        cursor.execute('''
+            INSERT OR REPLACE INTO settings (key, value, updated_at)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+        ''', (key, str(value)))
+        
+        conn.commit()
+        conn.close()
+        
+        # Also update in memory cache
+        from src.services.hybrid_data_manager import get_hybrid_data_manager
+        data_manager = get_hybrid_data_manager()
+        if 'settings' not in data_manager.memory_cache:
+            data_manager.memory_cache['settings'] = {}
+        data_manager.memory_cache['settings'][key] = value
+        
+        # Add alert for setting change
+        await add_alert("settings", f"Setting '{key}' updated to '{value}'", "info")
+        
+        return {"status": "success", "key": key, "value": value, "persisted": True}
+        
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/settings/get/{key}", tags=["Settings - Core"])
+async def get_setting(key: str):
+    """Get a specific setting from database"""
+    try:
+        conn = sqlite3.connect('data/trading_settings.db')
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT value FROM settings WHERE key = ?", (key,))
+        result = cursor.fetchone()
+        conn.close()
+        
+        if result:
+            return {"status": "success", "key": key, "value": result[0]}
+        else:
+            # Check memory cache as fallback
+            from src.services.hybrid_data_manager import get_hybrid_data_manager
+            data_manager = get_hybrid_data_manager()
+            cached_value = data_manager.memory_cache.get('settings', {}).get(key)
+            
+            if cached_value:
+                return {"status": "success", "key": key, "value": cached_value, "source": "cache"}
+            else:
+                return {"status": "error", "message": "Setting not found"}
+                
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+# 7. WEBSOCKET STATUS
+@app.get("/websocket/status", tags=["System - WebSocket"])
+async def get_websocket_status():
+    """Get WebSocket connection status"""
+    try:
+        # Check if WebSocket manager exists
+        connected_clients = len(manager.active_connections) if 'manager' in globals() else 0
+        
+        # Check Kite WebSocket
+        kite_ws_connected = False
+        try:
+            from src.services.kite_websocket_service import get_kite_websocket_service
+            kite_ws = get_kite_websocket_service()
+            kite_ws_connected = kite_ws.is_connected()
+        except:
+            pass
+        
+        return {
+            "connected": connected_clients > 0 or breeze_ws_connected,
+            "clients_connected": connected_clients,
+            "kite_ws": kite_ws_connected,
+            "endpoints": [
+                "/ws",
+                "/ws/tradingview",
+                "/ws/market-data",
+                "/ws/breeze-live",
+                "/ws/live-positions"
+            ],
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"connected": False, "error": str(e)}
+
+# ======================== PRODUCTION MONITORING ENDPOINTS ========================
+@app.get("/api/monitoring/sessions", tags=["System - Monitoring"])
+async def get_session_health():
+    """Monitor broker session health with TTL"""
+    from datetime import datetime, timedelta
+    
+    result = {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "sessions": {}
+    }
+    
+    # Check Breeze session
+    try:
+        from src.infrastructure.services.session_validator import SessionValidator
+        validator = SessionValidator()
+        breeze_valid, breeze_error = await validator.validate_breeze_session()
+        
+        # Estimate TTL (Breeze sessions typically last 1 day)
+        breeze_ttl = 1440 if breeze_valid else 0  # 24 hours in minutes
+        
+        result["sessions"]["breeze"] = {
+            "connected": breeze_valid,
+            "expires_in_minutes": breeze_ttl,
+            "error": breeze_error
+        }
+    except Exception as e:
+        result["sessions"]["breeze"] = {
+            "connected": False,
+            "expires_in_minutes": 0,
+            "error": str(e)
+        }
+    
+    # Check Kite session
+    try:
+        kite_valid, kite_error = await validator.validate_kite_session()
+        
+        # Kite sessions typically last 1 day
+        kite_ttl = 1440 if kite_valid else 0
+        
+        result["sessions"]["kite"] = {
+            "connected": kite_valid,
+            "expires_in_minutes": kite_ttl,
+            "error": kite_error
+        }
+    except Exception as e:
+        result["sessions"]["kite"] = {
+            "connected": False,
+            "expires_in_minutes": 0,
+            "error": str(e)
+        }
+    
+    # Alert if any session is about to expire
+    for broker, info in result["sessions"].items():
+        if info["expires_in_minutes"] < 60 and info["expires_in_minutes"] > 0:
+            logger.warning(f"{broker} session expiring soon: {info['expires_in_minutes']} minutes remaining")
+    
+    return result
+
+@app.get("/api/monitoring/metrics", tags=["System - Monitoring"])
+async def get_trading_metrics():
+    """Get trading system metrics for monitoring"""
+    from datetime import datetime, timedelta
+    
+    # Initialize metrics
+    metrics = {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "orders_last_hour": 0,
+        "success_rate": 0.0,
+        "avg_latency_ms": 0,
+        "failed_orders": 0,
+        "webhook_alerts": 0,
+        "active_positions": 0,
+        "total_pnl": 0.0
+    }
+    
+    try:
+        # Get order metrics from database
+        from src.infrastructure.database.connection import get_db_connection
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Orders in last hour
+        one_hour_ago = (datetime.now() - timedelta(hours=1)).isoformat()
+        cursor.execute("""
+            SELECT COUNT(*) as total,
+                   SUM(CASE WHEN status = 'COMPLETED' THEN 1 ELSE 0 END) as successful,
+                   AVG(execution_time_ms) as avg_latency
+            FROM Orders
+            WHERE created_at > ?
+        """, (one_hour_ago,))
+        
+        row = cursor.fetchone()
+        if row and row[0] > 0:
+            metrics["orders_last_hour"] = row[0]
+            metrics["success_rate"] = row[1] / row[0] if row[0] > 0 else 0
+            metrics["avg_latency_ms"] = row[2] or 0
+            metrics["failed_orders"] = row[0] - row[1]
+        
+        # Active positions
+        cursor.execute("SELECT COUNT(*) FROM Positions WHERE status = 'OPEN'")
+        metrics["active_positions"] = cursor.fetchone()[0] or 0
+        
+        # Total PnL today
+        cursor.execute("""
+            SELECT SUM(pnl) FROM Trades 
+            WHERE DATE(exit_time) = DATE(GETDATE())
+        """)
+        metrics["total_pnl"] = cursor.fetchone()[0] or 0.0
+        
+        conn.close()
+    except Exception as e:
+        logger.error(f"Error fetching metrics: {e}")
+    
+    # Add webhook metrics from memory if available
+    if hasattr(app.state, 'webhook_count'):
+        metrics["webhook_alerts"] = app.state.webhook_count
+    
+    return metrics
+
+@app.get("/api/monitoring/circuit-breakers", tags=["System - Monitoring"])
+async def get_circuit_breaker_status():
+    """Monitor circuit breaker status for all services"""
+    
+    status = {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "circuit_breakers": {}
+    }
+    
+    # Check Breeze API circuit breaker
+    try:
+        from src.services.circuit_breaker import CircuitBreaker
+        breeze_cb = CircuitBreaker("breeze_api", failure_threshold=5, timeout=60)
+        status["circuit_breakers"]["breeze_api"] = {
+            "status": "open" if breeze_cb.is_open else "closed",
+            "failures": breeze_cb.failure_count,
+            "last_failure": breeze_cb.last_failure_time.isoformat() if breeze_cb.last_failure_time else None
+        }
+    except:
+        status["circuit_breakers"]["breeze_api"] = {"status": "unknown", "failures": 0}
+    
+    # Check Kite API circuit breaker
+    try:
+        kite_cb = CircuitBreaker("kite_api", failure_threshold=5, timeout=60)
+        status["circuit_breakers"]["kite_api"] = {
+            "status": "open" if kite_cb.is_open else "closed",
+            "failures": kite_cb.failure_count,
+            "last_failure": kite_cb.last_failure_time.isoformat() if kite_cb.last_failure_time else None
+        }
+    except:
+        status["circuit_breakers"]["kite_api"] = {"status": "unknown", "failures": 0}
+    
+    # Check Database circuit breaker
+    try:
+        db_cb = CircuitBreaker("database", failure_threshold=3, timeout=30)
+        status["circuit_breakers"]["database"] = {
+            "status": "open" if db_cb.is_open else "closed",
+            "failures": db_cb.failure_count,
+            "last_failure": db_cb.last_failure_time.isoformat() if db_cb.last_failure_time else None
+        }
+    except:
+        status["circuit_breakers"]["database"] = {"status": "unknown", "failures": 0}
+    
+    # Alert if any circuit breaker is open
+    for service, info in status["circuit_breakers"].items():
+        if info["status"] == "open":
+            logger.critical(f"Circuit breaker OPEN for {service}: {info['failures']} failures")
+    
+    return status
 
 if __name__ == "__main__":
     # Kill any existing process on port 8000

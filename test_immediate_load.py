@@ -26,7 +26,7 @@ driver.execute_script("""
         monday: 'next',
         tuesday: 'monthend',
         wednesday: 'next',
-        thursday: 'next',
+        tuesday: 'next',
         friday: 'next'
     };
     localStorage.setItem('weekdayExpiryConfig', JSON.stringify(config));

@@ -607,8 +607,8 @@ class ExitPredictor:
             sorted_imp = dict(sorted(importance_dict.items(), key=lambda x: x[1], reverse=True)[:10])
             return sorted_imp
         except Exception as e:
-            logger.warning(f"Could not get feature importance: {e}")
-            return {}
+            logger.error(f"Could not get feature importance: {e}")
+            raise RuntimeError(f"Failed to calculate feature importance: {str(e)}")
     
     def _get_prediction_feature_importance(self, model, X, feature_names) -> Dict[str, float]:
         """Get feature importance for specific prediction"""
@@ -631,9 +631,8 @@ class ExitPredictor:
                 sorted_imp = dict(sorted(importance_dict.items(), key=lambda x: x[1], reverse=True)[:5])
                 return sorted_imp
         except Exception as e:
-            logger.warning(f"Could not get prediction feature importance: {e}")
-        
-        return {}
+            logger.error(f"Could not get prediction feature importance: {e}")
+            raise RuntimeError(f"Failed to calculate prediction feature importance: {str(e)}")
     
     def _calculate_expected_profit(self, action: str, current_state: Dict) -> float:
         """

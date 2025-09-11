@@ -122,13 +122,13 @@ class RealtimeStopLossMonitor:
     def _fetch_option_price(self, breeze, strike: int, option_type: str) -> float:
         """Fetch current option price from Breeze"""
         try:
-            # Get current expiry (next Thursday)
+            # Get current expiry (next Tuesday)
             from datetime import datetime
             today = datetime.now()
-            days_until_thursday = (3 - today.weekday()) % 7
-            if days_until_thursday == 0 and today.hour >= 15:  # After 3:30 PM on Thursday
-                days_until_thursday = 7
-            expiry = today + timedelta(days=days_until_thursday)
+            days_until_tuesday = (1 - today.weekday()) % 7
+            if days_until_tuesday == 0 and today.hour >= 15:  # After 3:30 PM on Tuesday
+                days_until_tuesday = 7
+            expiry = today + timedelta(days=days_until_tuesday)
             
             symbol = f"NIFTY{expiry.strftime('%d%b%y').upper()}{strike}{option_type[0]}"
             

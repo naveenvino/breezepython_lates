@@ -356,7 +356,7 @@ class ComprehensiveAPITest(unittest.TestCase):
                 "monday": "next",
                 "tuesday": "current",
                 "wednesday": "next",
-                "thursday": "next",
+                "tuesday": "next",
                 "friday": "monthend"
             }
             

@@ -56,8 +56,8 @@ class AsyncBreezeService:
         self._initialize()
         
         if self._breeze is None:
-            logger.warning("Breeze API not available. Returning empty data.")
-            return {"Success": [], "Error": "Breeze API not initialized."}
+            logger.error("Breeze API not available")
+            raise RuntimeError("Breeze API not initialized - cannot fetch historical data")
         
         try:
             loop = asyncio.get_event_loop()
@@ -69,4 +69,4 @@ class AsyncBreezeService:
             return result
         except Exception as e:
             logger.error(f"Error fetching historical data: {e}")
-            return {"Success": [], "Error": str(e)}
+            raise RuntimeError(f"Failed to fetch historical data from Breeze API: {str(e)}")

@@ -54,7 +54,7 @@ class SessionValidator:
             session_token = os.getenv('BREEZE_API_SESSION')
             
             # Log what we found for debugging
-            logger.info(f"Validating Breeze - API Key: {api_key[:10] if api_key else 'None'}..., Secret: {api_secret[:10] if api_secret else 'None'}..., Session: {session_token if session_token else 'None'}")
+            logger.info("Validating Breeze session - credentials found: API Key: [REDACTED], Secret: [REDACTED], Session: [REDACTED]")
             
             if not api_key:
                 return False, "Missing Breeze API key in .env file"
@@ -80,21 +80,21 @@ class SessionValidator:
                     self.session_valid = True
                     self.last_check_time = datetime.now()
                     self.last_error = None
-                    logger.info(f"Breeze session validated successfully with token: {session_token[:10]}...")
+                    logger.info("Breeze session validated successfully")
                     return True, None
                 # Check for Status field
                 elif response.get('Status') == 200:
                     self.session_valid = True
                     self.last_check_time = datetime.now()
                     self.last_error = None
-                    logger.info(f"Breeze session validated successfully with token: {session_token[:10]}...")
+                    logger.info("Breeze session validated successfully")
                     return True, None
                 # Check if we got data back (some endpoints return data directly)
                 elif 'trade_name' in response or 'pan' in response:
                     self.session_valid = True
                     self.last_check_time = datetime.now()
                     self.last_error = None
-                    logger.info(f"Breeze session validated successfully with token: {session_token[:10]}...")
+                    logger.info("Breeze session validated successfully")
                     return True, None
                     
                 error_msg = response.get('Error', 'Unknown error') if response else 'No response'
@@ -136,7 +136,7 @@ class SessionValidator:
             access_token = os.getenv('KITE_ACCESS_TOKEN')
             
             # Log what we found for debugging
-            logger.info(f"Validating Kite - API Key: {api_key[:10] if api_key else 'None'}..., Access Token: {access_token[:10] if access_token else 'None'}...")
+            logger.info("Validating Kite session - credentials found: API Key: [REDACTED], Access Token: [REDACTED]")
             
             if not api_key:
                 return False, "Missing Kite API key in .env file"

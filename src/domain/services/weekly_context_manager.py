@@ -323,9 +323,9 @@ class WeeklyContextManager:
         return market_open <= time <= market_close
     
     def get_next_expiry(self, date: datetime) -> datetime:
-        """Get next Thursday expiry from given date"""
-        # NIFTY weekly expiry is on Thursday
-        days_ahead = 3 - date.weekday()  # Thursday is 3
+        """Get next Tuesday expiry from given date"""
+        # NIFTY weekly expiry is on Tuesday
+        days_ahead = 1 - date.weekday()  # Tuesday is 1
         if days_ahead <= 0:  # Target day already happened this week
             days_ahead += 7
         
@@ -333,7 +333,7 @@ class WeeklyContextManager:
         return expiry.replace(hour=15, minute=30, second=0, microsecond=0)
     
     def get_expiry_for_week(self, week_start: datetime) -> datetime:
-        """Get expiry date for a given week (Thursday 3:30 PM)"""
-        # Week starts on Sunday, expiry is on Thursday
-        expiry = week_start + timedelta(days=4)  # Sunday + 4 = Thursday
+        """Get expiry date for a given week (Tuesday 3:30 PM)"""
+        # Week starts on Sunday, expiry is on Tuesday
+        expiry = week_start + timedelta(days=2)  # Sunday + 2 = Tuesday
         return expiry.replace(hour=15, minute=30, second=0, microsecond=0)

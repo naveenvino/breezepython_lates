@@ -143,10 +143,10 @@ class BreezeBroker(BaseBroker):
                 orders = response.get('Success', [])
                 return [self._parse_order(order) for order in orders]
             else:
-                return []
+                raise RuntimeError(f"Failed to get orders: {response.get('Error', 'Unknown error')}")
         except Exception as e:
             print(f"Error getting orders: {e}")
-            return []
+            raise RuntimeError(f"Failed to fetch orders: {str(e)}")
             
     def get_positions(self) -> List[Position]:
         if not self.is_connected:
@@ -173,10 +173,10 @@ class BreezeBroker(BaseBroker):
                     
                 return positions
             else:
-                return []
+                raise RuntimeError(f"Failed to get positions: {response.get('Error', 'Unknown error')}")
         except Exception as e:
             print(f"Error getting positions: {e}")
-            return []
+            raise RuntimeError(f"Failed to fetch positions: {str(e)}")
             
     def get_holdings(self) -> List[Holdings]:
         if not self.is_connected:
@@ -201,10 +201,10 @@ class BreezeBroker(BaseBroker):
                     
                 return holdings
             else:
-                return []
+                raise RuntimeError(f"Failed to get holdings: {response.get('Error', 'Unknown error')}")
         except Exception as e:
             print(f"Error getting holdings: {e}")
-            return []
+            raise RuntimeError(f"Failed to fetch holdings: {str(e)}")
             
     def get_quote(self, symbol: str) -> MarketQuote:
         if not self.is_connected:
@@ -260,10 +260,10 @@ class BreezeBroker(BaseBroker):
             if response.get('Status') == 200:
                 return response.get('Success', [])
             else:
-                return []
+                raise RuntimeError(f"Failed to get historical data: {response.get('Error', 'Unknown error')}")
         except Exception as e:
             print(f"Error getting historical data: {e}")
-            return []
+            raise RuntimeError(f"Failed to fetch historical data: {str(e)}")
             
     def get_margin(self) -> Dict[str, Any]:
         if not self.is_connected:
@@ -280,10 +280,10 @@ class BreezeBroker(BaseBroker):
                     "total_margin": float(funds.get('limit_value', 0))
                 }
             else:
-                return {}
+                raise RuntimeError(f"Failed to get margin data: {response.get('Error', 'Unknown error')}")
         except Exception as e:
             print(f"Error getting margin: {e}")
-            return {}
+            raise RuntimeError(f"Failed to fetch margin data: {str(e)}")
             
     def square_off_position(self, symbol: str, quantity: int = None) -> Dict[str, Any]:
         if not self.is_connected:

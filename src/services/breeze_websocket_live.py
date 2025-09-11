@@ -226,16 +226,16 @@ class BreezeWebSocketLive:
         return None
     
     def _get_current_expiry(self):
-        """Get current week expiry (Thursday)"""
+        """Get current week expiry (Tuesday)"""
         today = datetime.now()
-        days_until_thursday = (3 - today.weekday()) % 7
+        days_until_tuesday = (1 - today.weekday()) % 7
         
-        # If today is Thursday after 3:30 PM, get next Thursday
-        if days_until_thursday == 0:
+        # If today is Tuesday after 3:30 PM, get next Tuesday
+        if days_until_tuesday == 0:
             if today.hour >= 15 and today.minute >= 30:
-                days_until_thursday = 7
+                days_until_tuesday = 7
         
-        expiry = today + timedelta(days=days_until_thursday)
+        expiry = today + timedelta(days=days_until_tuesday)
         
         # Return in standard format for internal use
         return expiry.strftime('%Y-%m-%d')

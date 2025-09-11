@@ -244,7 +244,7 @@ class RunBacktestUseCase:
                 logger.info(f"Added {added} options data records for expiry {expiry.date()}")
     
     def _get_expiry_dates(self, from_date: datetime, to_date: datetime) -> List[datetime]:
-        """Get all Thursday expiry dates in the period"""
+        """Get all Tuesday expiry dates in the period"""
         expiry_dates = []
         current = from_date
         
@@ -938,7 +938,7 @@ class RunBacktestUseCase:
         
         for strike, option_type, expiry_date in self.missing_options_data:
             # Group by week for efficient API calls
-            week_start = expiry_date - timedelta(days=expiry_date.weekday() + 3)  # Monday before expiry
+            week_start = expiry_date - timedelta(days=expiry_date.weekday() + 1)  # Monday before expiry
             week_key = (week_start, expiry_date)
             grouped_by_week[week_key].add(strike)
         

@@ -20,7 +20,7 @@ def test_complete_config_flow():
             "monday": "current",
             "tuesday": "current", 
             "wednesday": "next",
-            "thursday": "next",
+            "tuesday": "next",
             "friday": "next"
         }
     }

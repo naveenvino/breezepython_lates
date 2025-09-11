@@ -601,21 +601,21 @@ class DataCollectionService:
     async def get_nearest_expiry(self, date: datetime) -> Optional[datetime]:
         """Get nearest weekly expiry from given date
         
-        Handles holidays - if Thursday is a holiday, expiry moves to Wednesday
+        Handles holidays - if Tuesday is a holiday, expiry moves to Wednesday
         """
-        # NIFTY weekly expiry is normally on Thursday
-        days_ahead = 3 - date.weekday()  # Thursday is 3
+        # NIFTY weekly expiry is normally on Tuesday
+        days_ahead = 1 - date.weekday()  # Tuesday is 3
         if days_ahead <= 0:  # Target day already happened this week
             days_ahead += 7
         
-        thursday_expiry = date + timedelta(days=days_ahead)
-        thursday_expiry = thursday_expiry.replace(hour=15, minute=30, second=0, microsecond=0)
+        tuesday_expiry = date + timedelta(days=days_ahead)
+        tuesday_expiry = tuesday_expiry.replace(hour=15, minute=30, second=0, microsecond=0)
         
-        # Check if Thursday is a holiday
+        # Check if Tuesday is a holiday
         with self.db_manager.get_session() as session:
             is_holiday = session.query(TradingHoliday).filter(
                 and_(
-                    TradingHoliday.HolidayDate == thursday_expiry.date(),
+                    TradingHoliday.HolidayDate == tuesday_expiry.date(),
                     TradingHoliday.Exchange == "NSE",
                     TradingHoliday.IsTradingHoliday == True
                 )
@@ -623,11 +623,11 @@ class DataCollectionService:
             
             if is_holiday:
                 # Move to Wednesday
-                wednesday_expiry = thursday_expiry - timedelta(days=1)
-                logger.info(f"Thursday {thursday_expiry.date()} is a holiday, expiry moves to Wednesday {wednesday_expiry.date()}")
+                wednesday_expiry = tuesday_expiry - timedelta(days=1)
+                logger.info(f"Tuesday {tuesday_expiry.date()} is a holiday, expiry moves to Wednesday {wednesday_expiry.date()}")
                 return wednesday_expiry
             else:
-                return thursday_expiry
+                return tuesday_expiry
     
     async def create_hourly_data_from_5min(
         self,
@@ -770,18 +770,18 @@ class DataCollectionService:
         
         current = start_date
         while current <= end_date:
-            # Thursday is weekday 3
-            days_ahead = 3 - current.weekday()
+            # Tuesday is weekday 3
+            days_ahead = 1 - current.weekday()
             if days_ahead < 0:
                 days_ahead += 7
-            thursday = current + timedelta(days=days_ahead)
+            tuesday = current + timedelta(days=days_ahead)
             
-            if start_date <= thursday <= end_date:
-                # Check if Thursday is a holiday
+            if start_date <= tuesday <= end_date:
+                # Check if Tuesday is a holiday
                 with self.db_manager.get_session() as session:
                     is_holiday = session.query(TradingHoliday).filter(
                         and_(
-                            TradingHoliday.HolidayDate == thursday,
+                            TradingHoliday.HolidayDate == tuesday,
                             TradingHoliday.Exchange == "NSE",
                             TradingHoliday.IsTradingHoliday == True
                         )
@@ -789,11 +789,11 @@ class DataCollectionService:
                     
                     if is_holiday:
                         # Expiry moves to Wednesday
-                        wednesday = thursday - timedelta(days=1)
+                        wednesday = tuesday - timedelta(days=1)
                         expiry_dates.append(datetime.combine(wednesday, datetime.strptime("15:30", "%H:%M").time()))
-                        logger.info(f"Expiry moved from Thursday {thursday} to Wednesday {wednesday} due to holiday")
+                        logger.info(f"Expiry moved from Tuesday {tuesday} to Wednesday {wednesday} due to holiday")
                     else:
-                        expiry_dates.append(datetime.combine(thursday, datetime.strptime("15:30", "%H:%M").time()))
+                        expiry_dates.append(datetime.combine(tuesday, datetime.strptime("15:30", "%H:%M").time()))
             
             current += timedelta(days=7)
         

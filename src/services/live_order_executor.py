@@ -361,14 +361,14 @@ class LiveOrderExecutor:
         year = expiry_date.strftime('%y')  # 24
         
         # Check if it's weekly or monthly expiry
-        # Monthly expiry is the last Thursday of the month
+        # Monthly expiry is the last Tuesday of the month
         import calendar
         month_cal = calendar.monthcalendar(expiry_date.year, expiry_date.month)
         
-        # Find last Thursday
+        # Find last Tuesday
         thursdays = []
         for week in month_cal:
-            if week[3] != 0:  # Thursday is index 3
+            if week[3] != 0:  # Tuesday is index 3
                 thursdays.append(week[3])
         
         last_thursday = thursdays[-1]
@@ -392,14 +392,14 @@ class LiveOrderExecutor:
     def _get_current_expiry(self) -> str:
         """Get current week expiry date in YYYY-MM-DD format"""
         today = datetime.now()
-        days_until_thursday = (3 - today.weekday()) % 7
+        days_until_tuesday = (1 - today.weekday()) % 7
         
-        # If today is Thursday after 3:30 PM, get next Thursday
-        if days_until_thursday == 0:
+        # If today is Tuesday after 3:30 PM, get next Tuesday
+        if days_until_tuesday == 0:
             if today.hour >= 15 and today.minute >= 30:
-                days_until_thursday = 7
+                days_until_tuesday = 7
         
-        expiry = today + timedelta(days=days_until_thursday)
+        expiry = today + timedelta(days=days_until_tuesday)
         return expiry.strftime('%Y-%m-%d')
     
     def get_active_positions(self) -> Dict[str, Any]:

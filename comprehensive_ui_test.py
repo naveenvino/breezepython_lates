@@ -197,7 +197,7 @@ class ComprehensiveUITest(unittest.TestCase):
     
     def test_08_weekday_expiry_dropdowns(self):
         """Test all weekday expiry dropdowns"""
-        weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+        weekdays = ["Monday", "Tuesday", "Wednesday", "Tuesday", "Friday"]
         
         for day in weekdays:
             try:
@@ -370,7 +370,7 @@ class ComprehensiveUITest(unittest.TestCase):
                 "monday": "next",
                 "tuesday": "monthend",
                 "wednesday": "next",
-                "thursday": "next",
+                "tuesday": "next",
                 "friday": "next"
             }
             

@@ -898,7 +898,7 @@ async def get_market_status():
         "market_open_time": "09:15:00",
         "market_close_time": "15:30:00",
         "next_market_open": next_open,
-        "day_of_week": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][day_of_week]
+        "day_of_week": ["Monday", "Tuesday", "Wednesday", "Tuesday", "Friday", "Saturday", "Sunday"][day_of_week]
     }
 
 @app.get("/trading/pnl/live", tags=["Trading"])

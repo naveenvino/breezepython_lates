@@ -45,9 +45,9 @@ class BreezeOptionService:
             return False
     
     def get_current_expiry(self):
-        """Get current weekly expiry (Thursday)"""
+        """Get current weekly expiry (Tuesday)"""
         today = datetime.now()
-        days_ahead = 3 - today.weekday()  # Thursday = 3
+        days_ahead = 1 - today.weekday()  # Tuesday = 1
         if days_ahead <= 0:
             days_ahead += 7
         expiry = today + timedelta(days=days_ahead)
@@ -59,7 +59,7 @@ class BreezeOptionService:
         try:
             if not self.breeze:
                 if not self._initialize():
-                    return {"error": "Failed to initialize Breeze", "pcr": 0, "total_oi": 0}
+                    raise RuntimeError("Failed to initialize Breeze connection for option chain data")
             
             expiry = self.get_current_expiry()
             
@@ -141,11 +141,11 @@ class BreezeOptionService:
                 
             else:
                 logger.error(f"Failed to get option chain: {response}")
-                return {"error": "No data received", "pcr": 0, "total_oi": 0}
+                raise ValueError(f"No option chain data received from Breeze API: {response}")
                 
         except Exception as e:
             logger.error(f"Error fetching option chain: {e}")
-            return {"error": str(e), "pcr": 0, "total_oi": 0}
+            raise RuntimeError(f"Failed to fetch option chain data: {str(e)}")
     
     def get_vix(self) -> Optional[float]:
         """Get India VIX value"""

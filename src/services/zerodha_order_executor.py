@@ -102,9 +102,9 @@ class ZerodhaOrderExecutor:
             if self.access_token:
                 self.kite.set_access_token(self.access_token)
                 self.is_connected = True
-                logger.info("Kite Connect initialized with saved token")
+                logger.info("Kite Connect initialized with saved credentials")
             else:
-                logger.warning("No access token found. Need to authenticate.")
+                logger.warning("No credentials found. Authentication required.")
             
             return True
             
@@ -119,9 +119,9 @@ class ZerodhaOrderExecutor:
             if os.path.exists(token_file):
                 with open(token_file, 'r') as f:
                     self.access_token = f.read().strip()
-                    logger.info("Loaded access token from file")
+                    logger.info("Loaded credentials from secure storage")
         except Exception as e:
-            logger.error(f"Error loading access token: {e}")
+            logger.error(f"Error loading credentials: {e}")
     
     def _save_access_token(self, token: str):
         """Save access token to file"""
@@ -129,9 +129,9 @@ class ZerodhaOrderExecutor:
             os.makedirs("logs", exist_ok=True)
             with open("logs/kite_access_token.txt", 'w') as f:
                 f.write(token)
-            logger.info("Saved access token to file")
+            logger.info("Saved credentials to secure storage")
         except Exception as e:
-            logger.error(f"Error saving access token: {e}")
+            logger.error(f"Error saving credentials: {e}")
     
     def authenticate(self, request_token: str) -> bool:
         """
@@ -387,9 +387,9 @@ class ZerodhaOrderExecutor:
             Symbol like "NIFTY24DEC25000PE"
         """
         if not expiry:
-            # Get current weekly expiry (Thursday)
+            # Get current weekly expiry (Tuesday)
             today = datetime.now()
-            days_ahead = 3 - today.weekday()  # Thursday is 3
+            days_ahead = 1 - today.weekday()  # Tuesday is 1
             if days_ahead <= 0:
                 days_ahead += 7
             expiry_date = today + timedelta(days=days_ahead)

@@ -511,7 +511,7 @@ class TradeLifecycleAnalyzer:
                     'Monday': None,  # Hold
                     'Tuesday': 0.5,  # Exit 50% if profitable
                     'Wednesday': 0.75,  # Exit 75% by Wed close
-                    'Thursday': 1.0  # Full exit before expiry
+                    'Tuesday': 1.0  # Full exit before expiry
                 }
             }
         

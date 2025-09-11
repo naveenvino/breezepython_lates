@@ -1,0 +1,29 @@
+{
+  "timestamp": "2025-09-09T01:01:44.264900",
+  "results": {
+    "passed": [
+      "API server is healthy",
+      "Current settings loaded",
+      "ENTRY WEBHOOK PROCESSED SUCCESSFULLY",
+      "Kill switch active: False",
+      "System is ready for trading",
+      "Breakeven monitoring active",
+      "EXIT WEBHOOK PROCESSED SUCCESSFULLY",
+      "NIFTY Spot: N/A",
+      "Hourly candle data available",
+      "UI page / accessible",
+      "UI page /settings accessible",
+      "UI page /positions accessible",
+      "\n>>> ALL CRITICAL TESTS PASSED!"
+    ],
+    "failed": [],
+    "warnings": [
+      "Breeze disconnected (Data feed inactive)",
+      "Kite disconnected (Paper trading mode)",
+      "Settings update failed",
+      "No positions found",
+      "UI page /tradingview_monitor returned 404"
+    ]
+  },
+  "success_rate": 100.0
+}

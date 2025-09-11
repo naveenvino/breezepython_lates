@@ -207,20 +207,25 @@ class LiveDataFeed:
             pe_tick = self.get_latest_tick(pe_symbol)
             
             if ce_tick or pe_tick:
+                if not ce_tick:
+                    raise ValueError(f"No CE tick data available for {ce_symbol}")
+                if not pe_tick:
+                    raise ValueError(f"No PE tick data available for {pe_symbol}")
+                    
                 chain_data.append({
                     'strike': strike,
-                    'ce_ltp': ce_tick.ltp if ce_tick else 0,
-                    'ce_volume': ce_tick.volume if ce_tick else 0,
-                    'ce_oi': ce_tick.oi if ce_tick else 0,
-                    'ce_bid': ce_tick.bid if ce_tick else 0,
-                    'ce_ask': ce_tick.ask if ce_tick else 0,
-                    'pe_ltp': pe_tick.ltp if pe_tick else 0,
-                    'pe_volume': pe_tick.volume if pe_tick else 0,
-                    'pe_oi': pe_tick.oi if pe_tick else 0,
-                    'pe_bid': pe_tick.bid if pe_tick else 0,
-                    'pe_ask': pe_tick.ask if pe_tick else 0,
-                    'pcr_oi': pe_tick.oi / ce_tick.oi if ce_tick and ce_tick.oi > 0 else 0,
-                    'pcr_volume': pe_tick.volume / ce_tick.volume if ce_tick and ce_tick.volume > 0 else 0
+                    'ce_ltp': ce_tick.ltp,
+                    'ce_volume': ce_tick.volume,
+                    'ce_oi': ce_tick.oi,
+                    'ce_bid': ce_tick.bid,
+                    'ce_ask': ce_tick.ask,
+                    'pe_ltp': pe_tick.ltp,
+                    'pe_volume': pe_tick.volume,
+                    'pe_oi': pe_tick.oi,
+                    'pe_bid': pe_tick.bid,
+                    'pe_ask': pe_tick.ask,
+                    'pcr_oi': pe_tick.oi / ce_tick.oi if ce_tick.oi > 0 else None,
+                    'pcr_volume': pe_tick.volume / ce_tick.volume if ce_tick.volume > 0 else None
                 })
                 
         return pd.DataFrame(chain_data)
@@ -468,7 +473,7 @@ class LiveDataFeed:
         """Calculate implied volatility (simplified)"""
         # Newton-Raphson for IV (simplified implementation)
         # In production, use more robust method
-        return 0.20  # Default 20% volatility
+        raise ValueError("Implied volatility calculation requires real market data - cannot provide default value")
         
     def _calculate_tick_rate(self) -> float:
         """Calculate ticks per second"""
@@ -512,14 +517,20 @@ class SimulatedDataFeed(LiveDataFeed):
         """Generate simulated ticks"""
         import time
         
-        # Initialize base prices
-        self.base_prices['NIFTY'] = 25000
+        # Initialize base prices from real market data
+        nifty_price = self._get_real_nifty_price()
+        if not nifty_price:
+            raise RuntimeError("Cannot initialize simulation without real NIFTY price")
+        self.base_prices['NIFTY'] = nifty_price
         
         while self.is_running:
             for symbol in self.subscribers:
                 # Generate random tick
                 if symbol not in self.base_prices:
-                    self.base_prices[symbol] = 100
+                    real_price = self._get_real_price(symbol)
+                    if not real_price:
+                        raise RuntimeError(f"Cannot simulate {symbol} without real price data")
+                    self.base_prices[symbol] = real_price
                     
                 # Random walk
                 change = np.random.normal(0, 0.001)
@@ -543,3 +554,15 @@ class SimulatedDataFeed(LiveDataFeed):
                 self._on_tick({'symbol': symbol, 'data': tick.__dict__})
                 
             time.sleep(0.1)  # 10 ticks per second
+            
+    def _get_real_nifty_price(self) -> Optional[float]:
+        """Get real NIFTY price for simulation initialization"""
+        # This should connect to real market data source
+        # For now, raise an error to force proper implementation
+        raise NotImplementedError("Must implement real market data connection for simulation")
+        
+    def _get_real_price(self, symbol: str) -> Optional[float]:
+        """Get real price for symbol"""
+        # This should connect to real market data source  
+        # For now, raise an error to force proper implementation
+        raise NotImplementedError(f"Must implement real market data connection for {symbol}")

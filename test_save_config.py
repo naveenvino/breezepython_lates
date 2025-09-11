@@ -42,7 +42,7 @@ def test_save_and_load_config():
             "monday": "current",
             "tuesday": "current", 
             "wednesday": "next",
-            "thursday": "month_end",
+            "tuesday": "month_end",
             "friday": "next"
         }
     }
@@ -51,7 +51,7 @@ def test_save_and_load_config():
     print(f"   Exit Day: {'Expiry Day' if test_config['exit_day_offset'] == 0 else f'T+{test_config['exit_day_offset']}'}")
     print(f"   Exit Time: {test_config['exit_time']}")
     print(f"   Monday Config: {test_config['weekday_config']['monday']}")
-    print(f"   Thursday Config: {test_config['weekday_config']['thursday']}")
+    print(f"   Tuesday Config: {test_config['weekday_config']['tuesday']}")
     
     # Save configuration
     try:
@@ -120,10 +120,10 @@ def test_save_and_load_config():
                         print(f"   [FAIL] Monday: Expected current, got {wc.get('monday')}")
                         weekday_ok = False
                         
-                    if wc.get('thursday') == 'month_end':
-                        print("   [OK] Thursday: month_end (correctly loaded)")
+                    if wc.get('tuesday') == 'month_end':
+                        print("   [OK] Tuesday: month_end (correctly loaded)")
                     else:
-                        print(f"   [FAIL] Thursday: Expected month_end, got {wc.get('thursday')}")
+                        print(f"   [FAIL] Tuesday: Expected month_end, got {wc.get('tuesday')}")
                         weekday_ok = False
                 else:
                     print("   [FAIL] Weekday config not found in loaded config")

@@ -250,7 +250,7 @@ class SignalPerformanceAnalyzer:
     
     def _day_name(self, day_num: int) -> str:
         """Convert day number to name"""
-        days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+        days = ['Monday', 'Tuesday', 'Wednesday', 'Tuesday', 'Friday', 'Saturday', 'Sunday']
         return days[day_num] if 0 <= day_num < 7 else "Unknown"
     
     def _analyze_market_regime(self, 
@@ -375,8 +375,8 @@ class SignalPerformanceAnalyzer:
                 
         # Day of week preference
         if metrics.best_day_of_week and metrics.best_day_of_week != "N/A":
-            if metrics.best_day_of_week == "Thursday":
-                recommendations.append("EXPIRY DAY: Best on Thursday - Consider closing before 3:15 PM")
+            if metrics.best_day_of_week == "Tuesday":
+                recommendations.append("EXPIRY DAY: Best on Tuesday - Consider closing before 3:15 PM")
             elif metrics.best_day_of_week == "Monday":
                 recommendations.append("WEEK START: Best on Monday - Fresh weekly levels")
             else:

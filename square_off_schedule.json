@@ -1,0 +1,754 @@
+[
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.096475",
+    "order_id": 1,
+    "entry_time": "2025-09-09T00:38:06.096475",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.738500",
+    "order_id": 1,
+    "entry_time": "2025-09-09T01:01:05.738500",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.038813",
+    "order_id": 1,
+    "entry_time": "2025-09-09T12:11:26.038813",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525100CE",
+    "quantity": 7500,
+    "exit_datetime": "2025-09-11T15:15:00.161438",
+    "order_id": 2,
+    "entry_time": "2025-09-09T12:11:30.161438",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525100CE",
+    "quantity": 7500,
+    "exit_datetime": "2025-09-11T15:15:00.161438",
+    "order_id": 3,
+    "entry_time": "2025-09-09T12:11:30.161438",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525100CE",
+    "quantity": 7500,
+    "exit_datetime": "2025-09-11T15:15:00.161438",
+    "order_id": 4,
+    "entry_time": "2025-09-09T12:11:30.161438",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2599999PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.013689",
+    "order_id": 5,
+    "entry_time": "2025-09-09T12:11:45.013689",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525200CE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.098035",
+    "order_id": 6,
+    "entry_time": "2025-09-09T12:11:49.098035",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525200CE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.098035",
+    "order_id": 7,
+    "entry_time": "2025-09-09T12:11:49.098035",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525200CE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.098035",
+    "order_id": 8,
+    "entry_time": "2025-09-09T12:11:49.098035",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.741661",
+    "order_id": 9,
+    "entry_time": "2025-09-09T12:12:35.741661",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525100CE",
+    "quantity": 7500,
+    "exit_datetime": "2025-09-11T15:15:00.845378",
+    "order_id": 10,
+    "entry_time": "2025-09-09T12:12:39.845378",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525100CE",
+    "quantity": 7500,
+    "exit_datetime": "2025-09-11T15:15:00.845378",
+    "order_id": 11,
+    "entry_time": "2025-09-09T12:12:39.845378",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525100CE",
+    "quantity": 7500,
+    "exit_datetime": "2025-09-11T15:15:00.845378",
+    "order_id": 12,
+    "entry_time": "2025-09-09T12:12:39.845378",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2599999PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.665058",
+    "order_id": 13,
+    "entry_time": "2025-09-09T12:12:54.665058",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525200CE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.096374",
+    "order_id": 14,
+    "entry_time": "2025-09-09T12:13:01.096374",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525200CE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.096374",
+    "order_id": 15,
+    "entry_time": "2025-09-09T12:13:01.096374",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525200CE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.096374",
+    "order_id": 16,
+    "entry_time": "2025-09-09T12:13:01.096374",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 75,
+    "exit_datetime": "2025-09-11T15:15:00.279045",
+    "order_id": 17,
+    "entry_time": "2025-09-09T12:26:29.279045",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525100CE",
+    "quantity": 7500,
+    "exit_datetime": "2025-09-11T15:15:00.487579",
+    "order_id": 17,
+    "entry_time": "2025-09-09T12:26:38.487579",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525200PE",
+    "quantity": 75,
+    "exit_datetime": "2025-09-11T15:15:00.543120",
+    "order_id": 17,
+    "entry_time": "2025-09-09T12:26:40.543120",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525200PE",
+    "quantity": 75,
+    "exit_datetime": "2025-09-11T15:15:00.543120",
+    "order_id": 17,
+    "entry_time": "2025-09-09T12:26:40.543120",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525200PE",
+    "quantity": 75,
+    "exit_datetime": "2025-09-11T15:15:00.543120",
+    "order_id": 17,
+    "entry_time": "2025-09-09T12:26:40.543120",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2599999CE",
+    "quantity": 75,
+    "exit_datetime": "2025-09-11T15:15:00.355436",
+    "order_id": 17,
+    "entry_time": "2025-09-09T12:26:51.355436",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.820325",
+    "order_id": 23,
+    "entry_time": "2025-09-09T15:47:32.820325",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525100CE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.026858",
+    "order_id": 23,
+    "entry_time": "2025-09-09T15:47:42.026858",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525200PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.090729",
+    "order_id": 23,
+    "entry_time": "2025-09-09T15:47:44.090729",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525400PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.482052",
+    "order_id": 23,
+    "entry_time": "2025-09-09T15:48:01.482052",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2599999CE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.558790",
+    "order_id": 23,
+    "entry_time": "2025-09-09T15:48:03.558790",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.978706",
+    "order_id": 27,
+    "entry_time": "2025-09-09T16:11:39.978706",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525100CE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.164789",
+    "order_id": 27,
+    "entry_time": "2025-09-09T16:11:49.164789",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525200PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.230023",
+    "order_id": 27,
+    "entry_time": "2025-09-09T16:11:51.230023",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525400PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.663698",
+    "order_id": 27,
+    "entry_time": "2025-09-09T16:12:06.663698",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2599999CE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.712268",
+    "order_id": 27,
+    "entry_time": "2025-09-09T16:12:08.712268",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.719995",
+    "order_id": 31,
+    "entry_time": "2025-09-09T16:27:49.719995",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525100CE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.907685",
+    "order_id": 30,
+    "entry_time": "2025-09-09T16:27:58.907685",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525200PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.963438",
+    "order_id": 30,
+    "entry_time": "2025-09-09T16:28:00.963438",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525400PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.850109",
+    "order_id": 30,
+    "entry_time": "2025-09-09T16:28:15.850109",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2599999CE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.895743",
+    "order_id": 30,
+    "entry_time": "2025-09-09T16:28:17.895743",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 1875,
+    "exit_datetime": "2025-09-11T15:15:00",
+    "order_id": 30,
+    "entry_time": "2025-09-09T10:15:00",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525100CE",
+    "quantity": 1875,
+    "exit_datetime": "2025-09-11T15:15:00.751849",
+    "order_id": 29,
+    "entry_time": "2025-09-09T16:43:41.751849",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525200PE",
+    "quantity": 1875,
+    "exit_datetime": "2025-09-11T15:15:00.741734",
+    "order_id": 29,
+    "entry_time": "2025-09-09T16:43:46.741734",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525200PE",
+    "quantity": 1875,
+    "exit_datetime": "2025-09-11T15:15:00.741734",
+    "order_id": 29,
+    "entry_time": "2025-09-09T16:43:46.741734",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525300CE",
+    "quantity": 1875,
+    "exit_datetime": "2025-09-11T15:15:00.074451",
+    "order_id": 29,
+    "entry_time": "2025-09-09T16:44:01.074451",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2524900PE",
+    "quantity": 1875,
+    "exit_datetime": "2025-09-11T15:15:00",
+    "order_id": 1,
+    "entry_time": "2025-09-09T16:50:00",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2524900PE",
+    "quantity": 1875,
+    "exit_datetime": "2025-09-11T15:15:00",
+    "order_id": 1,
+    "entry_time": "2025-09-09T17:00:00",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2524900PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00",
+    "order_id": 2,
+    "entry_time": "2025-09-09T17:05:00",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525100CE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.215001",
+    "order_id": 3,
+    "entry_time": "2025-09-09T17:24:34.215001",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525200PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.342907",
+    "order_id": 4,
+    "entry_time": "2025-09-09T17:24:37.342907",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525200PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.342907",
+    "order_id": 5,
+    "entry_time": "2025-09-09T17:24:37.342907",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525300CE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.171240",
+    "order_id": 6,
+    "entry_time": "2025-09-09T17:24:46.171240",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2524900PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.474699",
+    "order_id": 1,
+    "entry_time": "2025-09-09T20:20:20.474699",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2524900PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.725935",
+    "order_id": 1,
+    "entry_time": "2025-09-09T20:38:19.725935",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2524900PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.460450",
+    "order_id": 2,
+    "entry_time": "2025-09-09T20:41:56.460450",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2524900PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.137229",
+    "order_id": 1,
+    "entry_time": "2025-09-09T20:47:07.137229",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2524900PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.898332",
+    "order_id": 1,
+    "entry_time": "2025-09-09T21:00:44.898332",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2524900PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.471879",
+    "order_id": 1,
+    "entry_time": "2025-09-09T21:13:29.471879",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2524700PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.290549",
+    "order_id": 2,
+    "entry_time": "2025-09-09T21:17:55.290549",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2524700PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00.188976",
+    "order_id": 3,
+    "entry_time": "2025-09-09T23:53:42.188976",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2524700PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-12T15:15:00.586548",
+    "order_id": 1,
+    "entry_time": "2025-09-10T00:31:03.586548",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2524700PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-11T15:15:00",
+    "order_id": 2,
+    "entry_time": "2025-09-09T21:00:00",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2524700PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-12T15:15:00.101934",
+    "order_id": 3,
+    "entry_time": "2025-09-10T02:30:25.101934",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2524700PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-12T15:15:00.116101",
+    "order_id": 4,
+    "entry_time": "2025-09-10T02:49:58.116101",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2524700PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-12T15:15:00.106781",
+    "order_id": 1,
+    "entry_time": "2025-09-10T03:17:15.106781",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-12T15:15:00.134761",
+    "order_id": 1,
+    "entry_time": "2025-09-10T17:29:14.134761",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-12T15:15:00.863521",
+    "order_id": 1,
+    "entry_time": "2025-09-10T17:51:18.863521",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-12T15:15:00.751884",
+    "order_id": 1,
+    "entry_time": "2025-09-10T18:07:05.751884",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-12T15:15:00.294527",
+    "order_id": 2,
+    "entry_time": "2025-09-10T18:07:32.294527",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-12T15:15:00.521087",
+    "order_id": 3,
+    "entry_time": "2025-09-10T18:08:26.521087",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-12T15:15:00",
+    "order_id": 1,
+    "entry_time": "2025-09-10T12:30:00",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-12T15:15:00.941658",
+    "order_id": 2,
+    "entry_time": "2025-09-10T18:37:47.941658",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-12T15:15:00",
+    "order_id": 3,
+    "entry_time": "2025-09-10T12:30:00",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-12T15:15:00.606904",
+    "order_id": 1,
+    "entry_time": "2025-09-10T18:50:45.606904",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-12T15:15:00.749800",
+    "order_id": 2,
+    "entry_time": "2025-09-10T18:52:38.749800",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-12T15:15:00.638603",
+    "order_id": 1,
+    "entry_time": "2025-09-10T18:55:57.638603",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-15T15:15:00.493531",
+    "order_id": 1,
+    "entry_time": "2025-09-11T12:28:40.493531",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-15T15:15:00.477818",
+    "order_id": 1,
+    "entry_time": "2025-09-11T13:12:31.477818",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-15T15:15:00.196407",
+    "order_id": 2,
+    "entry_time": "2025-09-11T13:25:08.196407",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-15T15:15:00.588268",
+    "order_id": 3,
+    "entry_time": "2025-09-11T13:28:49.588268",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-15T15:15:00.179920",
+    "order_id": 4,
+    "entry_time": "2025-09-11T13:31:12.179920",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-15T15:15:00.397352",
+    "order_id": 5,
+    "entry_time": "2025-09-11T13:48:35.397352",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-15T15:15:00.022027",
+    "order_id": 6,
+    "entry_time": "2025-09-11T13:51:20.022027",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 750,
+    "exit_datetime": "2025-09-15T15:15:00.980302",
+    "order_id": 1,
+    "entry_time": "2025-09-11T14:30:40.980302",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 375,
+    "exit_datetime": "2025-09-15T15:15:00.044849",
+    "order_id": 1,
+    "entry_time": "2025-09-11T14:37:11.044849",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 75,
+    "exit_datetime": "2025-09-15T15:15:00.282708",
+    "order_id": 2,
+    "entry_time": "2025-09-11T14:37:41.282708",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 75,
+    "exit_datetime": "2025-09-15T15:15:00.572909",
+    "order_id": 3,
+    "entry_time": "2025-09-11T14:41:22.572909",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2524850PE",
+    "quantity": 75,
+    "exit_datetime": "2025-09-15T15:15:00.600652",
+    "order_id": 1,
+    "entry_time": "2025-09-11T14:57:35.600652",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY23SEP2525000PE",
+    "quantity": 75,
+    "exit_datetime": "2025-09-15T15:15:00.770970",
+    "order_id": 1,
+    "entry_time": "2025-09-11T15:03:57.770970",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY16SEP2525000PE",
+    "quantity": 75,
+    "exit_datetime": "2025-09-15T15:15:00.951213",
+    "order_id": 1,
+    "entry_time": "2025-09-11T15:51:37.951213",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY16SEP2525000PE",
+    "quantity": 75,
+    "exit_datetime": "2025-09-15T15:15:00.819451",
+    "order_id": 2,
+    "entry_time": "2025-09-11T15:56:28.819451",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY16SEP2525000PE",
+    "quantity": 75,
+    "exit_datetime": "2025-09-15T15:15:00.015917",
+    "order_id": 3,
+    "entry_time": "2025-09-11T15:56:45.015917",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY16SEP2525000PE",
+    "quantity": 75,
+    "exit_datetime": "2025-09-15T15:15:00.105599",
+    "order_id": 1,
+    "entry_time": "2025-09-11T15:59:28.105599",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY16SEP2525000PE",
+    "quantity": 75,
+    "exit_datetime": "2025-09-15T15:15:00.925830",
+    "order_id": 2,
+    "entry_time": "2025-09-11T15:59:37.925830",
+    "status": "scheduled"
+  },
+  {
+    "symbol": "NIFTY16SEP2525000PE",
+    "quantity": 75,
+    "exit_datetime": "2025-09-15T15:15:00.432871",
+    "order_id": 3,
+    "entry_time": "2025-09-11T16:01:01.432871",
+    "status": "scheduled"
+  }
+]

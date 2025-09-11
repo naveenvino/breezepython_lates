@@ -1,17 +1,17 @@
 """
-Fix missing Thursday July 17, 2025 options data
+Fix missing Tuesday July 17, 2025 options data
 """
 import requests
 from datetime import date
 
 BASE_URL = "http://localhost:8002"
 
-print("Fixing Missing Thursday July 17, 2025 Options Data")
+print("Fixing Missing Tuesday July 17, 2025 Options Data")
 print("=" * 60)
 
-# The issue: Thursday collection was partial, missing strikes 24800-25350
+# The issue: Tuesday collection was partial, missing strikes 24800-25350
 
-print("\n1. Re-collecting Thursday data with force_refresh...")
+print("\n1. Re-collecting Tuesday data with force_refresh...")
 
 response = requests.post(
     f"{BASE_URL}/api/v1/collect/options-direct",

@@ -145,8 +145,8 @@ class PaperTradingEngine:
         # Check stop losses
         self._check_stop_losses(market_data)
         
-        # Check for expiry day square-off (3:15 PM on Thursday)
-        if timestamp.weekday() == 3 and timestamp.hour == 15 and timestamp.minute >= 15:
+        # Check for expiry day square-off (3:15 PM on Tuesday)
+        if timestamp.weekday() == 1 and timestamp.hour == 15 and timestamp.minute >= 15:
             self._square_off_expiry_positions()
             
         # Evaluate signals if evaluator is available

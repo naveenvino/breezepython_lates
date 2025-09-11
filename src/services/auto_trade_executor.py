@@ -85,7 +85,16 @@ class AutoTradeExecutor:
                 # Active signals
                 self.active_signals = config.get('active_signals', [])
                 
-                logger.info(f"Loaded config from DB: {self.default_lots} lots, hedge={self.use_hedging}, active_signals={self.active_signals}")
+                logger.info("Loaded config from DB", extra={
+                "config": {
+                    "lots": self.default_lots,
+                    "hedge_enabled": self.use_hedging,
+                    "hedge_method": self.hedge_method,
+                    "active_signals": self.active_signals,
+                    "max_positions": self.max_positions,
+                    "daily_loss_limit": self.max_daily_loss
+                }
+            })
             else:
                 # Use defaults if no config found
                 self._set_default_config()
@@ -137,7 +146,13 @@ class AutoTradeExecutor:
             
             def on_stop_loss_triggered(position: LivePosition, stop_type, reason: str):
                 """Handle stop loss trigger"""
-                logger.warning(f"STOP LOSS TRIGGERED for {position.id}: {stop_type.value} - {reason}")
+                logger.warning("STOP LOSS TRIGGERED", extra={
+                "position_id": position.id,
+                "stop_type": stop_type.value,
+                "reason": reason,
+                "strike": position.main_strike,
+                "type": position.main_type
+            })
                 
                 # Find and close the position
                 for pos in self.open_positions:
@@ -394,7 +409,16 @@ class AutoTradeExecutor:
         # Save state
         self.save_state()
         
-        logger.info(f"Paper trade executed: {position}")
+        logger.info("Paper trade executed", extra={
+            "trade": {
+                "order_id": order_id,
+                "symbol": order['symbol'],
+                "quantity": order['quantity'],
+                "price": price,
+                "signal": signal['signal_name'],
+                "mode": "PAPER"
+            }
+        })
         
         return {
             "success": True,
@@ -450,7 +474,17 @@ class AutoTradeExecutor:
             # Save state
             self.save_state()
             
-            logger.info(f"Live trade executed: {position}")
+            logger.info("Live trade executed", extra={
+                "trade": {
+                    "order_id": str(order_id),
+                    "symbol": order['symbol'],
+                    "quantity": order['quantity'],
+                    "price": order_details.get('average_price', 0),
+                    "signal": signal['signal_name'],
+                    "mode": "LIVE",
+                    "status": order_details.get('status')
+                }
+            })
             
             return {
                 "success": True,
@@ -601,7 +635,14 @@ class AutoTradeExecutor:
             
             # Execute close order
             if self.mode == TradeMode.PAPER:
-                logger.info(f"Paper position closed: {position['symbol']} - {reason}")
+                logger.info("Paper position closed", extra={
+                    "position": {
+                        "symbol": position['symbol'],
+                        "reason": reason,
+                        "pnl": position.get('pnl', 0),
+                        "mode": "PAPER"
+                    }
+                })
             else:
                 if self.kite:
                     self.kite.place_order(

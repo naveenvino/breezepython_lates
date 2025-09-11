@@ -15,11 +15,10 @@ from src.services.realtime_candle_service import get_realtime_candle_service
 logger = logging.getLogger(__name__)
 
 class StopLossType(Enum):
-    STRIKE_BASED = "strike_based"  # Main strike as stop loss
+    HOURLY_CLOSE = "hourly_close"  # Based on hourly candle close beyond strike
     PROFIT_LOCK = "profit_lock"    # Lock profit after target
-    TIME_BASED = "time_based"      # Square off at specific time
+    TIME_BASED = "time_based"      # T+N exit timing from configuration
     TRAILING = "trailing"          # Trailing stop loss
-    HOURLY_CLOSE = "hourly_close"  # Based on hourly candle close
 
 @dataclass
 class StopLossRule:
@@ -30,9 +29,7 @@ class StopLossRule:
     
     def __post_init__(self):
         # Set default parameters
-        if self.type == StopLossType.STRIKE_BASED:
-            self.params.setdefault('buffer_points', 0)
-        elif self.type == StopLossType.PROFIT_LOCK:
+        if self.type == StopLossType.PROFIT_LOCK:
             self.params.setdefault('target_percent', 2.0)
             self.params.setdefault('lock_percent', 1.0)
         elif self.type == StopLossType.TIME_BASED:
@@ -52,12 +49,12 @@ class LiveStopLossMonitor:
         self.data_manager = get_hybrid_data_manager()
         self.candle_service = get_realtime_candle_service()
         
-        # Stop loss rules (STRIKE_BASED is MANDATORY - always enabled)
+        # Stop loss rules - Hourly close based on strike is the main stop loss
         self.stop_loss_rules = [
             StopLossRule(
-                type=StopLossType.STRIKE_BASED,
-                enabled=True,  # MANDATORY - Cannot be disabled
-                params={'buffer_points': 0}
+                type=StopLossType.HOURLY_CLOSE,
+                enabled=True,  # MANDATORY - Check on hourly close if beyond strike
+                params={'stop_buffer': 0}  # No buffer - exact strike
             ),
             StopLossRule(
                 type=StopLossType.PROFIT_LOCK,
@@ -70,20 +67,19 @@ class LiveStopLossMonitor:
             ),
             StopLossRule(
                 type=StopLossType.TIME_BASED,
-                enabled=False,  # DISABLED - No need for daily square off
-                params={'square_off_time': time(15, 15)}
+                enabled=True,  # ENABLED - For T+N exit timing from configuration
+                params={'square_off_time': time(15, 15)}  # Will be overridden by config
             ),
             StopLossRule(
                 type=StopLossType.TRAILING,
                 enabled=False,
                 params={'trail_percent': 1.0}
-            ),
-            StopLossRule(
-                type=StopLossType.HOURLY_CLOSE,
-                enabled=True,  # MANDATORY - Always active
-                params={'stop_buffer': 0}  # No buffer - exact strike
             )
         ]
+        
+        # Remove STRIKE_BASED as it's duplicate of HOURLY_CLOSE
+        # Store webhook_id to position mapping for combined tracking
+        self.webhook_positions: Dict[str, List[int]] = {}  # webhook_id -> [position_ids]
         
         # Position tracking
         self.position_high_water_marks: Dict[int, float] = {}  # For trailing stops
@@ -115,13 +111,6 @@ class LiveStopLossMonitor:
     def _check_all_stops(self, position: LivePosition, spot_price: float):
         """Check all stop loss conditions for a position"""
         
-        # Strike-based stop loss
-        if self._is_rule_enabled(StopLossType.STRIKE_BASED):
-            if self._check_strike_based_stop(position, spot_price):
-                self._trigger_stop_loss(position, StopLossType.STRIKE_BASED,
-                                       f"Spot {spot_price} breached strike {position.main_strike}")
-                return
-        
         # Profit lock
         if self._is_rule_enabled(StopLossType.PROFIT_LOCK):
             if self._check_profit_lock(position):
@@ -129,11 +118,11 @@ class LiveStopLossMonitor:
                                        "Profit lock triggered")
                 return
         
-        # Time-based square off
+        # Time-based T+N exit
         if self._is_rule_enabled(StopLossType.TIME_BASED):
-            if self._check_time_based_stop():
+            if self._check_time_based_exit(position):
                 self._trigger_stop_loss(position, StopLossType.TIME_BASED,
-                                       "Time-based square off at 15:15")
+                                       "T+N exit timing triggered")
                 return
         
         # Trailing stop loss
@@ -143,35 +132,22 @@ class LiveStopLossMonitor:
                                        "Trailing stop triggered")
                 return
     
-    def _check_strike_based_stop(self, position: LivePosition, spot_price: float) -> bool:
-        """Check if spot price has breached strike (main strike as stop loss)
-        IMPORTANT: TradingView also sends exit signals, avoid double trigger
-        
-        Option Seller Logic:
-        - PUT selling is BULLISH strategy (expecting market to go up or stay flat)
-        - CALL selling is BEARISH strategy (expecting market to go down or stay flat)
-        """
-        # Check if spot price is None or 0
-        if not spot_price or spot_price <= 0:
-            return False
-            
-        # Check if already being closed by TradingView
-        if position.status == 'closing' or position.status == 'closed':
-            logger.info(f"Position {position.id} already closing, skipping strike check")
-            return False
-            
-        rule = self._get_rule(StopLossType.STRIKE_BASED)
-        buffer = rule.params['buffer_points']
-        
-        # CORRECTED LOGIC for option sellers:
-        # PUT selling (bullish): Exit if spot goes BELOW strike (market turned bearish)
-        # CALL selling (bearish): Exit if spot goes ABOVE strike (market turned bullish)
-        if 'PE' in position.signal_type or position.signal_type in ['S1', 'S2', 'S4', 'S7']:
-            # Sold PUT - loss when spot goes DOWN below strike (opposite of bullish expectation)
-            return spot_price <= (position.main_strike - buffer)
-        else:
-            # Sold CALL - loss when spot goes UP above strike (opposite of bearish expectation)
-            return spot_price >= (position.main_strike + buffer)
+    def register_position_with_webhook(self, webhook_id: str, position_id: int):
+        """Register a position with its webhook_id for combined tracking"""
+        if webhook_id not in self.webhook_positions:
+            self.webhook_positions[webhook_id] = []
+        if position_id not in self.webhook_positions[webhook_id]:
+            self.webhook_positions[webhook_id].append(position_id)
+            logger.info(f"Registered position {position_id} with webhook {webhook_id}")
+    
+    def get_combined_positions(self, webhook_id: str) -> List[LivePosition]:
+        """Get all positions (main + hedge) for a webhook_id"""
+        positions = []
+        if webhook_id in self.webhook_positions:
+            for pos_id in self.webhook_positions[webhook_id]:
+                if pos_id in self.data_manager.memory_cache['active_positions']:
+                    positions.append(self.data_manager.memory_cache['active_positions'][pos_id])
+        return positions
     
     def _check_hourly_close_stop(self, position: LivePosition, candle: HourlyCandle) -> bool:
         """Check if hourly candle closed beyond strike (MANDATORY DEFAULT - exact strike as stop loss)
@@ -243,18 +219,71 @@ class LiveStopLossMonitor:
         
         return False
     
-    def _check_time_based_stop(self) -> bool:
-        """Check if it's time for square off"""
-        rule = self._get_rule(StopLossType.TIME_BASED)
-        square_off_time = rule.params['square_off_time']
-        
-        current_time = datetime.now().time()
-        
-        # Allow 1 minute window for square off
-        square_off_dt = datetime.combine(datetime.now().date(), square_off_time)
-        time_diff = abs((datetime.now() - square_off_dt).total_seconds())
-        
-        return time_diff <= 60  # Within 1 minute of square off time
+    def _check_time_based_exit(self, position: LivePosition) -> bool:
+        """Check if it's time for T+N exit based on configuration STORED AT ENTRY TIME"""
+        try:
+            # Get exit timing configuration from database
+            import sqlite3
+            conn = sqlite3.connect('data/trading_settings.db')
+            cursor = conn.cursor()
+            
+            # Get the webhook_id and EXIT CONFIG STORED AT ENTRY for this position
+            cursor.execute("""
+                SELECT webhook_id, created_at, exit_config_day, exit_config_time
+                FROM OrderTracking 
+                WHERE (main_order_id = ? OR hedge_order_id = ?)
+                AND status != 'failed'
+            """, (position.order_id, position.order_id))
+            
+            result = cursor.fetchone()
+            conn.close()
+            
+            if not result:
+                return False
+                
+            webhook_id, entry_time_str, exit_day, exit_time_str = result
+            
+            # If no exit config was stored (old orders), return False
+            if exit_day is None or exit_time_str is None:
+                return False
+                
+            entry_time = datetime.strptime(entry_time_str, '%Y-%m-%d %H:%M:%S')
+            
+            # Calculate target exit datetime
+            # exit_day: 0 = expiry day, 1-7 = T+N days
+            if exit_day == 0:
+                # Exit on expiry day - get expiry date from position
+                # For now, return False as expiry logic is handled elsewhere
+                return False
+            else:
+                # T+N days from entry
+                target_date = entry_time
+                trading_days_added = 0
+                
+                while trading_days_added < exit_day:
+                    target_date += timedelta(days=1)
+                    # Skip weekends
+                    if target_date.weekday() < 5:  # Monday=0, Friday=4
+                        trading_days_added += 1
+                
+                # Set the exit time
+                exit_hour, exit_minute = map(int, exit_time_str.split(':'))
+                target_exit = target_date.replace(hour=exit_hour, minute=exit_minute, second=0)
+                
+                # Check if current time is past target exit time
+                current_time = datetime.now()
+                
+                # Allow 1 minute window
+                time_diff = abs((current_time - target_exit).total_seconds())
+                
+                if current_time >= target_exit and time_diff <= 60:
+                    logger.info(f"T+{exit_day} exit triggered for position {position.id} at {exit_time_str}")
+                    return True
+                    
+        except Exception as e:
+            logger.error(f"Error checking time-based exit: {e}")
+            
+        return False
     
     def _check_trailing_stop(self, position: LivePosition) -> bool:
         """Check trailing stop loss INCLUDING HEDGE in calculation"""
@@ -305,8 +334,47 @@ class LiveStopLossMonitor:
         return False
     
     def _trigger_stop_loss(self, position: LivePosition, stop_type: StopLossType, reason: str):
-        """Trigger stop loss for a position"""
+        """Trigger stop loss for combined main + hedge positions"""
         logger.warning(f"STOP LOSS TRIGGERED for position {position.id}: {reason}")
+        
+        # Find webhook_id for this position
+        webhook_id = None
+        for wid, pos_ids in self.webhook_positions.items():
+            if position.id in pos_ids:
+                webhook_id = wid
+                break
+        
+        if webhook_id:
+            # Close all positions for this webhook_id (main + hedge)
+            positions_to_close = self.get_combined_positions(webhook_id)
+            logger.info(f"Closing {len(positions_to_close)} positions for webhook {webhook_id}")
+            
+            total_pnl = 0
+            for pos in positions_to_close:
+                total_pnl += pos.pnl
+                self.data_manager.close_position(pos.id, pos.pnl)
+                
+                # Clean up tracking
+                if pos.id in self.position_high_water_marks:
+                    del self.position_high_water_marks[pos.id]
+                if pos.id in self.position_profit_locked:
+                    del self.position_profit_locked[pos.id]
+            
+            # Remove webhook tracking
+            del self.webhook_positions[webhook_id]
+            
+            # Send alert with combined P&L
+            pnl = total_pnl
+        else:
+            # Fallback to single position close
+            pnl = position.pnl
+            self.data_manager.close_position(position.id, pnl)
+            
+            # Clean up tracking
+            if position.id in self.position_high_water_marks:
+                del self.position_high_water_marks[position.id]
+            if position.id in self.position_profit_locked:
+                del self.position_profit_locked[position.id]
         
         # Calculate final P&L
         pnl = position.pnl
@@ -408,12 +476,10 @@ class LiveStopLossMonitor:
         # Check each stop type
         for rule in self.stop_loss_rules:
             if rule.enabled:
-                if rule.type == StopLossType.STRIKE_BASED:
-                    triggered = self._check_strike_based_stop(position, spot_price)
-                elif rule.type == StopLossType.PROFIT_LOCK:
+                if rule.type == StopLossType.PROFIT_LOCK:
                     triggered = self._check_profit_lock(position)
                 elif rule.type == StopLossType.TIME_BASED:
-                    triggered = self._check_time_based_stop()
+                    triggered = self._check_time_based_exit(position)
                 elif rule.type == StopLossType.TRAILING:
                     triggered = self._check_trailing_stop(position)
                 else:

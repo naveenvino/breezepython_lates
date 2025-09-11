@@ -116,7 +116,7 @@ class LoginScheduler:
                     schedule.every().monday.at(time_str).do(self.run_breeze_login)
                     schedule.every().tuesday.at(time_str).do(self.run_breeze_login)
                     schedule.every().wednesday.at(time_str).do(self.run_breeze_login)
-                    schedule.every().thursday.at(time_str).do(self.run_breeze_login)
+                    schedule.every().tuesday.at(time_str).do(self.run_breeze_login)
                     schedule.every().friday.at(time_str).do(self.run_breeze_login)
                 else:
                     schedule.every().day.at(time_str).do(self.run_breeze_login)
@@ -130,7 +130,7 @@ class LoginScheduler:
                     schedule.every().monday.at(time_str).do(self.run_kite_login)
                     schedule.every().tuesday.at(time_str).do(self.run_kite_login)
                     schedule.every().wednesday.at(time_str).do(self.run_kite_login)
-                    schedule.every().thursday.at(time_str).do(self.run_kite_login)
+                    schedule.every().tuesday.at(time_str).do(self.run_kite_login)
                     schedule.every().friday.at(time_str).do(self.run_kite_login)
                 else:
                     schedule.every().day.at(time_str).do(self.run_kite_login)

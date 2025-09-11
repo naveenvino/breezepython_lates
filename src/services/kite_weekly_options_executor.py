@@ -59,7 +59,7 @@ class KiteWeeklyOptionsExecutor:
     
     def format_monthly_symbol(self, expiry_date: datetime, strike: int, option_type: str) -> str:
         """
-        Format symbol for NIFTY monthly options (last Thursday)
+        Format symbol for NIFTY monthly options (last Tuesday)
         
         Args:
             expiry_date: Monthly expiry date
@@ -77,8 +77,8 @@ class KiteWeeklyOptionsExecutor:
         return symbol
     
     def is_monthly_expiry(self, expiry_date: datetime) -> bool:
-        """Check if the expiry is monthly (last Thursday of month)"""
-        # Check if this is the last Thursday of the month
+        """Check if the expiry is monthly (last Tuesday of month)"""
+        # Check if this is the last Tuesday of the month
         # Add 7 days and see if we're in next month
         next_week = expiry_date + timedelta(days=7)
         return next_week.month != expiry_date.month
@@ -91,7 +91,9 @@ class KiteWeeklyOptionsExecutor:
                           expiry_date: datetime,
                           order_type: str = "MARKET",
                           price: float = None,
-                          product: str = "MIS") -> str:
+                          product: str = "NRML",
+                          use_iceberg: bool = True,
+                          use_amo: bool = False) -> str:
         """
         Place an option order on Kite
         
@@ -104,6 +106,7 @@ class KiteWeeklyOptionsExecutor:
             order_type: 'MARKET' or 'LIMIT'
             price: Price for limit orders
             product: 'MIS' (intraday) or 'NRML' (overnight)
+            use_amo: Whether to place as AMO order (for after market hours)
         
         Returns:
             Order ID
@@ -115,28 +118,72 @@ class KiteWeeklyOptionsExecutor:
             else:
                 tradingsymbol = self.format_weekly_symbol(expiry_date, strike, option_type)
             
-            # Prepare order parameters
-            order_params = {
-                'tradingsymbol': tradingsymbol,
-                'exchange': 'NFO',
-                'transaction_type': transaction_type,
-                'quantity': quantity,
-                'order_type': order_type,
-                'product': product,
-                'variety': 'regular'
-            }
+            # Check if we need to split the order (iceberg)
+            MAX_QUANTITY = 1800  # 24 lots * 75
             
-            # Add price for limit orders
-            if order_type == 'LIMIT' and price:
-                order_params['price'] = price
-            
-            logger.info(f"Placing Kite order: {order_params}")
-            
-            # Place the order
-            order_id = self.kite.place_order(**order_params)
-            
-            logger.info(f"Order placed successfully. Order ID: {order_id}")
-            return order_id
+            if use_iceberg and quantity > MAX_QUANTITY:
+                # Split into multiple orders
+                logger.info(f"Order quantity {quantity} exceeds max {MAX_QUANTITY}, using iceberg orders")
+                order_ids = []
+                remaining_qty = quantity
+                
+                while remaining_qty > 0:
+                    chunk_qty = min(remaining_qty, MAX_QUANTITY)
+                    
+                    # Prepare order parameters for this chunk
+                    order_params = {
+                        'tradingsymbol': tradingsymbol,
+                        'exchange': 'NFO',
+                        'transaction_type': transaction_type,
+                        'quantity': chunk_qty,
+                        'order_type': order_type,
+                        'product': product,
+                        'variety': 'amo' if use_amo else 'regular'
+                    }
+                    
+                    # Add price for limit orders
+                    if order_type == 'LIMIT' and price:
+                        order_params['price'] = price
+                    
+                    logger.info(f"Placing iceberg chunk: {chunk_qty}/{quantity} - {order_params}")
+                    
+                    # Place the order chunk
+                    order_id = self.kite.place_order(**order_params)
+                    order_ids.append(order_id)
+                    logger.info(f"Iceberg chunk placed. Order ID: {order_id}")
+                    
+                    remaining_qty -= chunk_qty
+                    
+                    # Small delay between orders to avoid rate limiting
+                    if remaining_qty > 0:
+                        import time
+                        time.sleep(0.5)
+                
+                logger.info(f"All iceberg orders placed successfully. Order IDs: {order_ids}")
+                return ','.join(map(str, order_ids))  # Return comma-separated order IDs
+            else:
+                # Single order within limit
+                order_params = {
+                    'tradingsymbol': tradingsymbol,
+                    'exchange': 'NFO',
+                    'transaction_type': transaction_type,
+                    'quantity': quantity,
+                    'order_type': order_type,
+                    'product': product,
+                    'variety': 'amo' if use_amo else 'regular'
+                }
+                
+                # Add price for limit orders
+                if order_type == 'LIMIT' and price:
+                    order_params['price'] = price
+                
+                logger.info(f"Placing Kite order: {order_params}")
+                
+                # Place the order
+                order_id = self.kite.place_order(**order_params)
+                
+                logger.info(f"Order placed successfully. Order ID: {order_id}")
+                return order_id
             
         except Exception as e:
             logger.error(f"Error placing order: {str(e)}")
@@ -147,7 +194,8 @@ class KiteWeeklyOptionsExecutor:
                            hedge_strike: int,
                            option_type: str,
                            lots: int,
-                           expiry_date: datetime) -> Dict:
+                           expiry_date: datetime,
+                           use_amo: bool = False) -> Dict:
         """
         Execute an iron condor strategy (main + hedge)
         
@@ -157,6 +205,7 @@ class KiteWeeklyOptionsExecutor:
             option_type: 'PE' or 'CE'
             lots: Number of lots
             expiry_date: Expiry date
+            use_amo: Whether to place as AMO order
         
         Returns:
             Dict with order IDs
@@ -171,27 +220,105 @@ class KiteWeeklyOptionsExecutor:
                 'status': 'pending'
             }
             
+            # Determine order type based on AMO or market hours
+            # Check if market is closed (after 3:30 PM or before 9:15 AM)
+            current_time = datetime.now().time()
+            market_open = datetime.strptime("09:15", "%H:%M").time()
+            market_close = datetime.strptime("15:30", "%H:%M").time()
+            
+            is_market_closed = current_time < market_open or current_time > market_close
+            
+            # Use LIMIT orders if AMO is enabled OR if market is closed
+            # (Market orders can't be placed after hours)
+            order_type = 'LIMIT' if (use_amo or is_market_closed) else 'MARKET'
+            
+            if is_market_closed and not use_amo:
+                logger.warning("Market is closed. Automatically using LIMIT orders for after-market placement.")
+            
+            # Get option prices if using LIMIT orders (AMO or after-market)
+            hedge_price = None
+            main_price = None
+            
+            if order_type == 'LIMIT':
+                # Get current option prices for LIMIT orders using Kite API (works better for AMO)
+                try:
+                    # Generate Kite symbols
+                    hedge_symbol = self.format_weekly_symbol(expiry_date, hedge_strike, option_type)
+                    main_symbol = self.format_weekly_symbol(expiry_date, main_strike, option_type)
+                    
+                    # Get LTP from Kite API using quotes
+                    try:
+                        # Fetch quotes for both symbols
+                        symbols = [f"NFO:{hedge_symbol}", f"NFO:{main_symbol}"]
+                        quotes = self.kite.quote(symbols)
+                        
+                        # Extract hedge price
+                        hedge_key = f"NFO:{hedge_symbol}"
+                        if hedge_key in quotes:
+                            hedge_ltp = quotes[hedge_key].get('last_price', 0)
+                            if hedge_ltp > 0:
+                                # For BUY orders, add 3% buffer to ensure execution in AMO
+                                hedge_price = round(hedge_ltp * 1.03, 1)
+                                logger.info(f"Kite Hedge LTP: {hedge_ltp}, AMO Limit Price: {hedge_price}")
+                            else:
+                                # FAIL LOUDLY - No dummy data
+                                logger.error(f"CRITICAL: Hedge option LTP is 0 for {hedge_symbol}")
+                                raise ValueError(f"Cannot place order: No price available for {hedge_symbol}")
+                        else:
+                            logger.error(f"CRITICAL: Could not get hedge quote from Kite for {hedge_symbol}")
+                            raise ValueError(f"Cannot place order: Failed to fetch price for {hedge_symbol}")
+                        
+                        # Extract main price
+                        main_key = f"NFO:{main_symbol}"
+                        if main_key in quotes:
+                            main_ltp = quotes[main_key].get('last_price', 0)
+                            if main_ltp > 0:
+                                # For SELL orders, reduce 2% buffer to ensure execution in AMO
+                                main_price = round(main_ltp * 0.98, 1)
+                                logger.info(f"Kite Main LTP: {main_ltp}, AMO Limit Price: {main_price}")
+                            else:
+                                # FAIL LOUDLY - No dummy data
+                                logger.error(f"CRITICAL: Main option LTP is 0 for {main_symbol}")
+                                raise ValueError(f"Cannot place order: No price available for {main_symbol}")
+                        else:
+                            logger.error(f"CRITICAL: Could not get main quote from Kite for {main_symbol}")
+                            raise ValueError(f"Cannot place order: Failed to fetch price for {main_symbol}")
+                            
+                    except Exception as e:
+                        logger.error(f"CRITICAL: Error getting quotes from Kite: {str(e)}")
+                        # FAIL LOUDLY - No dummy data allowed
+                        raise ValueError(f"Cannot place AMO order: Failed to fetch option prices from Kite API - {str(e)}")
+                        
+                except Exception as e:
+                    logger.error(f"CRITICAL: Error fetching Kite quotes for AMO: {str(e)}")
+                    # FAIL LOUDLY - No dummy data allowed
+                    raise ValueError(f"Cannot place AMO order: Failed to initialize price fetching - {str(e)}")
+            
             # Place hedge order first (BUY) for margin benefit
-            logger.info(f"Placing hedge order: BUY {hedge_strike} {option_type}")
+            logger.info(f"Placing hedge order: BUY {hedge_strike} {option_type} (AMO: {use_amo}, Type: {order_type})")
             hedge_order_id = self.place_option_order(
                 strike=hedge_strike,
                 option_type=option_type,
                 transaction_type='BUY',
                 quantity=quantity,
                 expiry_date=expiry_date,
-                order_type='MARKET'
+                order_type=order_type,
+                price=hedge_price,
+                use_amo=use_amo
             )
             results['hedge_order_id'] = hedge_order_id
             
             # Then place main order (SELL)
-            logger.info(f"Placing main order: SELL {main_strike} {option_type}")
+            logger.info(f"Placing main order: SELL {main_strike} {option_type} (AMO: {use_amo}, Type: {order_type})")
             main_order_id = self.place_option_order(
                 strike=main_strike,
                 option_type=option_type,
                 transaction_type='SELL',
                 quantity=quantity,
                 expiry_date=expiry_date,
-                order_type='MARKET'
+                order_type=order_type,
+                price=main_price,
+                use_amo=use_amo
             )
             results['main_order_id'] = main_order_id
             
@@ -244,12 +371,55 @@ class KiteWeeklyOptionsExecutor:
             main_strike = webhook_data['strike']
             option_type = webhook_data['option_type']  # PE or CE
             lots = webhook_data.get('lots', 10)
+            use_amo = webhook_data.get('use_amo', False)  # AMO flag from webhook
             
-            # Calculate hedge strike (200 points away)
-            if option_type == 'PE':
-                hedge_strike = main_strike - 200  # Lower strike for PUT hedge
-            else:
-                hedge_strike = main_strike + 200  # Higher strike for CALL hedge
+            # Load hedge configuration from user settings and select optimal hedge
+            hedge_strike = None
+            hedge_price = None
+            try:
+                import sqlite3
+                conn = sqlite3.connect('data/trading_settings.db')
+                cursor = conn.cursor()
+                cursor.execute("SELECT hedge_method, hedge_offset, hedge_percent FROM TradeConfiguration WHERE user_id='default' AND config_name='default'")
+                result = cursor.fetchone()
+                
+                hedge_method = 'offset'  # Default
+                hedge_offset = 200
+                hedge_percent = 30.0
+                
+                if result:
+                    hedge_method = result[0]  # 'percentage' or 'offset'
+                    hedge_offset = int(result[1])  # Points offset
+                    hedge_percent = float(result[2])  # Percentage for hedge
+                    
+                logger.info(f"Hedge config: method={hedge_method}, offset={hedge_offset}, percent={hedge_percent}%")
+                conn.close()
+                
+                # Use the hedge selection service for proper implementation
+                from src.services.hedge_selection_service import HedgeSelectionService
+                hedge_service = HedgeSelectionService()
+                
+                hedge_strike, hedge_price = hedge_service.select_hedge_strike(
+                    main_strike=main_strike,
+                    option_type=option_type,
+                    expiry_date=expiry_date,
+                    hedge_method=hedge_method,
+                    hedge_offset=hedge_offset,
+                    hedge_percent=hedge_percent
+                )
+                
+            except Exception as e:
+                logger.warning(f"Could not use hedge selection service: {e}, using fallback")
+                # Simple fallback
+                hedge_offset = 200
+                if option_type == 'PE':
+                    hedge_strike = main_strike - hedge_offset
+                else:
+                    hedge_strike = main_strike + hedge_offset
+                hedge_price = None
+            
+            logger.info(f"Final hedge selection: Main={main_strike}, Hedge={hedge_strike}" + 
+                       (f" @ Rs. {hedge_price}" if hedge_price else ""))
             
             # Execute the trade
             result = self.execute_iron_condor(
@@ -257,7 +427,8 @@ class KiteWeeklyOptionsExecutor:
                 hedge_strike=hedge_strike,
                 option_type=option_type,
                 lots=lots,
-                expiry_date=expiry_date
+                expiry_date=expiry_date,
+                use_amo=use_amo
             )
             
             # Add symbols to result for reference
