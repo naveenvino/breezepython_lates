@@ -1665,14 +1665,6 @@
     <div class="container">
         <!-- Master Controls -->
         <div class="master-controls">
-            <div class="auto-trade-toggle">
-                <span style="font-weight: 600;">AUTO TRADE</span>
-                <label class="toggle-switch big-toggle">
-                    <input type="checkbox" id="autoTradeToggle" onchange="toggleAutoTrade()">
-                    <span class="toggle-slider"></span>
-                </label>
-            </div>
-
             <!-- Trading Mode Status (Dynamic) -->
             <div id="tradingModeStatus" style="padding: 8px 16px; background: var(--bg-tertiary); border-radius: 8px; display: inline-flex; align-items: center; gap: 8px;">
                 <i class="fas fa-circle" id="tradingModeIcon" style="font-size: 8px;"></i>
@@ -1778,19 +1770,9 @@
                 </button>
             </div>
 
-            <!-- Active Signals -->
-            <div class="glass-card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <i class="fas fa-signal"></i>
-                        Active Signals
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="masterSignalToggle" checked onchange="toggleAllSignals(this)">
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-
+            <!-- Active Signals section removed - now in Configuration Panel -->
+            <!-- Signals moved to Configuration Panel -->
+            <!--
                 <div class="signals-grid">
                     <div class="signal-card active" id="signalS1" data-signal="S1">
                         <div class="signal-header">
@@ -1977,6 +1959,7 @@
                     </div>
                 </div>
             </div>
+            -->
 
             <!-- Active Orders -->
             <div class="glass-card" id="orders">
@@ -1988,6 +1971,9 @@
                     <div class="order-stats">
                         <span class="badge" id="pendingCount" style="background: var(--accent-orange);">0 Pending</span>
                         <span class="badge" id="openCount" style="background: var(--accent-blue); margin-left: 8px;">0 Open</span>
+                        <button onclick="cancelAllOrders()" class="btn-action" style="margin-left: 12px; padding: 6px 12px; font-size: 11px; background: var(--accent-red); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            <i class="fas fa-times-circle"></i> Cancel All
+                        </button>
                     </div>
                 </div>
                 <div id="ordersTable" style="overflow-x: auto;">
@@ -2001,11 +1987,12 @@
                                 <th style="text-align: right; padding: 8px;">Price</th>
                                 <th style="text-align: center; padding: 8px;">Status</th>
                                 <th style="text-align: center; padding: 8px;">Time</th>
+                                <th style="text-align: center; padding: 8px;">Action</th>
                             </tr>
                         </thead>
                         <tbody id="ordersTableBody">
                             <tr>
-                                <td colspan="7" style="text-align: center; padding: 20px; color: var(--text-muted);">
+                                <td colspan="8" style="text-align: center; padding: 20px; color: var(--text-muted);">
                                     No active orders
                                 </td>
                             </tr>
@@ -2099,6 +2086,59 @@
                         </label>
                         <small style="color: var(--text-muted); display: block; margin-top: 5px; margin-left: 25px;">
                             Place After Market Orders when market is closed
+                        </small>
+                    </div>
+
+                    <!-- Auto Trade Toggle -->
+                    <div class="form-group">
+                        <label class="form-label" style="display: flex; align-items: center; gap: 10px;">
+                            <input type="checkbox" id="autoTradeToggle" style="width: auto; margin: 0;">
+                            <span>Auto Trade Mode</span>
+                        </label>
+                        <small style="color: var(--text-muted); display: block; margin-top: 5px; margin-left: 25px;">
+                            When enabled, trades execute automatically. When disabled, trades require manual approval.
+                        </small>
+                    </div>
+
+                    <!-- Active Signals Selection -->
+                    <div class="form-group">
+                        <label class="form-label">Active Signals</label>
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px;">
+                            <label style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                                <input type="checkbox" class="signal-toggle" data-signal="S1" style="width: auto; margin: 0;">
+                                <span>S1</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                                <input type="checkbox" class="signal-toggle" data-signal="S2" style="width: auto; margin: 0;">
+                                <span>S2</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                                <input type="checkbox" class="signal-toggle" data-signal="S3" style="width: auto; margin: 0;">
+                                <span>S3</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                                <input type="checkbox" class="signal-toggle" data-signal="S4" style="width: auto; margin: 0;">
+                                <span>S4</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                                <input type="checkbox" class="signal-toggle" data-signal="S5" style="width: auto; margin: 0;">
+                                <span>S5</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                                <input type="checkbox" class="signal-toggle" data-signal="S6" style="width: auto; margin: 0;">
+                                <span>S6</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                                <input type="checkbox" class="signal-toggle" data-signal="S7" style="width: auto; margin: 0;">
+                                <span>S7</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                                <input type="checkbox" class="signal-toggle" data-signal="S8" style="width: auto; margin: 0;">
+                                <span>S8</span>
+                            </label>
+                        </div>
+                        <small style="color: var(--text-muted); display: block; margin-top: 5px;">
+                            Select which signals to act on when received from TradingView
                         </small>
                     </div>
                 </div>
@@ -2774,7 +2814,7 @@
             const config = {
                 num_lots: parseInt(document.getElementById('numLots').value) || 10,
                 entry_timing: document.getElementById('entryTiming').value || 'immediate',
-                exit_day_offset: parseInt(document.getElementById('exitDayOffset').value) || 2,
+                exit_day_offset: parseInt(document.getElementById('exitDayOffset').value) || 0,
                 exit_time: document.getElementById('exitTime').value || '15:15',
                 weekday_config: {
                     monday: document.getElementById('expiryMonday').value || 'current',
@@ -2838,15 +2878,26 @@
                     // Auto Trading Settings (if applicable)
                     auto_trade_enabled: document.getElementById('autoTradeToggle')?.checked || false,
                     active_signals: Array.from(document.querySelectorAll('.signal-toggle:checked')).map(cb => cb.getAttribute('data-signal') || cb.value).filter(v => v && v !== 'on'),
-                    max_positions: parseInt(document.getElementById('maxPositions')?.value) || 5,
-                    daily_profit_target: 100000,
-                    max_loss_per_trade: parseFloat(document.getElementById('maxLossPerTrade')?.value) || 20000,
-                    max_exposure: parseFloat(document.getElementById('maxExposure')?.value) || 200000,
-                    position_size_mode: 'fixed',
-                    
+
+                    // Telegram Alert Settings
+                    telegram_enabled: document.getElementById('telegramEnabled')?.checked || false,
+                    telegram_bot_token: document.getElementById('telegramBotToken')?.value || '',
+                    telegram_chat_id: document.getElementById('telegramChatId')?.value || '',
+
+                    // Email Alert Settings
+                    email_enabled: document.getElementById('emailEnabled')?.checked || false,
+                    email_from: document.getElementById('emailFrom')?.value || '',
+                    email_to: document.getElementById('emailTo')?.value || '',
+
+                    // Alert Types
+                    alert_trade_entry: document.querySelector('input[value="trade_entry"]')?.checked ?? true,
+                    alert_trade_exit: document.querySelector('input[value="trade_exit"]')?.checked ?? true,
+                    alert_stop_loss: document.querySelector('input[value="stop_loss"]')?.checked ?? true,
+                    alert_risk_warnings: document.querySelector('input[value="risk_warnings"]')?.checked ?? true,
+                    alert_daily_summary: document.querySelector('input[value="daily_summary"]')?.checked ?? false,
+
                     // Expiry and Exit Timing Settings
-                    selected_expiry: document.getElementById('expiryDate')?.value || null,
-                    exit_day_offset: parseInt(document.getElementById('exitDayOffset')?.value ?? 2),
+                    exit_day_offset: parseInt(document.getElementById('exitDayOffset')?.value ?? 0),
                     exit_time: document.getElementById('exitTime')?.value || '15:15',
                     auto_square_off_enabled: document.getElementById('autoSquareOffEnabled')?.checked || true,
                     
@@ -3052,12 +3103,19 @@
                     trail_percent: 1.0,
                     auto_trade_enabled: false,
                     active_signals: [],
-                    max_positions: 5,
-                    daily_profit_target: 100000,
-                    max_loss_per_trade: 20000,
-                    position_size_mode: 'fixed',
-                    selected_expiry: null,
-                    exit_day_offset: 2,
+                    // Telegram settings for Naveen
+                    telegram_enabled: true,
+                    telegram_bot_token: '8268902303:AAFy8t0gARt0iWGech3mlIfrOZ9S4Jrt3WM',
+                    telegram_chat_id: '992005734',
+                    email_enabled: false,
+                    email_from: '',
+                    email_to: '',
+                    alert_trade_entry: true,
+                    alert_trade_exit: true,
+                    alert_stop_loss: true,
+                    alert_risk_warnings: true,
+                    alert_daily_summary: false,
+                    exit_day_offset: 0,
                     exit_time: '15:15',
                     auto_square_off_enabled: true,
                     weekday_config: {
@@ -3090,13 +3148,22 @@
                 trail_percent: parseFloat(document.getElementById('trailPercent')?.value) || 1.0,
                 auto_trade_enabled: document.getElementById('autoTradeToggle')?.checked || false,
                 active_signals: Array.from(document.querySelectorAll('.signal-toggle:checked')).map(cb => cb.getAttribute('data-signal') || cb.value).filter(v => v && v !== 'on'),
-                max_positions: 5,
-                daily_profit_target: 100000,
-                max_loss_per_trade: 20000,
-                position_size_mode: 'fixed',
+                // Telegram settings
+                telegram_enabled: document.getElementById('telegramEnabled')?.checked || false,
+                telegram_bot_token: document.getElementById('telegramBotToken')?.value || '',
+                telegram_chat_id: document.getElementById('telegramChatId')?.value || '',
+                // Email settings
+                email_enabled: document.getElementById('emailEnabled')?.checked || false,
+                email_from: document.getElementById('emailFrom')?.value || '',
+                email_to: document.getElementById('emailTo')?.value || '',
+                // Alert types
+                alert_trade_entry: document.querySelector('input[value="trade_entry"]')?.checked ?? true,
+                alert_trade_exit: document.querySelector('input[value="trade_exit"]')?.checked ?? true,
+                alert_stop_loss: document.querySelector('input[value="stop_loss"]')?.checked ?? true,
+                alert_risk_warnings: document.querySelector('input[value="risk_warnings"]')?.checked ?? true,
+                alert_daily_summary: document.querySelector('input[value="daily_summary"]')?.checked ?? false,
                 // Add expiry and exit timing
-                selected_expiry: document.getElementById('expiryDate')?.value || null,
-                exit_day_offset: parseInt(document.getElementById('exitDayOffset')?.value) || 2,
+                exit_day_offset: parseInt(document.getElementById('exitDayOffset')?.value) || 0,
                 exit_time: document.getElementById('exitTime')?.value || '15:15',
                 auto_square_off_enabled: document.getElementById('autoSquareOffEnabled')?.checked || true,
                 // Add weekday configuration
@@ -3204,17 +3271,60 @@
                 });
             }
             
-            // Apply Expiry Selection
-            if (config.selected_expiry && document.getElementById('expiryDate')) {
-                document.getElementById('expiryDate').value = config.selected_expiry;
-                console.log('[CONFIG] Set selected_expiry to:', config.selected_expiry);
+            // Apply Telegram Alert Settings
+            if (document.getElementById('telegramEnabled')) {
+                document.getElementById('telegramEnabled').checked = config.telegram_enabled || false;
+                console.log('[CONFIG] Set telegramEnabled to:', config.telegram_enabled || false);
+                // Trigger change event to show/hide config
+                document.getElementById('telegramEnabled').dispatchEvent(new Event('change'));
             }
-            
+            if (document.getElementById('telegramBotToken')) {
+                document.getElementById('telegramBotToken').value = config.telegram_bot_token || '';
+                console.log('[CONFIG] Set telegramBotToken');
+            }
+            if (document.getElementById('telegramChatId')) {
+                document.getElementById('telegramChatId').value = config.telegram_chat_id || '';
+                console.log('[CONFIG] Set telegramChatId');
+            }
+
+            // Apply Email Alert Settings
+            if (document.getElementById('emailEnabled')) {
+                document.getElementById('emailEnabled').checked = config.email_enabled || false;
+                console.log('[CONFIG] Set emailEnabled to:', config.email_enabled || false);
+                // Trigger change event to show/hide config
+                document.getElementById('emailEnabled').dispatchEvent(new Event('change'));
+            }
+            if (document.getElementById('emailFrom')) {
+                document.getElementById('emailFrom').value = config.email_from || '';
+            }
+            if (document.getElementById('emailTo')) {
+                document.getElementById('emailTo').value = config.email_to || '';
+            }
+
+            // Apply Alert Types
+            const alertTypes = {
+                'trade_entry': config.alert_trade_entry ?? true,
+                'trade_exit': config.alert_trade_exit ?? true,
+                'stop_loss': config.alert_stop_loss ?? true,
+                'risk_warnings': config.alert_risk_warnings ?? true,
+                'daily_summary': config.alert_daily_summary ?? false
+            };
+
+            Object.entries(alertTypes).forEach(([type, enabled]) => {
+                const checkbox = document.querySelector(`input[value="${type}"]`);
+                if (checkbox) {
+                    checkbox.checked = enabled;
+                    console.log(`[CONFIG] Set alert type ${type} to:`, enabled);
+                }
+            });
+
+            // Expiry selection handled by weekday_config
+
             // Apply Exit Timing Settings from server config (server is source of truth)
             if (config.exit_day_offset !== undefined || config.exit_time || config.auto_square_off_enabled !== undefined) {
                 // Apply from server config
                 if (document.getElementById('exitDayOffset')) {
-                    document.getElementById('exitDayOffset').value = config.exit_day_offset !== undefined ? config.exit_day_offset : 2;
+                    document.getElementById('exitDayOffset').value = config.exit_day_offset !== undefined ? config.exit_day_offset : 0;
                     console.log('[CONFIG] Set exitDayOffset to:', config.exit_day_offset);
                 }
                 if (document.getElementById('exitTime')) {
@@ -3548,6 +3658,13 @@
             // Paper trading removed - Live only
             updateHedgeExample();
             
+            // Load pending alerts on startup with delay to ensure DOM is ready
+            console.log('[INIT] Scheduling pending alerts load...');
+            setTimeout(() => {
+                console.log('[INIT] Loading pending alerts now...');
+                loadPendingAlerts();
+            }, 2000);
+            
             // Start monitoring
             startBreakevenMonitoring();
             start1HourCandleMonitor();
@@ -3714,6 +3831,137 @@
         
         // ===== ORDER TRACKING FUNCTIONS =====
         
+        // Cancel Kite order directly with broker
+        async function cancelKiteOrder(orderId) {
+            if (!confirm(`Are you sure you want to cancel order ${orderId}?`)) {
+                return;
+            }
+
+            try {
+                // Try the new endpoint first, fallback to the old one
+                let response = await fetch(getApiUrl(`/orders/${orderId}`), {
+                    method: 'DELETE'
+                });
+
+                let result;
+                try {
+                    result = await response.json();
+                } catch (e) {
+                    result = { status: 'error', message: 'Invalid response from server' };
+                }
+
+                if (response.ok && result.status === 'success') {
+                    showNotification(`✓ Order ${orderId} cancelled successfully`, 'success');
+
+                    // Remove the order row with fade animation
+                    const orderRow = document.querySelector(`tr[data-order-id="${orderId}"]`);
+                    if (orderRow) {
+                        orderRow.style.opacity = '0.5';
+                        orderRow.style.transition = 'opacity 0.3s';
+                        setTimeout(() => {
+                            orderRow.remove();
+                        }, 300);
+                    }
+
+                    // Reload orders after a delay
+                    setTimeout(loadActiveOrders, 500);
+                } else {
+                    // Extract error message from response
+                    let errorMsg = result.message || result.detail || 'Unknown error';
+                    if (errorMsg.includes('hash error')) {
+                        errorMsg = 'Order may have already been cancelled or expired';
+                    }
+                    showNotification(`Failed to cancel order: ${errorMsg}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error cancelling order:', error);
+                showNotification(`Error cancelling order: ${error.message}`, 'error');
+            }
+        }
+
+        // Cancel all pending orders
+        async function cancelAllOrders() {
+            try {
+                // First, get all active orders
+                const response = await fetch(getApiUrl('/api/orders/active'));
+                if (!response.ok) {
+                    showNotification('Failed to fetch active orders', 'error');
+                    return;
+                }
+
+                const data = await response.json();
+                const orders = data.orders || [];
+
+                // Filter cancellable orders
+                const cancellableOrders = orders.filter(order =>
+                    order.status === 'OPEN' ||
+                    order.status === 'PENDING' ||
+                    order.status === 'TRIGGER PENDING' ||
+                    order.status === 'AMO REQ RECEIVED' ||
+                    order.status === 'PUT ORDER REQ RECEIVED' ||
+                    order.status === 'VALIDATION PENDING' ||
+                    order.status === 'OPEN PENDING'
+                );
+
+                if (cancellableOrders.length === 0) {
+                    showNotification('No cancellable orders found', 'info');
+                    return;
+                }
+
+                if (!confirm(`Are you sure you want to cancel ${cancellableOrders.length} orders?`)) {
+                    return;
+                }
+
+                let successCount = 0;
+                let failCount = 0;
+
+                // Cancel each order
+                for (const order of cancellableOrders) {
+                    try {
+                        const cancelResponse = await fetch(getApiUrl(`/orders/${order.order_id}`), {
+                            method: 'DELETE'
+                        });
+
+                        if (cancelResponse.ok) {
+                            successCount++;
+                            // Update UI - fade out the order
+                            const orderRow = document.querySelector(`tr[data-order-id="${order.order_id}"]`);
+                            if (orderRow) {
+                                orderRow.style.opacity = '0.5';
+                                orderRow.style.transition = 'opacity 0.3s';
+                            }
+                        } else {
+                            failCount++;
+                            console.error(`Failed to cancel order ${order.order_id}`);
+                        }
+                    } catch (error) {
+                        failCount++;
+                        console.error(`Error cancelling order ${order.order_id}:`, error);
+                    }
+                }
+
+                // Show result
+                if (successCount > 0 && failCount === 0) {
+                    showNotification(`✓ Successfully cancelled ${successCount} orders`, 'success');
+                } else if (successCount > 0 && failCount > 0) {
+                    showNotification(`Cancelled ${successCount} orders, ${failCount} failed`, 'warning');
+                } else {
+                    showNotification(`Failed to cancel orders`, 'error');
+                }
+
+                // Reload orders after a delay
+                setTimeout(loadActiveOrders, 500);
+
+            } catch (error) {
+                console.error('Error in cancelAllOrders:', error);
+                showNotification(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Make functions available globally
+        window.cancelKiteOrder = cancelKiteOrder;
+        window.cancelAllOrders = cancelAllOrders;
+
         // Load and display active orders
         async function loadActiveOrders() {
             try {
@@ -3738,14 +3986,14 @@
             if (orders.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="7" style="text-align: center; padding: 20px; color: var(--text-muted);">
+                        <td colspan="8" style="text-align: center; padding: 20px; color: var(--text-muted);">
                             No active orders
                         </td>
                     </tr>
                 `;
                 return;
             }
-            
+
             tbody.innerHTML = orders.map(order => {
                 const filledQty = order.filled_quantity || 0;
                 const totalQty = order.quantity || 0;
@@ -3753,7 +4001,16 @@
                 const price = order.price || 'MARKET';
                 const time = formatOrderTime(order.order_timestamp || order.exchange_update_timestamp);
                 const statusClass = getStatusClass(order.status);
-                
+
+                // Only show cancel button for cancellable orders
+                const canCancel = order.status === 'OPEN' ||
+                                 order.status === 'PENDING' ||
+                                 order.status === 'TRIGGER PENDING' ||
+                                 order.status === 'AMO REQ RECEIVED' ||
+                                 order.status === 'PUT ORDER REQ RECEIVED' ||
+                                 order.status === 'VALIDATION PENDING' ||
+                                 order.status === 'OPEN PENDING';
+
                 return `
                     <tr data-order-id="${order.order_id}">
                         <td style="font-family: monospace; font-size: 11px;">${order.order_id}</td>
@@ -3772,6 +4029,15 @@
                             <span class="status-badge ${statusClass}">${order.status}</span>
                         </td>
                         <td style="text-align: center; font-size: 11px; color: var(--text-muted);">${time}</td>
+                        <td style="text-align: center;">
+                            ${canCancel ? `
+                                <button onclick="cancelKiteOrder('${order.order_id}')"
+                                        class="btn-action"
+                                        style="padding: 4px 8px; font-size: 11px; background: var(--accent-red); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>
+                            ` : '<span style="color: var(--text-muted); font-size: 10px;">-</span>'}
+                        </td>
                     </tr>
                 `;
             }).join('');
@@ -4916,6 +5182,24 @@
                 case 'candle_complete':
                     handleHourlyCandleClose(data.data);
                     break;
+                case 'new_alert':
+                    // Handle pending alert broadcast from server
+                    console.log('[WebSocket] New pending alert received:', data.data);
+                    if (data.data && data.data.status === 'PENDING') {
+                        // Add the database ID if not present (for new alerts)
+                        const pendingAlert = {
+                            ...data.data,
+                            id: data.data.id || Date.now(), // Use timestamp as fallback ID
+                            webhook_data: {
+                                signal: data.data.signal,
+                                strike: data.data.strike,
+                                type: data.data.option_type,
+                                spot_price: data.data.spot_price
+                            }
+                        };
+                        addPendingAlertToStream(pendingAlert);
+                    }
+                    break;
             }
         }
 
@@ -5497,6 +5781,489 @@
             console.log(`Pending alerts: ${pendingCount}`);
         }
         
+        // Load pending alerts from API
+        async function loadPendingAlerts() {
+            console.log('[PENDING ALERTS] Starting to load pending alerts...');
+            try {
+                const url = getApiUrl('/api/pending-alerts');
+                console.log('[PENDING ALERTS] Fetching from:', url);
+                const response = await fetch(url);
+                const data = await response.json();
+                console.log('[PENDING ALERTS] Response:', data);
+
+                // Clear existing pending alerts from UI first
+                const stream = document.getElementById('alertStream');
+                if (stream) {
+                    // Remove only pending alert elements (keep executed ones)
+                    const pendingElements = stream.querySelectorAll('.alert-item[data-type="pending"]');
+                    pendingElements.forEach(el => el.remove());
+                }
+
+                if (data.status === 'success' && data.alerts) {
+                    console.log(`[PENDING ALERTS] Found ${data.pending_count} pending alerts`);
+                    
+                    // Display each pending alert in the stream
+                    data.alerts.forEach(alert => {
+                        // Reconstruct alert for display
+                        const reconstructedAlert = {
+                            id: alert.id,  // IMPORTANT: Include database ID
+                            alert_id: alert.alert_id,
+                            signal: alert.signal,
+                            strike: alert.strike,
+                            type: alert.option_type,
+                            action: 'ENTRY',
+                            spot_price: alert.spot_price,
+                            timestamp: alert.timestamp,
+                            isPending: true
+                        };
+
+                        // Add to stream with pending status
+                        addPendingAlertToStream(reconstructedAlert);
+                    });
+                    
+                    if (data.pending_count > 0) {
+                        showNotification(`${data.pending_count} pending alerts loaded`, 'info');
+                    }
+                }
+            } catch (error) {
+                console.error('[PENDING ALERTS] Error loading pending alerts:', error);
+            }
+        }
+        
+        // Add pending alert to stream (similar to addAlertToStream but for pending alerts)
+        function addPendingAlertToStream(alert) {
+            console.log('[PENDING ALERTS] Adding alert to stream:', alert);
+            console.log('[PENDING ALERTS] Alert has database ID:', alert.id);
+            console.log('[PENDING ALERTS] Alert has alert_id:', alert.alert_id);
+
+            const stream = document.getElementById('alertStream');
+            if (!stream) {
+                console.error('[PENDING ALERTS] Alert stream element not found!');
+                return;
+            }
+            const alertId = alert.alert_id;
+            const dbId = alert.id;  // Database ID for API calls
+
+            if (!dbId) {
+                console.error('[PENDING ALERTS] WARNING: Alert missing database ID!', alert);
+            }
+
+            // Store in window.pendingAlerts
+            window.pendingAlerts = window.pendingAlerts || {};
+            window.pendingAlerts[alertId] = alert;
+
+            // Also create a dbId to alertId mapping for easier lookup
+            window.pendingAlertsByDbId = window.pendingAlertsByDbId || {};
+            window.pendingAlertsByDbId[dbId] = alertId;
+
+            console.log('[PENDING ALERTS] Stored alert with key:', alertId, 'and DB ID:', dbId);
+            
+            const signalDescriptions = {
+                'S1': 'Bear Trap',
+                'S2': 'Support Hold',
+                'S3': 'Resistance Hold',
+                'S4': 'Bias Failure Bull',
+                'S5': 'Bias Failure Bear',
+                'S6': 'Weakness Confirmed',
+                'S7': 'Breakout Confirmed',
+                'S8': 'Breakdown Confirmed'
+            };
+            
+            const description = signalDescriptions[alert.signal] || 'Signal Triggered';
+            const isBullish = ['S1', 'S2', 'S4', 'S7'].includes(alert.signal);
+            const signalColor = isBullish ? 'var(--accent-green)' : 'var(--accent-red)';
+            
+            const alertHtml = `
+                <div class="alert-item" id="${alertId}" data-type="pending" style="border-left: 3px solid ${signalColor}; border-right: 3px solid var(--accent-yellow);">
+                    <div class="alert-content" style="flex: 1;">
+                        <div class="alert-signal" style="font-size: 14px; font-weight: 600; color: ${signalColor};">
+                            ${alert.signal}: ${description}
+                            <span style="color: var(--accent-yellow); margin-left: 10px; font-size: 12px;">
+                                <i class="fas fa-clock"></i> PENDING
+                            </span>
+                        </div>
+                        <div class="alert-details" style="margin: 8px 0;">
+                            <div style="font-size: 13px;">
+                                <strong>Strike:</strong> ${alert.strike}${alert.type} | 
+                                <strong>Spot:</strong> ${alert.spot_price || 'N/A'}
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                                Received: ${new Date(alert.timestamp).toLocaleTimeString()}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert-actions-container">
+                        <div class="alert-actions" style="display: flex; flex-direction: column; gap: 4px;">
+                            <button class="btn-alert-action btn-execute" onclick="executePendingAlert('${dbId}')" style="background: var(--accent-green);">
+                                <i class="fas fa-play"></i> Execute
+                            </button>
+                            <button class="btn-alert-action btn-modify" onclick="modifyPendingAlert('${dbId}')" style="background: var(--accent-blue);">
+                                <i class="fas fa-edit"></i> Modify
+                            </button>
+                            <button class="btn-alert-action btn-cancel" onclick="cancelPendingAlert('${dbId}')" style="background: var(--accent-red);">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            stream.insertAdjacentHTML('afterbegin', alertHtml);
+        }
+        
+        // Execute pending alert using API
+        window.executePendingAlert = async function(dbId) {
+            console.log('[EXECUTE] Looking for alert with DB ID:', dbId);
+
+            // Use the dbId mapping to find the alertId
+            const alertIdFromMapping = window.pendingAlertsByDbId && window.pendingAlertsByDbId[dbId];
+            console.log('[EXECUTE] Alert ID from mapping:', alertIdFromMapping);
+
+            let alertElement = null;
+            let alertIdToDelete = null;
+
+            if (alertIdFromMapping) {
+                // Found via mapping
+                alertElement = document.getElementById(alertIdFromMapping);
+                alertIdToDelete = alertIdFromMapping;
+                console.log('[EXECUTE] Found alert via mapping:', alertIdFromMapping);
+            } else {
+                // Fallback: search through all alerts
+                console.log('[EXECUTE] No mapping found, searching all alerts...');
+                for (const [alertId, alert] of Object.entries(window.pendingAlerts || {})) {
+                    console.log(`[EXECUTE] Checking alert ${alertId}, has ID: ${alert.id}, comparing with ${dbId}`);
+                    if (alert.id == dbId || alert.id === parseInt(dbId)) {
+                        alertElement = document.getElementById(alertId);
+                        alertIdToDelete = alertId;
+                        console.log('[EXECUTE] Found matching alert:', alertId);
+                        break;
+                    }
+                }
+            }
+
+            if (!alertElement) {
+                console.error('[EXECUTE] Alert element not found for DB ID:', dbId);
+                console.error('[EXECUTE] Available mappings:', window.pendingAlertsByDbId);
+                console.error('[EXECUTE] Available alerts:', Object.keys(window.pendingAlerts || {}));
+                showNotification('Alert element not found', 'error');
+                return;
+            }
+
+            const buttons = alertElement.querySelectorAll('.btn-alert-action');
+
+            // Disable buttons
+            buttons.forEach(btn => btn.disabled = true);
+
+            const executeBtn = alertElement.querySelector('.btn-execute');
+            executeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Executing...';
+
+            try {
+                const response = await fetch(getApiUrl(`/api/pending-alerts/${dbId}/execute`), {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.status === 'success' || result.webhook_id) {
+                    showNotification('Alert executed successfully', 'success');
+                    alertElement.style.opacity = '0.5';
+                    alertElement.style.borderColor = 'var(--accent-green)';
+                    executeBtn.innerHTML = '<i class="fas fa-check"></i> Executed';
+
+                    // Remove alert after a short delay
+                    setTimeout(() => {
+                        alertElement.style.transition = 'all 0.3s ease';
+                        alertElement.style.transform = 'translateX(100%)';
+                        setTimeout(() => {
+                            alertElement.remove();
+                            if (alertIdToDelete) {
+                                delete window.pendingAlerts[alertIdToDelete];
+                                // Also clean up the dbId mapping
+                                if (window.pendingAlertsByDbId) {
+                                    for (const [id, aId] of Object.entries(window.pendingAlertsByDbId)) {
+                                        if (aId === alertIdToDelete) {
+                                            delete window.pendingAlertsByDbId[id];
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }, 300);
+                    }, 1000);
+                } else {
+                    showNotification('Execution failed: ' + (result.message || 'Unknown error'), 'error');
+                    buttons.forEach(btn => btn.disabled = false);
+                    executeBtn.innerHTML = '<i class="fas fa-play"></i> Execute';
+                }
+            } catch (error) {
+                showNotification('Error executing alert: ' + error.message, 'error');
+                buttons.forEach(btn => btn.disabled = false);
+                executeBtn.innerHTML = '<i class="fas fa-play"></i> Execute';
+            }
+        };
+        
+        // Modify pending alert
+        window.modifyPendingAlert = async function(dbId) {
+            // Find alert using dbId similar to execute function
+            const alertIdFromMapping = window.pendingAlertsByDbId && window.pendingAlertsByDbId[dbId];
+            let alert = null;
+            let alertId = null;
+
+            if (alertIdFromMapping) {
+                alert = window.pendingAlerts[alertIdFromMapping];
+                alertId = alertIdFromMapping;
+            } else {
+                // Fallback: search through all alerts
+                for (const [aId, a] of Object.entries(window.pendingAlerts || {})) {
+                    if (a.id == dbId || a.id === parseInt(dbId)) {
+                        alert = a;
+                        alertId = aId;
+                        break;
+                    }
+                }
+            }
+
+            if (!alert) {
+                showNotification('Alert not found', 'error');
+                return;
+            }
+
+            // Store for later use
+            window.tempDbId = dbId;
+            window.tempAlertId = alertId;
+            window.tempAlert = alert;
+
+            // Create and show modify modal
+            showModifyModal(alert, dbId, alertId);
+        };
+
+        // Show modify modal
+        function showModifyModal(alert, dbId, alertId) {
+            // Remove existing modal if any
+            const existingModal = document.getElementById('modifyModal');
+            if (existingModal) existingModal.remove();
+
+            const modalHtml = `
+                <div id="modifyModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: var(--background-light); border-radius: 12px; padding: 24px; width: 400px; max-width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                        <h3 style="margin: 0 0 20px 0; color: var(--text-primary); font-size: 18px;">
+                            Modify Pending Alert - ${alert.signal}
+                        </h3>
+
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 12px;">Strike Price</label>
+                            <input type="number" id="newModifyStrike" value="${alert.strike}" step="50" style="width: 100%; padding: 10px; background: var(--background-dark); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
+                        </div>
+
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 12px;">Option Type</label>
+                            <select id="newModifyType" style="width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #333; border-radius: 6px; color: #ffffff; font-size: 14px; cursor: pointer;">
+                                <option value="PE" style="background: #1a1a1a; color: #ffffff;">PUT (PE)</option>
+                                <option value="CE" style="background: #1a1a1a; color: #ffffff;">CALL (CE)</option>
+                            </select>
+                        </div>
+
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 12px;">Number of Lots (Cannot be modified)</label>
+                            <input type="number" id="newModifyLots" value="${alert.lots || 1}" min="1" max="50" disabled style="width: 100%; padding: 10px; background: #0a0a0a; border: 1px solid #222; border-radius: 6px; color: #666; cursor: not-allowed; opacity: 0.7;">
+                        </div>
+
+                        <div style="margin-bottom: 16px; padding: 12px; background: var(--background-dark); border-radius: 6px;">
+                            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Hedge Configuration</div>
+                            <div style="font-size: 14px; color: var(--text-primary);" id="hedgeConfigInfo">
+                                <i class="fas fa-shield-alt" style="color: var(--accent-green);"></i>
+                                Loading hedge configuration...
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                            <button onclick="closeModifyModal()" style="padding: 10px 20px; background: var(--background-dark); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); cursor: pointer;">
+                                Cancel
+                            </button>
+                            <button onclick="confirmModify()" style="padding: 10px 20px; background: var(--accent-blue); border: none; border-radius: 6px; color: white; cursor: pointer;">
+                                <i class="fas fa-check"></i> Modify Alert
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+            // Set the selected option type after modal is inserted
+            const selectElement = document.getElementById('newModifyType');
+            if (selectElement) {
+                const currentType = alert.type || alert.option_type || 'PE';
+                selectElement.value = currentType;
+            }
+
+            // Load and display actual hedge configuration
+            const hedgeConfigDiv = document.getElementById('hedgeConfigInfo');
+            if (hedgeConfigDiv) {
+                // Load configuration from API
+                fetch(getApiUrl('/api/config'))
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(config => {
+                        console.log('Loaded hedge config:', config);
+                        const hedgeEnabled = config.hedge_enabled;
+                        const hedgeMethod = config.hedge_method || 'percentage';
+                        const hedgePercent = config.hedge_percent || 30;
+                        const hedgeOffset = config.hedge_offset || 200;
+
+                        let hedgeText = '';
+                        if (!hedgeEnabled) {
+                            hedgeText = '<i class="fas fa-times-circle" style="color: var(--accent-red);"></i> Hedge is disabled';
+                        } else if (hedgeMethod === 'percentage') {
+                            hedgeText = `<i class="fas fa-shield-alt" style="color: var(--accent-green);"></i> Hedge at ${hedgePercent}% away from strike`;
+                        } else {
+                            hedgeText = `<i class="fas fa-shield-alt" style="color: var(--accent-green);"></i> Hedge at ${hedgeOffset} points away`;
+                        }
+
+                        hedgeConfigDiv.innerHTML = hedgeText;
+                    })
+                    .catch(error => {
+                        console.error('Error loading hedge config:', error);
+                        // Use default values if API fails
+                        hedgeConfigDiv.innerHTML = '<i class="fas fa-shield-alt" style="color: var(--accent-green);"></i> Hedge at 30% away from strike (default)';
+                    });
+            }
+        }
+
+        // Confirm modify
+        window.confirmModify = async function() {
+            const newStrike = document.getElementById('newModifyStrike').value;
+            const newType = document.getElementById('newModifyType').value;
+            const newLots = document.getElementById('newModifyLots').value;
+
+            if (!newStrike) {
+                showNotification('Please enter strike price', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(getApiUrl(`/api/pending-alerts/${window.tempDbId}/modify`), {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        strike: parseInt(newStrike),
+                        lots: parseInt(newLots),
+                        option_type: newType
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    showNotification('Alert modified successfully', 'success');
+
+                    // Update display
+                    const alertElement = document.getElementById(window.tempAlertId);
+                    if (alertElement) {
+                        const detailsDiv = alertElement.querySelector('.alert-details div');
+                        if (detailsDiv) {
+                            detailsDiv.innerHTML = `<strong>Strike:</strong> ${newStrike}${newType} | <strong>Lots:</strong> ${newLots}`;
+                        }
+                        // Add modified indicator
+                        alertElement.style.borderColor = 'var(--accent-yellow)';
+                    }
+
+                    // Update local data
+                    if (window.pendingAlerts[window.tempAlertId]) {
+                        window.pendingAlerts[window.tempAlertId].strike = parseInt(newStrike);
+                        window.pendingAlerts[window.tempAlertId].lots = parseInt(newLots);
+                        window.pendingAlerts[window.tempAlertId].type = newType;
+                        window.pendingAlerts[window.tempAlertId].option_type = newType;
+                    }
+
+                    // Close modal
+                    closeModifyModal();
+                } else {
+                    showNotification('Modification failed: ' + result.message, 'error');
+                }
+            } catch (error) {
+                showNotification('Error modifying alert: ' + error.message, 'error');
+            }
+        };
+
+        // Close modify modal
+        window.closeModifyModal = function() {
+            const modal = document.getElementById('modifyModal');
+            if (modal) {
+                modal.style.opacity = '0';
+                setTimeout(() => modal.remove(), 200);
+            }
+        };
+
+        // Cancel pending alert
+        window.cancelPendingAlert = async function(dbId) {
+            if (!confirm('Cancel this pending alert?')) return;
+
+            // Use the dbId mapping to find the alertId
+            const alertIdFromMapping = window.pendingAlertsByDbId && window.pendingAlertsByDbId[dbId];
+
+            let alertElement = null;
+            let alertIdToDelete = null;
+
+            if (alertIdFromMapping) {
+                alertElement = document.getElementById(alertIdFromMapping);
+                alertIdToDelete = alertIdFromMapping;
+            } else {
+                // Fallback: search through all alerts
+                for (const [alertId, alert] of Object.entries(window.pendingAlerts || {})) {
+                    if (alert.id == dbId || alert.id === parseInt(dbId)) {
+                        alertElement = document.getElementById(alertId);
+                        alertIdToDelete = alertId;
+                        break;
+                    }
+                }
+            }
+
+            if (!alertElement) {
+                showNotification('Alert element not found', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(getApiUrl(`/api/pending-alerts/${dbId}/cancel`), {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    showNotification('Alert cancelled', 'info');
+                    alertElement.style.opacity = '0.3';
+                    alertElement.style.textDecoration = 'line-through';
+                    alertElement.querySelectorAll('button').forEach(btn => btn.remove());
+                    if (alertIdToDelete) {
+                        delete window.pendingAlerts[alertIdToDelete];
+                        // Also clean up the dbId mapping
+                        if (window.pendingAlertsByDbId) {
+                            for (const [dbId, alertId] of Object.entries(window.pendingAlertsByDbId)) {
+                                if (alertId === alertIdToDelete) {
+                                    delete window.pendingAlertsByDbId[dbId];
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    showNotification('Cancellation failed: ' + result.message, 'error');
+                }
+            } catch (error) {
+                showNotification('Error cancelling alert: ' + error.message, 'error');
+            }
+        };
+        
         // Initialize auto trade status indicator
         function initializeAutoTradeStatus() {
             // Use the existing updateTradingModeDisplay function instead of creating duplicate
@@ -5506,11 +6273,24 @@
         
         // Generate test alert for demonstration
         window.generateTestAlert = function() {
+            console.log('[TEST ALERT] Generating test alert...');
+
             const signals = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8'];
             const randomSignal = signals[Math.floor(Math.random() * signals.length)];
             const isBullish = ['S1', 'S2', 'S4', 'S7'].includes(randomSignal);
             const optionType = isBullish ? 'PE' : 'CE';
-            const strikeBase = currentSpot ? Math.floor(currentSpot / 50) * 50 : null; // Round to nearest 50
+
+            // Get current spot from UI or use default
+            let spotPrice = 25050;
+            const spotElement = document.getElementById('spotPrice');
+            if (spotElement && spotElement.textContent) {
+                const parsed = parseFloat(spotElement.textContent);
+                if (parsed && parsed > 15000 && parsed < 35000) {
+                    spotPrice = parsed;
+                }
+            }
+
+            const strikeBase = Math.floor(spotPrice / 50) * 50; // Round to nearest 50
             const strikeOffset = (Math.floor(Math.random() * 5) - 2) * 50; // -100 to +100
             const strike = strikeBase + strikeOffset;
             
@@ -5531,14 +6311,54 @@
                 strike: strike,
                 type: optionType,
                 action: 'ENTRY',
-                spot_price: 25050,
+                spot_price: spotPrice,
                 timestamp: new Date().toISOString()
             };
-            
-            // Add the alert through the normal flow
-            addAlertToStream(testAlert);
-            
-            showNotification(`Test alert generated: ${randomSignal}`, 'info');
+
+            console.log('[TEST ALERT] Test alert object:', testAlert);
+
+            // Check if auto trade is enabled
+            const autoTradeCheckbox = document.getElementById('autoTradeToggle');
+            const autoTradeEnabled = autoTradeCheckbox ? autoTradeCheckbox.checked : false;
+
+            if (!autoTradeEnabled) {
+                console.log('[TEST ALERT] Auto trade disabled - creating pending alert');
+                // Send webhook to create pending alert
+                const webhookPayload = {
+                    secret: 'tradingview-webhook-secret-key-2025',
+                    signal: randomSignal,
+                    action: 'Entry',
+                    strike: strike,
+                    type: optionType,
+                    spot_price: spotPrice
+                };
+
+                fetch(getApiUrl('/webhook/entry'), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(webhookPayload)
+                })
+                .then(response => response.json())
+                .then(result => {
+                    console.log('[TEST ALERT] Webhook response:', result);
+                    if (result.status === 'pending') {
+                        showNotification(`Test alert stored for manual review: ${randomSignal}`, 'warning');
+                    } else {
+                        showNotification(`Test alert generated: ${randomSignal}`, 'info');
+                    }
+                })
+                .catch(error => {
+                    console.error('[TEST ALERT] Error:', error);
+                    showNotification('Error generating test alert', 'error');
+                });
+            } else {
+                console.log('[TEST ALERT] Auto trade enabled - adding to stream');
+                // Add the alert through the normal flow
+                addAlertToStream(testAlert);
+                showNotification(`Test alert generated: ${randomSignal}`, 'info');
+            }
         }
         
         // Calculate hedge strike based on percentage rule
@@ -7485,7 +8305,7 @@
             try {
                 // Direct Telegram API test for Naveen
                 const botToken = "8268902303:AAFy8t0gARt0iWGech3mlIfrOZ9S4Jrt3WM";
-                const chatId = null  // Configure chat ID in settings;
+                const chatId = "992005734";  // Naveen's chat ID
                 
                 const testMessage = {
                     chat_id: chatId,
@@ -10327,7 +11147,7 @@ function loadExitTimingConfig() {
         try {
             const config = JSON.parse(savedConfig);
             if (document.getElementById('exitDayOffset')) {
-                document.getElementById('exitDayOffset').value = config.exit_day_offset !== undefined ? config.exit_day_offset : 2;
+                document.getElementById('exitDayOffset').value = config.exit_day_offset !== undefined ? config.exit_day_offset : 0;
             }
             if (document.getElementById('exitTime')) {
                 document.getElementById('exitTime').value = config.exit_time || '15:15';
@@ -10354,7 +11174,7 @@ function loadExitTimingConfig() {
             if (config && !savedConfig) {
                 // Apply if no localStorage config
                 if (document.getElementById('exitDayOffset')) {
-                    document.getElementById('exitDayOffset').value = config.exit_day_offset !== undefined ? config.exit_day_offset : 2;
+                    document.getElementById('exitDayOffset').value = config.exit_day_offset !== undefined ? config.exit_day_offset : 0;
                 }
                 if (document.getElementById('exitTime')) {
                     document.getElementById('exitTime').value = config.exit_time || '15:15';

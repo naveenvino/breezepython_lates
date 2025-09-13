@@ -92,12 +92,20 @@ async def startup_event():
         logger.error(f"Failed to initialize Kite WebSocket: {e}")
     
     try:
-        # Start real-time stop loss monitoring
+        # Start real-time stop loss monitoring with Kite
         from src.services.realtime_stop_loss_monitor import start_realtime_monitoring
         start_realtime_monitoring()
-        logger.info("Real-time stop loss monitoring started")
+        logger.info("Real-time stop loss monitoring started with Kite")
+
+        # Start Kite hourly candle monitoring for stop loss checks
+        from src.services.kite_hourly_candle_service import get_kite_hourly_candle_service
+        from src.services.live_stoploss_monitor import get_live_stoploss_monitor
+
+        candle_service = get_kite_hourly_candle_service()
+        candle_service.start_monitoring()
+        logger.info("Kite hourly candle monitoring started")
     except Exception as e:
-        logger.error(f"Failed to start real-time monitoring: {e}")
+        logger.error(f"Failed to start monitoring services: {e}")
     
     try:
         # Start automatic order status monitoring
@@ -2547,11 +2555,69 @@ async def cancel_order(order_id: str):
     """Cancel an order"""
     try:
         kite_client, _, _, _, _ = get_kite_services()
-        kite_client.kite.cancel_order(order_id=order_id, variety="regular")
+
+        # Try to get order details first to determine variety
+        try:
+            orders = kite_client.kite.orders()
+            order = next((o for o in orders if o['order_id'] == order_id), None)
+
+            if order:
+                variety = order.get('variety', 'regular')
+                # For AMO orders, use 'amo' variety
+                if order.get('status') == 'AMO REQ RECEIVED' or variety == 'amo':
+                    variety = 'amo'
+            else:
+                variety = 'regular'
+        except:
+            variety = 'regular'
+
+        # Cancel the order with appropriate variety
+        kite_client.kite.cancel_order(order_id=order_id, variety=variety)
         return {"status": "success", "message": f"Order {order_id} cancelled"}
     except Exception as e:
-        logger.error(f"Error cancelling order: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error cancelling order {order_id}: {e}")
+        # Return error as JSON instead of raising HTTPException
+        return {"status": "error", "message": str(e)}
+
+@app.delete("/api/kite/order/{order_id}/cancel", tags=["Kite - Order Management"])
+async def cancel_kite_order(order_id: str):
+    """Cancel a Kite order directly with broker"""
+    try:
+        kite_client, _, _, _, _ = get_kite_services()
+
+        # Try to get order details first to determine variety
+        try:
+            orders = kite_client.kite.orders()
+            order = next((o for o in orders if o['order_id'] == order_id), None)
+
+            if order:
+                variety = order.get('variety', 'regular')
+                # For AMO orders, use 'amo' variety
+                if order.get('status') == 'AMO REQ RECEIVED' or variety == 'amo':
+                    variety = 'amo'
+            else:
+                variety = 'regular'
+        except:
+            variety = 'regular'
+
+        # Cancel the order with appropriate variety
+        kite_client.kite.cancel_order(order_id=order_id, variety=variety)
+
+        # Log the cancellation
+        logger.info(f"Order {order_id} cancelled successfully via API with variety={variety}")
+
+        return {
+            "status": "success",
+            "message": f"Order {order_id} cancelled successfully",
+            "order_id": order_id
+        }
+    except Exception as e:
+        logger.error(f"Error cancelling Kite order {order_id}: {str(e)}")
+        return {
+            "status": "error",
+            "message": str(e),
+            "order_id": order_id
+        }
 
 @app.get("/api/orders/active", tags=["Kite - Order Management"])
 async def get_active_orders():
@@ -4275,6 +4341,11 @@ async def save_trade_configuration(config: dict):
         logger.error(f"Save trade config error: {str(e)}")
         return {"status": "error", "message": str(e)}
 
+@app.get("/api/config", tags=["Trading"])
+async def get_api_configuration():
+    """Get trade configuration for API (alias for /trade-config)"""
+    return await get_trade_configuration()
+
 @app.get("/trade-config", tags=["Trading"])
 async def get_trade_configuration():
     """Get trade configuration from database"""
@@ -4287,16 +4358,17 @@ async def get_trade_configuration():
         cursor = conn.cursor()
         
         cursor.execute("""
-            SELECT num_lots, entry_timing, hedge_enabled, hedge_percent, profit_lock_enabled, auto_trade_enabled
+            SELECT num_lots, entry_timing, hedge_enabled, hedge_percent, profit_lock_enabled, auto_trade_enabled,
+                   hedge_method, hedge_offset
             FROM TradeConfiguration
             ORDER BY id DESC
             LIMIT 1
         """)
-        
+
         result = cursor.fetchone()
         cursor.close()
         conn.close()
-        
+
         if result:
             return {
                 "num_lots": result[0],
@@ -4304,7 +4376,9 @@ async def get_trade_configuration():
                 "hedge_enabled": bool(result[2]),
                 "hedge_percent": result[3],
                 "profit_lock_enabled": bool(result[4]),
-                "auto_trade_enabled": bool(result[5])
+                "auto_trade_enabled": bool(result[5]),
+                "hedge_method": result[6] if len(result) > 6 and result[6] else "percentage",
+                "hedge_offset": result[7] if len(result) > 7 and result[7] else 200
             }
         else:
             return {
@@ -4313,7 +4387,9 @@ async def get_trade_configuration():
                 "hedge_enabled": False,
                 "hedge_percent": 30.0,
                 "profit_lock_enabled": False,
-                "auto_trade_enabled": False
+                "auto_trade_enabled": False,
+                "hedge_method": "percentage",
+                "hedge_offset": 200
             }
             
     except Exception as e:
@@ -6530,58 +6606,152 @@ async def webhook_entry(request: dict):
         option_type = request.get('option_type') or request.get('type')
         
         # DUPLICATE PREVENTION - Check for same signal within 5 seconds
-        signal_key = f"{request['signal']}_{request['strike']}_{option_type}_entry"
+        # Skip duplicate check if this is a manual execution of a pending alert
         current_time = datetime.now()
-        
         recent_signals = data_manager.memory_cache.get('recent_signals', {})
-        if signal_key in recent_signals:
-            last_time = datetime.fromisoformat(recent_signals[signal_key])
-            if (current_time - last_time).total_seconds() < 5:
-                logger.warning(f"Duplicate signal ignored: {signal_key}")
-                return {
-                    "status": "ignored",
-                    "message": "Duplicate signal within 5 seconds",
-                    "signal": request['signal']
-                }
-        
-        # Update recent signals
-        recent_signals[signal_key] = current_time.isoformat()
-        data_manager.memory_cache['recent_signals'] = recent_signals
-        
+
+        if not request.get('manual_execution', False):
+            signal_key = f"{request['signal']}_{request['strike']}_{option_type}_entry"
+
+            if signal_key in recent_signals:
+                last_time = datetime.fromisoformat(recent_signals[signal_key])
+                if (current_time - last_time).total_seconds() < 5:
+                    logger.warning(f"Duplicate signal ignored: {signal_key}")
+                    return {
+                        "status": "ignored",
+                        "message": "Duplicate signal within 5 seconds",
+                        "signal": request['signal']
+                    }
+
+            # Update recent signals
+            recent_signals[signal_key] = current_time.isoformat()
+            data_manager.memory_cache['recent_signals'] = recent_signals
+
         # Clean old signals (older than 10 seconds)
         for key in list(recent_signals.keys()):
             if (current_time - datetime.fromisoformat(recent_signals[key])).total_seconds() > 10:
                 del recent_signals[key]
         
-        # GET LOTS FROM USER SETTINGS (not from webhook)
+        # GET LOTS AND AUTO TRADE SETTING FROM USER SETTINGS
         # TradingView doesn't send lots - we use UI configured value
         # Use TradeConfiguration table which has the actual settings
+        auto_trade_enabled = False
         try:
             conn = sqlite3.connect('data/trading_settings.db')
             cursor = conn.cursor()
             # Get from TradeConfiguration table - the correct source
-            cursor.execute("SELECT num_lots, max_positions FROM TradeConfiguration WHERE user_id='default' AND config_name='default' AND is_active=1")
+            cursor.execute("SELECT num_lots, auto_trade_enabled FROM TradeConfiguration WHERE user_id='default' AND config_name='default' AND is_active=1")
             result = cursor.fetchone()
             if result:
                 lots = int(result[0])  # num_lots column
                 max_lots = 30  # Allow up to 30 lots
-                logger.info(f"[WEBHOOK] Loaded lots from TradeConfiguration: {lots}")
+                auto_trade_enabled = bool(result[1]) if len(result) > 1 else False
+                logger.info(f"[WEBHOOK] Loaded config - Lots: {lots}, Auto Trade: {auto_trade_enabled}")
             else:
                 lots = 5  # Default fallback
                 max_lots = 30
-                logger.warning("[WEBHOOK] No config found, using default 5 lots")
+                auto_trade_enabled = False
+                logger.warning("[WEBHOOK] No config found, using defaults")
             conn.close()
         except Exception as e:
             logger.error(f"[WEBHOOK] Error loading config: {e}")
             lots = 5  # Default fallback
             max_lots = 30
+            auto_trade_enabled = False
         
         # VALIDATE POSITION SIZE
         if lots > max_lots:
             logger.warning(f"Position size {lots} exceeds max {max_lots}, capping at max")
             lots = max_lots  # Cap at maximum
         
-        # NO PRE-TRADE VERIFICATION - Process directly
+        # CHECK AUTO TRADE ENABLED - If disabled, store as pending alert
+        if not auto_trade_enabled:
+            logger.info(f"[WEBHOOK] Auto trade disabled - storing as pending alert")
+            
+            # Store pending alert in database
+            try:
+                conn = sqlite3.connect('data/trading_settings.db')
+                cursor = conn.cursor()
+                
+                # Create pending alerts table if not exists
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS PendingAlerts (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        alert_id TEXT UNIQUE,
+                        signal TEXT,
+                        strike INTEGER,
+                        option_type TEXT,
+                        lots INTEGER,
+                        spot_price REAL,
+                        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        status TEXT DEFAULT 'PENDING',
+                        action_taken TEXT,
+                        action_time DATETIME,
+                        webhook_data TEXT
+                    )
+                """)
+                
+                # Generate unique alert ID
+                alert_id = f"alert_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{request['signal']}"
+                
+                # Store the alert
+                cursor.execute("""
+                    INSERT OR REPLACE INTO PendingAlerts
+                    (alert_id, signal, strike, option_type, lots, spot_price, webhook_data)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    alert_id,
+                    request['signal'],
+                    request['strike'],
+                    option_type,
+                    lots,
+                    request.get('spot_price', 0),
+                    json.dumps(request)
+                ))
+
+                # Get the database ID for the inserted row
+                db_id = cursor.lastrowid
+
+                conn.commit()
+                conn.close()
+
+                # Broadcast to UI via WebSocket
+                await manager.broadcast({
+                    "type": "new_alert",
+                    "data": {
+                        "id": db_id,  # Include database ID for UI operations
+                        "alert_id": alert_id,
+                        "signal": request['signal'],
+                        "strike": request['strike'],
+                        "option_type": option_type,
+                        "lots": lots,
+                        "spot_price": request.get('spot_price', 0),
+                        "timestamp": datetime.now().isoformat(),
+                        "status": "PENDING",
+                        "actions": ["EXECUTE", "MODIFY", "CANCEL"]
+                    }
+                })
+                
+                logger.info(f"[WEBHOOK] Pending alert stored: {alert_id}")
+                
+                return {
+                    "status": "pending",
+                    "message": "Alert stored for manual review",
+                    "alert_id": alert_id,
+                    "signal": request['signal'],
+                    "strike": request['strike'],
+                    "auto_trade": False
+                }
+                
+            except Exception as e:
+                logger.error(f"[WEBHOOK] Error storing pending alert: {e}")
+                return {
+                    "status": "error",
+                    "message": f"Failed to store pending alert: {str(e)}"
+                }
+        
+        # AUTO TRADE ENABLED - Process directly
+        logger.info(f"[WEBHOOK] Auto trade enabled - executing immediately")
         premium = request.get('premium', 100)
         
         # Get expiry configuration for current day
@@ -6798,8 +6968,8 @@ async def webhook_entry(request: dict):
                     kite_order_result = {
                         'main_order_id': kite_result.get('main_order_id'),
                         'hedge_order_id': kite_result.get('hedge_order_id'),
-                        'main_symbol': kite_result.get('main_symbol'),
-                        'hedge_symbol': kite_result.get('hedge_symbol')
+                        'main_symbol': main_symbol,  # Use the calculated symbol
+                        'hedge_symbol': hedge_symbol   # Use the calculated symbol
                     }
                     logger.warning(f"✅ ORDERS SUBMITTED to Kite: {kite_order_result}")
                     # For MARKET orders, we can assume they'll fill quickly
@@ -6856,8 +7026,8 @@ async def webhook_entry(request: dict):
                         datetime.now().isoformat(),
                         order_status,
                         kite_result.get('error', '') if order_status == 'failed' else None,
-                        exit_day,  # Store exit config at entry time
-                        exit_time  # Store exit config at entry time
+                        exit_day,  # Stored for AUDIT ONLY - actual exit uses LIVE config from TradeConfiguration
+                        exit_time  # Stored for AUDIT ONLY - actual exit uses LIVE config from TradeConfiguration
                     ))
                     conn.commit()
                     conn.close()
@@ -6866,21 +7036,21 @@ async def webhook_entry(request: dict):
                     logger.error(f"Failed to save order tracking: {e}")
                 
                 if kite_result.get('status') == 'executed':
-                    
+
                     # Add success alert for UI notification
                     alerts = data_manager.memory_cache.get('alerts', [])
                     alerts.append({
                         'id': len(alerts) + 1,
                         'type': 'order_success',
-                        'message': f"✅ Orders Placed: {kite_result['main_symbol']} (Main: {kite_result['main_order_id']}, Hedge: {kite_result['hedge_order_id']})",
+                        'message': f"✅ Orders Placed: {kite_order_result['main_symbol']} (Main: {kite_order_result['main_order_id']}, Hedge: {kite_order_result['hedge_order_id']})",
                         'severity': 'success',
                         'timestamp': datetime.now().isoformat(),
                         'read': False,
                         'details': {
-                            'main_order': kite_result['main_order_id'],
-                            'hedge_order': kite_result['hedge_order_id'],
-                            'main_symbol': kite_result['main_symbol'],
-                            'hedge_symbol': kite_result['hedge_symbol'],
+                            'main_order': kite_order_result['main_order_id'],
+                            'hedge_order': kite_order_result['hedge_order_id'],
+                            'main_symbol': kite_order_result['main_symbol'],
+                            'hedge_symbol': kite_order_result['hedge_symbol'],
                             'amo': amo_enabled
                         }
                     })
@@ -7268,6 +7438,313 @@ async def webhook_exit(request: dict):
         return response
     except Exception as e:
         logger.error(f"Error handling webhook exit: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/pending-alerts", tags=["Webhooks - Manual Mode"])
+async def get_pending_alerts():
+    """Get all pending alerts that need manual action"""
+    try:
+        conn = sqlite3.connect('data/trading_settings.db')
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT id, alert_id, signal, strike, option_type, lots, 
+                   spot_price, timestamp, status, webhook_data
+            FROM PendingAlerts 
+            WHERE status = 'PENDING'
+            ORDER BY timestamp DESC
+        """)
+        
+        alerts = []
+        for row in cursor.fetchall():
+            alerts.append({
+                'id': row['id'],
+                'alert_id': row['alert_id'],
+                'signal': row['signal'],
+                'strike': row['strike'],
+                'option_type': row['option_type'],
+                'lots': row['lots'],
+                'spot_price': row['spot_price'],
+                'timestamp': row['timestamp'],
+                'status': row['status'],
+                'webhook_data': json.loads(row['webhook_data']) if row['webhook_data'] else None
+            })
+        
+        conn.close()
+        
+        return {
+            "status": "success",
+            "pending_count": len(alerts),
+            "alerts": alerts
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching pending alerts: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/pending-alerts/{alert_id}/execute", tags=["Webhooks - Manual Mode"])
+async def execute_pending_alert(alert_id: str):
+    """Manually execute a pending alert"""
+    try:
+        # Convert alert_id to int since it's the database ID
+        try:
+            db_id = int(alert_id)
+        except ValueError:
+            return {"status": "error", "message": "Invalid alert ID format"}
+
+        conn = sqlite3.connect('data/trading_settings.db')
+        cursor = conn.cursor()
+
+        # Get the pending alert (alert_id is the database ID from the URL)
+        cursor.execute("""
+            SELECT * FROM PendingAlerts
+            WHERE id = ? AND (status = 'PENDING' OR status = 'pending' OR status IS NULL)
+        """, (db_id,))
+        
+        alert = cursor.fetchone()
+        if not alert:
+            conn.close()
+            return {"status": "error", "message": "Alert not found or already processed"}
+
+        # Get the actual alert_id for WebSocket and other uses
+        actual_alert_id = alert[1]  # alert_id column
+
+        # Parse webhook data or build it from alert columns
+        if alert[11]:  # webhook_data column
+            try:
+                webhook_data = json.loads(alert[11])
+            except (json.JSONDecodeError, TypeError):
+                # Build from alert columns if JSON parsing fails
+                webhook_data = {
+                    'signal': alert[2],  # signal column
+                    'strike': alert[3],  # strike column
+                    'type': alert[4],    # option_type column
+                    'spot_price': alert[6] if alert[6] else 0  # spot_price column
+                }
+        else:
+            # Build webhook data from alert columns
+            webhook_data = {
+                'signal': alert[2],  # signal column
+                'strike': alert[3],  # strike column
+                'type': alert[4],    # option_type column
+                'spot_price': alert[6] if alert[6] else 0  # spot_price column
+            }
+        
+        # Update status to EXECUTING
+        cursor.execute("""
+            UPDATE PendingAlerts
+            SET status = 'EXECUTING', action_taken = 'EXECUTE', action_time = CURRENT_TIMESTAMP
+            WHERE id = ?
+        """, (db_id,))
+        conn.commit()
+        
+        # Temporarily enable auto trade for this execution
+        conn2 = sqlite3.connect('data/trading_settings.db')
+        cursor2 = conn2.cursor()
+
+        # Save current auto_trade_enabled and amo_enabled state
+        cursor2.execute("SELECT auto_trade_enabled, amo_enabled FROM TradeConfiguration WHERE user_id='default' AND config_name='default'")
+        original_state = cursor2.fetchone()
+        original_auto_trade = original_state[0] if original_state else False
+        original_amo = original_state[1] if original_state and len(original_state) > 1 else False
+
+        # Temporarily enable auto trade AND AMO (for after-market execution)
+        cursor2.execute("""
+            UPDATE TradeConfiguration
+            SET auto_trade_enabled = 1, amo_enabled = 1
+            WHERE user_id='default' AND config_name='default'
+        """)
+        conn2.commit()
+
+        try:
+            # Execute the trade using the webhook entry logic directly
+            # Convert pending alert back to webhook request format
+            reconstructed_request = {
+                'secret': webhook_data.get('secret', 'tradingview-webhook-secret-key-2025'),
+                'signal': webhook_data['signal'],
+                'action': 'Entry',
+                'strike': webhook_data['strike'],
+                'type': webhook_data['type'],
+                'spot_price': webhook_data.get('spot_price', 0),
+                'lots': alert[5],  # Use lots from the alert
+                'manual_execution': True  # Flag to bypass duplicate detection
+            }
+
+            # Call the webhook entry function directly
+            result = await webhook_entry(reconstructed_request)
+
+        finally:
+            # Restore original auto_trade_enabled and amo_enabled state
+            cursor2.execute("""
+                UPDATE TradeConfiguration
+                SET auto_trade_enabled = ?, amo_enabled = ?
+                WHERE user_id='default' AND config_name='default'
+            """, (original_auto_trade, original_amo))
+            conn2.commit()
+            conn2.close()
+        
+        # Update alert status based on result
+        if result and result.get('status') == 'success' and result.get('webhook_id'):
+            cursor.execute("""
+                UPDATE PendingAlerts
+                SET status = 'EXECUTED'
+                WHERE id = ?
+            """, (db_id,))
+
+            # Also broadcast to WebSocket if available
+            try:
+                from __main__ import websocket_manager
+                if websocket_manager:
+                    await websocket_manager.broadcast({
+                        "type": "alert_executed",
+                        "alert_id": actual_alert_id,
+                        "db_id": db_id,
+                        "result": result
+                    })
+            except (ImportError, NameError, AttributeError) as e:
+                logger.debug(f"WebSocket broadcast not available: {e}")
+        else:
+            cursor.execute("""
+                UPDATE PendingAlerts
+                SET status = 'FAILED'
+                WHERE id = ?
+            """, (db_id,))
+        
+        conn.commit()
+        conn.close()
+        
+        # Return proper response including webhook_id for UI
+        return {
+            "status": "success",
+            "message": f"Alert executed successfully",
+            "webhook_id": result.get('webhook_id') if result else None,
+            "result": result
+        }
+        
+    except Exception as e:
+        logger.error(f"Error executing pending alert: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/pending-alerts/{alert_id}/modify", tags=["Webhooks - Manual Mode"])
+async def modify_pending_alert(alert_id: str, request: dict = Body(...)):
+    """Modify parameters of a pending alert before execution"""
+    try:
+        # Convert alert_id to int since it's the database ID
+        try:
+            db_id = int(alert_id)
+        except ValueError:
+            return {"status": "error", "message": "Invalid alert ID format"}
+
+        conn = sqlite3.connect('data/trading_settings.db')
+        cursor = conn.cursor()
+
+        # Get the pending alert (alert_id is the database ID from the URL)
+        cursor.execute("""
+            SELECT * FROM PendingAlerts
+            WHERE id = ? AND (status = 'PENDING' OR status = 'pending' OR status IS NULL)
+        """, (db_id,))
+        
+        alert = cursor.fetchone()
+        if not alert:
+            conn.close()
+            return {"status": "error", "message": "Alert not found or already processed"}
+        
+        # Parse and update webhook data
+        webhook_data = json.loads(alert[11])  # webhook_data column
+        
+        # Update fields if provided
+        if 'strike' in request:
+            webhook_data['strike'] = request['strike']
+        if 'lots' in request:
+            webhook_data['lots'] = request['lots']
+        if 'option_type' in request:
+            webhook_data['type'] = request['option_type']
+        
+        # Update the alert
+        cursor.execute("""
+            UPDATE PendingAlerts
+            SET strike = ?, lots = ?, option_type = ?, webhook_data = ?,
+                action_taken = 'MODIFIED', action_time = CURRENT_TIMESTAMP
+            WHERE id = ?
+        """, (
+            webhook_data.get('strike'),
+            request.get('lots', alert[5]),  # Use provided lots or keep existing
+            webhook_data.get('type'),
+            json.dumps(webhook_data),
+            db_id  # Use database ID here
+        ))
+        
+        conn.commit()
+        conn.close()
+
+        # Broadcast to WebSocket if available
+        try:
+            from __main__ import websocket_manager
+            if websocket_manager:
+                await websocket_manager.broadcast({
+                    "type": "alert_modified",
+                    "alert_id": alert[1],  # actual alert_id from database
+                    "db_id": db_id,
+                    "modifications": request
+                })
+        except (ImportError, NameError, AttributeError) as e:
+            logger.debug(f"WebSocket broadcast not available: {e}")
+        
+        return {
+            "status": "success",
+            "message": f"Alert {alert_id} modified",
+            "updated_data": webhook_data
+        }
+        
+    except Exception as e:
+        logger.error(f"Error modifying pending alert: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/pending-alerts/{alert_id}/cancel", tags=["Webhooks - Manual Mode"])
+async def cancel_pending_alert(alert_id: str):
+    """Cancel a pending alert"""
+    try:
+        # Convert alert_id to int since it's the database ID
+        try:
+            db_id = int(alert_id)
+        except ValueError:
+            return {"status": "error", "message": "Invalid alert ID format"}
+
+        conn = sqlite3.connect('data/trading_settings.db')
+        cursor = conn.cursor()
+
+        # Update alert status to CANCELLED (alert_id is the database ID from the URL)
+        cursor.execute("""
+            UPDATE PendingAlerts
+            SET status = 'CANCELLED', action_taken = 'CANCEL', action_time = CURRENT_TIMESTAMP
+            WHERE id = ? AND (status = 'PENDING' OR status = 'pending' OR status IS NULL)
+        """, (db_id,))
+        
+        if cursor.rowcount == 0:
+            conn.close()
+            return {"status": "error", "message": "Alert not found or already processed"}
+        
+        conn.commit()
+        conn.close()
+
+        # Broadcast to WebSocket if available
+        try:
+            if 'websocket_manager' in globals() and websocket_manager:
+                await websocket_manager.broadcast({
+                    "type": "alert_cancelled",
+                    "alert_id": alert_id
+                })
+        except Exception as e:
+            logger.debug(f"WebSocket broadcast failed: {e}")
+        
+        return {
+            "status": "success",
+            "message": f"Alert {alert_id} cancelled"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error cancelling pending alert: {e}")
         return {"status": "error", "message": str(e)}
 
 @app.get("/orders/check-status")
@@ -12024,6 +12501,251 @@ async def get_circuit_breaker_status():
             logger.critical(f"Circuit breaker OPEN for {service}: {info['failures']} failures")
     
     return status
+
+# ================== STRATEGY MANAGEMENT ENDPOINTS ==================
+
+@app.post("/api/strategies/create")
+async def create_strategy(request: Request):
+    """Create a new trading strategy"""
+    try:
+        data = await request.json()
+        
+        # Import services
+        from src.services.strategy_manager_service import get_strategy_manager
+        from src.services.strategy_scheduler_service import get_strategy_scheduler
+        
+        manager = get_strategy_manager()
+        scheduler = get_strategy_scheduler(manager)
+        
+        # Create strategy
+        strategy_id = manager.create_strategy(
+            name=data.get('strategy_name'),
+            signals=data.get('signals', []),
+            config=data.get('configuration', {}),
+            schedule=data.get('schedule', {})
+        )
+        
+        # Add schedule if provided
+        if data.get('schedule'):
+            schedule_id = scheduler.add_schedule(
+                strategy_id=strategy_id,
+                schedule_type=data['schedule'].get('type', 'TIME_BASED'),
+                config=data['schedule']
+            )
+        
+        return {
+            "status": "success",
+            "strategy_id": strategy_id,
+            "message": "Strategy created successfully"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error creating strategy: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/strategies/{strategy_id}/start")
+async def start_strategy(strategy_id: str):
+    """Start a strategy"""
+    try:
+        from src.services.strategy_manager_service import get_strategy_manager
+        manager = get_strategy_manager()
+        
+        success = manager.start_strategy(strategy_id)
+        
+        if success:
+            return {
+                "status": "success",
+                "message": f"Strategy {strategy_id} started"
+            }
+        else:
+            return {
+                "status": "error",
+                "message": f"Failed to start strategy {strategy_id}"
+            }
+            
+    except Exception as e:
+        logger.error(f"Error starting strategy: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/strategies/{strategy_id}/pause")
+async def pause_strategy(strategy_id: str):
+    """Pause a running strategy"""
+    try:
+        from src.services.strategy_manager_service import get_strategy_manager
+        manager = get_strategy_manager()
+        
+        success = manager.pause_strategy(strategy_id)
+        
+        if success:
+            return {
+                "status": "success",
+                "message": f"Strategy {strategy_id} paused"
+            }
+        else:
+            return {
+                "status": "error",
+                "message": f"Strategy {strategy_id} not found or not running"
+            }
+            
+    except Exception as e:
+        logger.error(f"Error pausing strategy: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/strategies/{strategy_id}/resume")
+async def resume_strategy(strategy_id: str):
+    """Resume a paused strategy"""
+    try:
+        from src.services.strategy_manager_service import get_strategy_manager
+        manager = get_strategy_manager()
+        
+        success = manager.resume_strategy(strategy_id)
+        
+        if success:
+            return {
+                "status": "success",
+                "message": f"Strategy {strategy_id} resumed"
+            }
+        else:
+            return {
+                "status": "error",
+                "message": f"Strategy {strategy_id} not found or not paused"
+            }
+            
+    except Exception as e:
+        logger.error(f"Error resuming strategy: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/strategies/{strategy_id}/stop")
+async def stop_strategy(strategy_id: str):
+    """Stop a strategy"""
+    try:
+        from src.services.strategy_manager_service import get_strategy_manager
+        manager = get_strategy_manager()
+        
+        success = manager.stop_strategy(strategy_id)
+        
+        if success:
+            return {
+                "status": "success",
+                "message": f"Strategy {strategy_id} stopped"
+            }
+        else:
+            return {
+                "status": "error",
+                "message": f"Strategy {strategy_id} not found"
+            }
+            
+    except Exception as e:
+        logger.error(f"Error stopping strategy: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/strategies")
+async def get_all_strategies():
+    """Get all strategies with their status"""
+    try:
+        from src.services.strategy_manager_service import get_strategy_manager
+        manager = get_strategy_manager()
+        
+        strategies = manager.get_all_strategies()
+        
+        return {
+            "status": "success",
+            "strategies": strategies
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting strategies: {e}")
+        return {"status": "error", "message": str(e), "strategies": []}
+
+@app.get("/api/strategies/{strategy_id}/performance")
+async def get_strategy_performance(strategy_id: str):
+    """Get performance metrics for a strategy"""
+    try:
+        from src.services.strategy_manager_service import get_strategy_manager
+        manager = get_strategy_manager()
+        
+        performance = manager.get_strategy_performance(strategy_id)
+        
+        return {
+            "status": "success",
+            "performance": performance
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting performance: {e}")
+        return {"status": "error", "message": str(e), "performance": {}}
+
+@app.delete("/api/strategies/{strategy_id}")
+async def delete_strategy(strategy_id: str):
+    """Delete a strategy"""
+    try:
+        # Stop strategy if running
+        from src.services.strategy_manager_service import get_strategy_manager
+        manager = get_strategy_manager()
+        manager.stop_strategy(strategy_id)
+        
+        # Delete from database
+        conn = sqlite3.connect('data/trading_settings.db')
+        cursor = conn.cursor()
+        
+        cursor.execute("DELETE FROM StrategyInstances WHERE strategy_id = ?", (strategy_id,))
+        cursor.execute("DELETE FROM StrategyExecutions WHERE strategy_id = ?", (strategy_id,))
+        cursor.execute("DELETE FROM StrategySchedules WHERE strategy_id = ?", (strategy_id,))
+        cursor.execute("DELETE FROM StrategyPerformance WHERE strategy_id = ?", (strategy_id,))
+        
+        conn.commit()
+        conn.close()
+        
+        return {
+            "status": "success",
+            "message": f"Strategy {strategy_id} deleted"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error deleting strategy: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/strategies/{strategy_id}/executions")
+async def get_strategy_executions(strategy_id: str):
+    """Get execution history for a strategy"""
+    try:
+        conn = sqlite3.connect('data/trading_settings.db')
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT execution_id, webhook_id, signal, main_strike, hedge_strike,
+                   entry_time, exit_time, status, pnl, created_at
+            FROM StrategyExecutions
+            WHERE strategy_id = ?
+            ORDER BY created_at DESC
+            LIMIT 50
+        """, (strategy_id,))
+        
+        executions = []
+        for row in cursor.fetchall():
+            executions.append({
+                'execution_id': row[0],
+                'webhook_id': row[1],
+                'signal': row[2],
+                'main_strike': row[3],
+                'hedge_strike': row[4],
+                'entry_time': row[5],
+                'exit_time': row[6],
+                'status': row[7],
+                'pnl': row[8],
+                'created_at': row[9]
+            })
+        
+        conn.close()
+        
+        return {
+            "status": "success",
+            "executions": executions
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting executions: {e}")
+        return {"status": "error", "message": str(e), "executions": []}
 
 if __name__ == "__main__":
     # Kill any existing process on port 8000

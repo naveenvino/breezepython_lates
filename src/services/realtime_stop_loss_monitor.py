@@ -41,18 +41,18 @@ class RealtimeStopLossMonitor:
     def _monitor_loop(self):
         """Main monitoring loop that runs continuously"""
         logger.info("Starting continuous monitoring loop")
-        
+
         while self.is_running:
             try:
                 # Import here to avoid circular imports
                 from src.services.hybrid_data_manager import get_hybrid_data_manager
                 from src.services.live_stoploss_monitor import get_live_stoploss_monitor
-                from src.infrastructure.brokers.breeze.breeze_client import BreezeClient
-                
+                from src.services.kite_market_data_service import KiteMarketDataService
+
                 data_manager = get_hybrid_data_manager()
                 monitor = get_live_stoploss_monitor()
-                # Initialize Breeze client directly
-                breeze = BreezeClient()
+                # Initialize Kite market data service
+                kite_service = KiteMarketDataService()
                 
                 # Get all active positions
                 positions = list(data_manager.memory_cache.get('active_positions', {}).values())
@@ -70,15 +70,15 @@ class RealtimeStopLossMonitor:
                             
                             # Fetch current option prices
                             main_price = self._fetch_option_price(
-                                breeze, 
-                                position.main_strike, 
+                                kite_service,
+                                position.main_strike,
                                 position.main_type
                             )
-                            
+
                             hedge_price = 0
                             if position.hedge_quantity > 0:
                                 hedge_price = self._fetch_option_price(
-                                    breeze,
+                                    kite_service,
                                     position.hedge_strike,
                                     position.hedge_type
                                 )
@@ -119,31 +119,29 @@ class RealtimeStopLossMonitor:
                 
         logger.info("Monitoring loop stopped")
         
-    def _fetch_option_price(self, breeze, strike: int, option_type: str) -> float:
-        """Fetch current option price from Breeze"""
+    def _fetch_option_price(self, kite_service, strike: int, option_type: str) -> float:
+        """Fetch current option price from Kite"""
         try:
-            # Get current expiry (next Tuesday)
+            # Get current expiry (next Thursday for weekly)
             from datetime import datetime
             today = datetime.now()
-            days_until_tuesday = (1 - today.weekday()) % 7
-            if days_until_tuesday == 0 and today.hour >= 15:  # After 3:30 PM on Tuesday
-                days_until_tuesday = 7
-            expiry = today + timedelta(days=days_until_tuesday)
-            
-            symbol = f"NIFTY{expiry.strftime('%d%b%y').upper()}{strike}{option_type[0]}"
-            
-            # Fetch quote from Breeze
-            response = breeze.get_quotes(
-                stock_code=symbol,
-                exchange_code="NFO",
-                product_type="options"
-            )
-            
-            if response and 'Success' in response:
-                data = response['Success'][0]
-                ltp = float(data.get('ltp', 0))
-                logger.debug(f"Fetched {symbol} price: ₹{ltp}")
+            days_until_thursday = (3 - today.weekday()) % 7
+            if days_until_thursday == 0 and today.hour >= 15:  # After 3:30 PM on Thursday
+                days_until_thursday = 7
+            expiry = today + timedelta(days=days_until_thursday)
+
+            # Format symbol for Kite (e.g., NFO:NIFTY24DEC25000CE)
+            symbol = f"NFO:NIFTY{expiry.strftime('%y%b').upper()}{strike}{option_type[0]}E"
+
+            # Fetch LTP from Kite
+            ltp_data = kite_service.get_ltp([symbol])
+            if symbol in ltp_data:
+                ltp = ltp_data[symbol]
+                logger.debug(f"Fetched {symbol} price from Kite: ₹{ltp}")
                 return ltp
+            else:
+                logger.warning(f"No price data for {symbol}")
+                return 0
                 
         except Exception as e:
             logger.error(f"Error fetching option price for {strike}{option_type}: {e}")

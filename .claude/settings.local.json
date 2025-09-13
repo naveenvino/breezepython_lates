@@ -15,7 +15,14 @@
       "Bash(cmd /c:*)",
       "Bash(sqlite3:*)",
       "Bash(python test_expiry_logic.py:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(pip install:*)",
+      "Bash(start chrome \"http://localhost:8000/ui/modules/trading/strategy_manager_pro.html\")",
+      "Bash(start C:/Users/E1791/Kitepy/breezepython/.venv/Scripts/python.exe unified_api_correct.py)",
+      "Bash(dir:*)",
+      "Bash(grep:*)",
+      "Bash(git check-ignore:*)",
+      "Bash(del check_schema.py)"
     ],
     "deny": [],
     "ask": []

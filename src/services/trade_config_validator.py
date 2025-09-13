@@ -186,10 +186,17 @@ class TradeConfigValidator:
             'trail_percent': 1.0,
             'auto_trade_enabled': False,
             'active_signals': [],
-            'max_positions': 5,
-            'daily_profit_target': 100000,
-            'max_loss_per_trade': 20000,
-            'position_size_mode': 'fixed'
+            'telegram_enabled': False,
+            'telegram_bot_token': '',
+            'telegram_chat_id': '',
+            'email_enabled': False,
+            'email_from': '',
+            'email_to': '',
+            'alert_trade_entry': True,
+            'alert_trade_exit': True,
+            'alert_stop_loss': True,
+            'alert_risk_warnings': True,
+            'alert_daily_summary': False
         }
         
         for key, default_value in defaults.items():

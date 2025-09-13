@@ -91,8 +91,16 @@ wheels/
 # Claude agents
 .claude/agents/
 
-# Archive folders
+# Archive folders - cleanup artifacts
 archive/
+archive/tests/
+archive/utilities/
+archive/migrations/
+archive/deprecated/
+archive/monitoring/
+archive/documentation/
+archive/reports/
+archive/configs/
 
 # Windows reserved filenames (prevent accidental creation)
 nul

@@ -47,8 +47,13 @@ class LiveStopLossMonitor:
     
     def __init__(self):
         self.data_manager = get_hybrid_data_manager()
-        self.candle_service = get_realtime_candle_service()
-        
+        # Use Kite hourly candle service instead of realtime candle service
+        from src.services.kite_hourly_candle_service import get_kite_hourly_candle_service
+        self.candle_service = get_kite_hourly_candle_service()
+
+        # Load trailing stop configuration from UI settings
+        trailing_enabled, trail_percent = self._load_trailing_stop_config()
+
         # Stop loss rules - Hourly close based on strike is the main stop loss
         self.stop_loss_rules = [
             StopLossRule(
@@ -72,8 +77,8 @@ class LiveStopLossMonitor:
             ),
             StopLossRule(
                 type=StopLossType.TRAILING,
-                enabled=False,
-                params={'trail_percent': 1.0}
+                enabled=trailing_enabled,  # Now reads from UI configuration
+                params={'trail_percent': trail_percent}
             )
         ]
         
@@ -89,8 +94,38 @@ class LiveStopLossMonitor:
         self.on_stop_loss_triggered: Optional[Callable[[LivePosition, StopLossType, str], None]] = None
         
         # Register for candle completion
-        self.candle_service.on_stop_loss_check = self._on_hourly_candle_close
+        self.candle_service.register_stop_loss_callback(self._on_hourly_candle_close)
     
+    def _load_trailing_stop_config(self) -> tuple:
+        """Load trailing stop configuration from database"""
+        try:
+            import sqlite3
+            conn = sqlite3.connect('data/trading_settings.db')
+            cursor = conn.cursor()
+
+            cursor.execute("""
+                SELECT trailing_stop_enabled, trail_percent
+                FROM TradeConfiguration
+                WHERE user_id='default' AND config_name='default'
+                ORDER BY id DESC
+                LIMIT 1
+            """)
+
+            result = cursor.fetchone()
+            conn.close()
+
+            if result:
+                enabled = bool(result[0]) if result[0] is not None else False
+                trail_percent = float(result[1]) if result[1] is not None else 1.0
+                logger.info(f"Loaded trailing stop config: enabled={enabled}, trail={trail_percent}%")
+                return enabled, trail_percent
+            else:
+                return False, 1.0
+
+        except Exception as e:
+            logger.error(f"Error loading trailing stop config: {e}")
+            return False, 1.0
+
     def _on_hourly_candle_close(self, candle: HourlyCandle):
         """Called when hourly candle closes"""
         logger.info(f"Checking stop loss at hourly close: {candle.timestamp}")
@@ -220,33 +255,59 @@ class LiveStopLossMonitor:
         return False
     
     def _check_time_based_exit(self, position: LivePosition) -> bool:
-        """Check if it's time for T+N exit based on configuration STORED AT ENTRY TIME"""
+        """Check if it's time for T+N exit based on CURRENT configuration (DYNAMIC)"""
         try:
             # Get exit timing configuration from database
             import sqlite3
             conn = sqlite3.connect('data/trading_settings.db')
             cursor = conn.cursor()
-            
-            # Get the webhook_id and EXIT CONFIG STORED AT ENTRY for this position
+
+            # First get the position entry time from OrderTracking
             cursor.execute("""
-                SELECT webhook_id, created_at, exit_config_day, exit_config_time
-                FROM OrderTracking 
+                SELECT webhook_id, created_at
+                FROM OrderTracking
                 WHERE (main_order_id = ? OR hedge_order_id = ?)
                 AND status != 'failed'
             """, (position.order_id, position.order_id))
-            
-            result = cursor.fetchone()
+
+            tracking_result = cursor.fetchone()
+            if not tracking_result:
+                conn.close()
+                return False
+
+            webhook_id, entry_time_str = tracking_result
+
+            # NOW GET CURRENT EXIT CONFIGURATION (NOT STORED AT ENTRY)
+            # This makes exit timing DYNAMIC and follows TODAY'S settings
+            cursor.execute("""
+                SELECT exit_day_offset, exit_time, auto_square_off_enabled
+                FROM TradeConfiguration
+                WHERE user_id='default' AND config_name='default'
+                ORDER BY id DESC
+                LIMIT 1
+            """)
+
+            config_result = cursor.fetchone()
             conn.close()
-            
-            if not result:
+
+            if not config_result:
+                # Use defaults if no config found
+                exit_day = 0  # T+0
+                exit_time_str = "15:15"
+                auto_square_off = True
+            else:
+                exit_day = config_result[0] if config_result[0] is not None else 0
+                exit_time_str = config_result[1] if config_result[1] else "15:15"
+                auto_square_off = bool(config_result[2]) if len(config_result) > 2 else True
+
+            # If auto square-off is disabled in current config, don't exit
+            if not auto_square_off:
+                logger.debug(f"Auto square-off disabled in current config for position {position.id}")
                 return False
-                
-            webhook_id, entry_time_str, exit_day, exit_time_str = result
-            
-            # If no exit config was stored (old orders), return False
-            if exit_day is None or exit_time_str is None:
-                return False
-                
+
+            # Log that we're using DYNAMIC configuration
+            logger.debug(f"Position {position.id}: Using CURRENT config T+{exit_day} at {exit_time_str} (dynamic)")
+
             entry_time = datetime.strptime(entry_time_str, '%Y-%m-%d %H:%M:%S')
             
             # Calculate target exit datetime
@@ -286,51 +347,81 @@ class LiveStopLossMonitor:
         return False
     
     def _check_trailing_stop(self, position: LivePosition) -> bool:
-        """Check trailing stop loss INCLUDING HEDGE in calculation"""
+        """
+        Advanced Trailing Stop that works WITH Profit Lock
+        Only activates after profit target is reached
+        Incrementally increases the lock level as profit grows
+
+        Example: Target=30%, Lock=3%, Trail=1%
+        - When profit reaches 30%, lock at 3%
+        - When profit reaches 31%, lock moves to 4%
+        - When profit reaches 32%, lock moves to 5%
+        - And so on...
+        """
+        # First check if profit lock is active (target reached)
+        if position.id not in self.position_profit_locked or not self.position_profit_locked[position.id]:
+            # Trailing stop not active until profit target is reached
+            return False
+
         rule = self._get_rule(StopLossType.TRAILING)
+        if not rule or not rule.enabled:
+            return False
+
         trail_percent = rule.params['trail_percent']
-        
+        profit_lock_rule = self._get_rule(StopLossType.PROFIT_LOCK)
+        base_lock_percent = profit_lock_rule.params.get('lock_percent', 5.0)
+        target_percent = profit_lock_rule.params.get('target_percent', 10.0)
+
         # Calculate NET profit (including hedge)
-        # Main leg: We sold, so profit when price decreases
         main_entry = position.main_price * position.main_quantity * 75
         main_current = position.current_main_price * position.main_quantity * 75
-        main_profit = main_entry - main_current  # Profit when current < entry
-        
-        # Hedge leg (if exists): We bought, so loss when price decreases
+        main_profit = main_entry - main_current
+
         hedge_profit = 0
         if position.hedge_price and position.hedge_quantity > 0:
             hedge_entry = position.hedge_price * position.hedge_quantity * 75
             hedge_current = (position.current_hedge_price or position.hedge_price) * position.hedge_quantity * 75
-            hedge_profit = hedge_current - hedge_entry  # Profit when current > entry (we bought)
-        
-        # Net profit = Main profit + Hedge profit
+            hedge_profit = hedge_current - hedge_entry
+
         net_profit = main_profit + hedge_profit
-        
-        # Track high water mark (highest profit achieved)
+        profit_percent = (net_profit / main_entry) * 100
+
+        # Track high water mark
         if position.id not in self.position_high_water_marks:
-            self.position_high_water_marks[position.id] = net_profit
-            logger.debug(f"Position {position.id} initial profit: ₹{net_profit:.2f}")
+            self.position_high_water_marks[position.id] = profit_percent
+            logger.debug(f"Position {position.id} initial profit: {profit_percent:.2f}%")
         else:
-            if net_profit > self.position_high_water_marks[position.id]:
+            if profit_percent > self.position_high_water_marks[position.id]:
                 old_high = self.position_high_water_marks[position.id]
-                self.position_high_water_marks[position.id] = net_profit
-                logger.info(f"Position {position.id} new high profit: ₹{net_profit:.2f} (was ₹{old_high:.2f})")
-        
-        # Check if profit has fallen by trail percent from high
-        high_water_mark = self.position_high_water_marks[position.id]
-        if high_water_mark > 0:  # Only trail when in profit
-            drawdown = high_water_mark - net_profit
-            # Calculate drawdown as percentage of entry value
-            drawdown_percent = (drawdown / main_entry) * 100
-            
-            logger.debug(f"Position {position.id} trailing: High ₹{high_water_mark:.2f}, "
-                        f"Current ₹{net_profit:.2f}, Drawdown {drawdown_percent:.2f}%")
-            
-            if drawdown_percent >= trail_percent:
+                self.position_high_water_marks[position.id] = profit_percent
+                logger.info(f"Position {position.id} new high profit: {profit_percent:.2f}% (was {old_high:.2f}%)")
+
+        high_water_mark_percent = self.position_high_water_marks[position.id]
+
+        # Calculate dynamic lock level based on how much profit exceeded target
+        # For every trail_percent above target, increase lock by trail_percent
+        profit_above_target = high_water_mark_percent - target_percent
+        if profit_above_target > 0:
+            # How many trail increments above target?
+            trail_increments = int(profit_above_target / trail_percent)
+            dynamic_lock_percent = base_lock_percent + (trail_increments * trail_percent)
+
+            logger.debug(f"Position {position.id} - Trailing active: "
+                        f"Peak={high_water_mark_percent:.2f}%, Current={profit_percent:.2f}%, "
+                        f"Dynamic Lock={dynamic_lock_percent:.2f}%")
+
+            # Check if profit has fallen below the dynamic lock level
+            if profit_percent < dynamic_lock_percent:
                 logger.warning(f"Trailing stop triggered for position {position.id}: "
-                             f"Drawdown {drawdown_percent:.2f}% >= {trail_percent}%")
+                             f"Profit {profit_percent:.2f}% fell below dynamic lock {dynamic_lock_percent:.2f}%")
                 return True
-        
+        else:
+            # Still use base lock if not above target by trail_percent
+            if profit_percent < base_lock_percent:
+                logger.warning(f"Profit lock triggered for position {position.id}: "
+                             f"Profit {profit_percent:.2f}% fell below base lock {base_lock_percent}%")
+                return True
+
         return False
     
     def _trigger_stop_loss(self, position: LivePosition, stop_type: StopLossType, reason: str):
